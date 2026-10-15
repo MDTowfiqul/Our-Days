@@ -77,7 +77,7 @@ object BackupCodec {
         .put("slides", JSONArray().apply { s.slides.forEach { put(File(it).name) } })
         .put(
             "moments",
-            JSONArray(MomentCodec.encode(s.moments.map { m -> m.copy(photoPath = m.photoPath?.let { File(it).name }) })),
+            JSONArray(MomentCodec.encode(s.moments.map { m -> m.copy(photoPaths = m.photoPaths.map { File(it).name }) })),
         )
         .toString(2)
 
@@ -135,7 +135,7 @@ object BackupCodec {
             homePage = o.optInt("homePage", d.homePage).coerceAtLeast(0),
             updateCheck = o.optBoolean("updateCheck", d.updateCheck),
             moments = MomentCodec.decode(o.optJSONArray("moments")?.toString())
-                .map { m -> m.copy(photoPath = fileName(m.photoPath)) }
+                .map { m -> m.copy(photoPaths = m.photoPaths.mapNotNull { fileName(it) }) }
                 .sortedBy { it.date },
             showMoments = o.optBoolean("showMoments", d.showMoments),
             showLive = o.optBoolean("showLive", d.showLive),

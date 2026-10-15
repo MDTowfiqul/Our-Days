@@ -54,6 +54,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Cake
 import androidx.compose.material.icons.rounded.CardGiftcard
 import androidx.compose.material.icons.rounded.Event
@@ -192,6 +193,29 @@ fun HomeScreen(
                     contentDescription = stringResource(R.string.settings),
                     tint = Color.White,
                     modifier = Modifier.size(22.dp),
+                )
+            }
+        }
+        // Auf der Momente-Seite: eigener schwebender Hinzufügen-Knopf rechts unten,
+        // losgelöst von der Leiste – damit man nicht erst ganz nach oben scrollen muss
+        if (pages[pager.currentPage] == HomePage.Moments) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(bottom = 16.dp, end = 16.dp)
+                    .shadow(8.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickable(onClick = { onAddMoment(null) })
+                    .size(56.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.Add,
+                    contentDescription = stringResource(R.string.moment_new),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(26.dp),
                 )
             }
         }
@@ -514,7 +538,7 @@ internal fun TodayBanner(lines: List<String>) {
 /** Rückblick auf das vergangene Jahr mit ein paar Fotos und dem Knopf zum Teilen */
 @Composable
 private fun YearReviewCard(review: YearReview, onShare: () -> Unit) {
-    val photos = review.moments.mapNotNull { it.photoPath }.take(3)
+    val photos = review.moments.flatMap { it.photoPaths }.take(3)
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),

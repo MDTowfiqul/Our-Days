@@ -13,7 +13,7 @@ import java.time.LocalDate
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class MomentTest {
-    private val firstDate = Moment("a", "Erstes Date", LocalDate.of(2024, 5, 10), "Kino", "/x/a.jpg", true)
+    private val firstDate = Moment("a", "Erstes Date", LocalDate.of(2024, 5, 10), "Kino", listOf("/x/a.jpg"), true)
     private val leap = Moment("b", "Schaltjahr", LocalDate.of(2024, 2, 29), yearlyReminder = true)
     private val quiet = Moment("c", "Ohne Erinnerung", LocalDate.of(2024, 5, 10), yearlyReminder = false)
 

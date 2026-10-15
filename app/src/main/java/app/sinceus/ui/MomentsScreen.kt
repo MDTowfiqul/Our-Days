@@ -65,6 +65,7 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -600,15 +601,34 @@ private fun TimelineItem(
                 .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         ) {
             val moment = (entry as? TimelineEntry.Saved)?.moment
-            if (moment?.photoPath != null) {
-                AsyncImage(
-                    model = File(moment.photoPath),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 10f),
-                )
+            val photos = moment?.photoPaths.orEmpty()
+            if (photos.isNotEmpty()) {
+                Box {
+                    AsyncImage(
+                        model = File(photos.first()),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 10f),
+                    )
+                    if (photos.size > 1) {
+                        Box(
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(8.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.Black.copy(alpha = 0.55f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                "+${photos.size - 1}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White,
+                            )
+                        }
+                    }
+                }
             }
             Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
                 Text(

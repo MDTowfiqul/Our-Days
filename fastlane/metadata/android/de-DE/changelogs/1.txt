@@ -1,5 +1,0 @@
-- Erste Version von Our Days
-- Schnell-Button für neue Momente
-- Mehrere Fotos pro Moment (Diarium-Stil)
-- Verschlüsselte Cloud-Sicherung über Telegram oder Google Drive (Play-Version)
-- Automatische tägliche oder wöchentliche Sicherungen, Nur-WLAN-Option

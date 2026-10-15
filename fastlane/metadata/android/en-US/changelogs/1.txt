@@ -1,0 +1,5 @@
+- First release of Our Days
+- Quick-add button for new moments
+- Multiple photos per moment (Diarium style)
+- Encrypted cloud backup via Telegram or Google Drive (Play version)
+- Automatic daily or weekly backups, Wi-Fi only option

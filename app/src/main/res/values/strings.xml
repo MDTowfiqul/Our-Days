@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">Since Us</string>
+    <string name="app_name" translatable="false">Our Days</string>
     <string name="widget_days_name">Days together</string>
     <string name="widget_days_description">Shows how many days you have been together</string>
     <string name="widget_photo_name">Love card</string>
@@ -92,7 +92,7 @@
     <string name="editor_hint">Drag with one finger, pinch with two to zoom.</string>
     <string name="other_photo">Other photo</string>
     <string name="reset">Reset</string>
-    <string name="widget_manual_hint">Long press your home screen, open Widgets and choose Since Us</string>
+    <string name="widget_manual_hint">Long press your home screen, open Widgets and choose Our Days</string>
     <string name="test_notification">This is how your special-day notifications will look.</string>
     <string name="widget_days_until">days to go</string>
     <string name="widget_next">Next: %1$s</string>
@@ -115,7 +115,7 @@
     <string name="update_failed">GitHub could not be reached</string>
     <string name="version">Version</string>
     <string name="licenses">Open source licenses</string>
-    <string name="licenses_app">Since Us is free software under the GNU General Public License 3.0 or later. The source code is on GitHub:</string>
+    <string name="licenses_app">Our Days is free software under the GNU General Public License 3.0 or later. The source code is on GitHub:</string>
     <string name="licenses_libraries">Libraries used</string>
     <string name="licenses_show_text">Show Apache License 2.0</string>
     <string name="licenses_hide_text">Hide license text</string>
@@ -237,7 +237,7 @@
     <string name="backup_saved">Backup saved</string>
     <string name="backup_save_failed">Backup could not be saved</string>
     <string name="backup_restored">Backup restored</string>
-    <string name="backup_restore_failed">This file is not a valid Since Us backup</string>
+    <string name="backup_restore_failed">This file is not a valid Our Days backup</string>
     <string name="settings_couple">People &amp; relationships</string>
     <string name="settings_home">Home screen</string>
     <string name="settings_home_summary">Moments, live counter and widget</string>
@@ -248,7 +248,7 @@
     <string name="notify_off">Off</string>
     <string name="notify_daily_at">On special days at %1$s</string>
     <string name="all_couples">For every kind of love</string>
-    <string name="all_couples_text">Since Us is for everyone in love, no matter who you are, whom you love or how many of you there are.</string>
+    <string name="all_couples_text">Our Days is for everyone in love, no matter who you are, whom you love or how many of you there are.</string>
     <string name="pride_title">Happy Pride Month!</string>
     <string name="credit_before" translatable="false">Built with</string>
     <string name="credit_heart">love</string>
@@ -297,24 +297,24 @@
     <string name="section_sync">Sync</string>
     <string name="sync_summary">Share moments between your phones</string>
     <string name="sync_intro">Keep your moments the same on your phones, without a cloud or account. Pair both phones once with a QR code, then send a sync file, for example through a messenger. Only your paired phones can open it.</string>
-    <string name="sync_intro_paired">Send a sync file whenever you have added something. The other phone opens it directly in Since Us and adds what is new. Photos come along.</string>
+    <string name="sync_intro_paired">Send a sync file whenever you have added something. The other phone opens it directly in Our Days and adds what is new. Photos come along.</string>
     <string name="sync_who">Who uses this phone?</string>
     <string name="sync_show_qr">Show QR code</string>
     <string name="sync_show_qr_summary">The other phone scans it</string>
     <string name="sync_scan">Scan QR code</string>
     <string name="sync_scan_summary">Scan the code shown on the other phone</string>
-    <string name="sync_scan_prompt">Scan the QR code from Since Us on the other phone</string>
+    <string name="sync_scan_prompt">Scan the QR code from Our Days on the other phone</string>
     <string name="sync_qr_text">Open Sync on the other phone and tap "Scan QR code". Only show this code to the people you are pairing with.</string>
     <string name="sync_paired">Paired</string>
     <string name="sync_paired_since">Paired since %1$s</string>
     <string name="sync_last">Last synced on %1$s</string>
     <string name="sync_paired_now">Paired. You can now send sync files.</string>
-    <string name="sync_bad_qr">This is not a pairing code from Since Us.</string>
+    <string name="sync_bad_qr">This is not a pairing code from Our Days.</string>
     <string name="sync_send">Send sync</string>
     <string name="sync_send_summary">Creates an encrypted file to share</string>
     <string name="sync_send_failed">The sync file could not be created.</string>
     <string name="sync_open">Open sync file</string>
-    <string name="sync_open_summary">If tapping the file did not open Since Us</string>
+    <string name="sync_open_summary">If tapping the file did not open Our Days</string>
     <string name="sync_show_qr_again">Pair another phone</string>
     <string name="sync_show_qr_again_summary">Shows the QR code again, for example for a new phone</string>
     <string name="sync_unpair">Unpair</string>
@@ -476,8 +476,8 @@
     <string name="changelog_setting_summary">Briefly show what\'s new after an update. Tap the version below to see it again.</string>
     <string name="app_lock">App lock</string>
     <string name="app_lock_summary">Unlock with fingerprint, face or PIN when opening. The content is hidden in recent apps.</string>
-    <string name="lock_title">Since Us is locked</string>
-    <string name="lock_prompt">Unlock Since Us</string>
+    <string name="lock_title">Our Days is locked</string>
+    <string name="lock_prompt">Unlock Our Days</string>
     <string name="lock_unlock">Unlock</string>
     <string name="lock_no_screen_lock">Set up a screen lock on your phone first.</string>
     <string name="font_title">Font</string>

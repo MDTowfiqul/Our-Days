@@ -13,8 +13,8 @@ data class Moment(
     val title: String,
     val date: LocalDate,
     val note: String = "",
-    /** Pfad zum Foto im App-Speicher (files/moments/), null = kein Foto */
-    val photoPath: String? = null,
+    /** Pfade zu Fotos im App-Speicher (files/moments/), leer = keine Fotos */
+    val photoPaths: List<String> = emptyList(),
     /** Am Jahrestag eine Mitteilung schicken */
     val yearlyReminder: Boolean = true,
     /** Gehört zu dieser Beziehung, null = zu allen */
@@ -34,7 +34,7 @@ object MomentCodec {
                     .put("title", m.title)
                     .put("date", m.date.toEpochDay())
                     .put("note", m.note)
-                    .put("photo", m.photoPath ?: JSONObject.NULL)
+                    .put("photos", JSONArray().apply { m.photoPaths.forEach { put(it) } })
                     .put("remind", m.yearlyReminder)
                     .put("rel", m.relationshipId ?: JSONObject.NULL)
                     .put("updated", m.updatedAt)
@@ -55,7 +55,11 @@ object MomentCodec {
                     title = o.getString("title"),
                     date = LocalDate.ofEpochDay(o.getLong("date")),
                     note = o.optString("note", ""),
-                    photoPath = if (o.isNull("photo")) null else o.optString("photo").ifBlank { null },
+                    photoPaths = o.optJSONArray("photos")
+                        ?.let { arr -> (0 until arr.length()).mapNotNull { arr.optString(it).ifBlank { null } } }
+                    // Altes Format: ein einzelnes Foto unter „photo“
+                        ?: (if (o.isNull("photo")) null else o.optString("photo").ifBlank { null })
+                            ?.let { listOf(it) }.orEmpty(),
                     yearlyReminder = o.optBoolean("remind", true),
                     relationshipId = if (o.isNull("rel")) null else o.optString("rel").ifBlank { null },
                     updatedAt = o.optLong("updated", 0),

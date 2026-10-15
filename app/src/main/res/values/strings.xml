@@ -252,7 +252,7 @@
     <string name="pride_title">Happy Pride Month!</string>
     <string name="credit_before" translatable="false">Built with</string>
     <string name="credit_heart">love</string>
-    <string name="credit_after" translatable="false">by Lian</string>
+    <string name="credit_after" translatable="false">by Towfiqul</string>
     <string name="reset_summary">Run setup again or delete everything</string>
     <string name="reset_intro">Careful: these steps change or delete your data. Save a backup first if you want to keep anything.</string>
     <string name="reset_backup_summary">Recommended before you start over</string>

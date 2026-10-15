@@ -88,11 +88,11 @@ class GmsDriveBackend(private val context: Context) : DriveBackend {
         }
     }
 
-    private fun deleteByName(account: String, name: String) {
+    private suspend fun deleteByName(account: String, name: String) {
         listBackups(account).filter { it.name == name }.forEach { delete(account, it.id) }
     }
 
-    private fun delete(account: String, id: String) {
+    private suspend fun delete(account: String, id: String) {
         val t = token(account)
         cloudHttp.newCall(
             Request.Builder()

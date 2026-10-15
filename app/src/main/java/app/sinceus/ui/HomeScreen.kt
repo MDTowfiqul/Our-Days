@@ -54,6 +54,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Cake
 import androidx.compose.material.icons.rounded.CardGiftcard
 import androidx.compose.material.icons.rounded.Event
@@ -193,6 +194,25 @@ fun HomeScreen(
                     tint = Color.White,
                     modifier = Modifier.size(22.dp),
                 )
+            }
+            // Auf der Momente-Seite: direkter Knopf für einen neuen Moment,
+            // damit man nicht erst ganz nach oben scrollen muss
+            if (pages[pager.currentPage] == HomePage.Moments) {
+                Box(
+                    Modifier
+                        .size(BarItemHeight)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable(onClick = { onAddMoment(null) }),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Rounded.Add,
+                        contentDescription = stringResource(R.string.moment_new),
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
         }
     }
@@ -514,7 +534,7 @@ internal fun TodayBanner(lines: List<String>) {
 /** Rückblick auf das vergangene Jahr mit ein paar Fotos und dem Knopf zum Teilen */
 @Composable
 private fun YearReviewCard(review: YearReview, onShare: () -> Unit) {
-    val photos = review.moments.mapNotNull { it.photoPath }.take(3)
+    val photos = review.moments.flatMap { it.photoPaths }.take(3)
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),

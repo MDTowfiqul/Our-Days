@@ -275,7 +275,7 @@ object ShareCard {
     @Synchronized
     fun renderMoment(context: Context, s: LoveSettings, m: Moment, today: LocalDate): Bitmap {
         useFont(context, s)
-        val photo = m.photoPath?.let { WidgetPhoto.photo(it, WIDTH, HEIGHT, DEFAULT_FOCUS_Y / 2) }
+        val photo = m.photoPaths.firstOrNull()?.let { WidgetPhoto.photo(it, WIDTH, HEIGHT, DEFAULT_FOCUS_Y / 2) }
         val (out, canvas) = canvasWith(context, s, photo)
         val w = WIDTH.toFloat()
         val maxWidth = w - 2 * MARGIN
@@ -312,7 +312,7 @@ object ShareCard {
     @Synchronized
     fun renderYear(context: Context, s: LoveSettings, review: YearReview): Bitmap {
         useFont(context, s)
-        val photos = review.moments.mapNotNull { it.photoPath }.take(4)
+        val photos = review.moments.flatMap { it.photoPaths }.take(4)
         val collage = if (photos.isEmpty()) null else collage(photos)
         val (out, canvas) = canvasWith(context, s, collage)
         val w = WIDTH.toFloat()

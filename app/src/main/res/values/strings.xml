@@ -190,6 +190,8 @@
     <string name="moment_field_date">Date</string>
     <string name="moment_field_note">Note (optional)</string>
     <string name="moment_add_photo">Add photo</string>
+    <string name="moment_add_photos">Add photos</string>
+    <string name="moment_photos">Photos</string>
     <string name="moment_change_photo">Change photo</string>
     <string name="moment_remove_photo">Remove photo</string>
     <string name="moment_remind">Yearly reminder</string>

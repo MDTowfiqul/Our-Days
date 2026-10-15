@@ -189,6 +189,8 @@
     <string name="moment_field_date">Datum</string>
     <string name="moment_field_note">Notiz (optional)</string>
     <string name="moment_add_photo">Foto hinzufügen</string>
+    <string name="moment_add_photos">Fotos hinzufügen</string>
+    <string name="moment_photos">Fotos</string>
     <string name="moment_change_photo">Foto ändern</string>
     <string name="moment_remove_photo">Foto entfernen</string>
     <string name="moment_remind">Jährlich erinnern</string>

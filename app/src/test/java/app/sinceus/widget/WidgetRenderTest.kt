@@ -63,7 +63,7 @@ class WidgetRenderTest {
 
     @Test
     fun countdown(): Unit = runBlocking {
-        LoveRepository(context).saveMoment(app.sinceus.data.Moment("trip", "Urlaub am Meer", LocalDate.now().plusDays(12)), null, false)
+        LoveRepository(context).saveMoment(app.sinceus.data.Moment("trip", "Urlaub am Meer", LocalDate.now().plusDays(12)), emptyList(), emptyList())
         render(CountdownWidget(), "countdown_3x2", DpSize(250.dp, 150.dp))
     }
 

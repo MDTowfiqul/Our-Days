@@ -39,7 +39,7 @@ class BackupTest {
         onboardingDone = true,
         homePage = 1,
         updateCheck = false,
-        moments = listOf(Moment("1", "Erstes Date", LocalDate.of(2025, 2, 14), "Kino", "/data/x/files/moments/1_5.jpg")),
+        moments = listOf(Moment("1", "Erstes Date", LocalDate.of(2025, 2, 14), "Kino", photoPaths = listOf("/data/x/files/moments/1_5.jpg"))),
         showMoments = true,
         showLive = false,
         slides = listOf("/data/x/files/slides/slide_1_0.jpg"),
@@ -52,7 +52,7 @@ class BackupTest {
     fun jsonKeepsAllDataWithFileNamesOnly() {
         val expected = sample.copy(
             photoPath = "photo_1.jpg",
-            moments = sample.moments.map { it.copy(photoPath = "1_5.jpg") },
+            moments = sample.moments.map { it.copy(photoPaths = listOf("1_5.jpg")) },
             slides = listOf("slide_1_0.jpg"),
         )
         assertEquals(expected, BackupCodec.decode(BackupCodec.encode(sample)))
@@ -80,7 +80,7 @@ class BackupTest {
         repo.resetAll()
         repo.setNames(listOf("Alex", "Sam"))
         repo.setStartDate(LocalDate.of(2025, 3, 15))
-        repo.saveMoment(Moment("1", "Erstes Date", LocalDate.of(2025, 2, 14), "Kino"), null, false)
+        repo.saveMoment(Moment("1", "Erstes Date", LocalDate.of(2025, 2, 14), "Kino"), emptyList(), emptyList())
         val file = ByteArrayOutputStream()
         repo.exportBackup(file)
 
@@ -116,7 +116,7 @@ class BackupTest {
         assertEquals(File(File(context.filesDir, "photos"), "photo_1.jpg").absolutePath, s.photoPath)
         // Fotos, die in der Datei fehlen, fallen weg
         assertTrue(s.slides.isEmpty())
-        assertNull(s.moments.single().photoPath)
+        assertTrue(s.moments.single().photoPaths.isEmpty())
         assertFalse(File(context.filesDir.parentFile, "evil.txt").exists())
         assertFalse(File(context.cacheDir.parentFile, "evil.txt").exists())
     }

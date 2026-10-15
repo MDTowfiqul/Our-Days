@@ -8,7 +8,7 @@ set -euo pipefail
 
 code="$1"
 ok=true
-for lang in de-DE en-US; do
+for lang in bn-BD en-US; do
   notes="fastlane/metadata/android/$lang/changelogs/$code.txt"
   if [ ! -s "$notes" ]; then
     echo "::error file=$notes::Änderungsnotiz fehlt: $notes"

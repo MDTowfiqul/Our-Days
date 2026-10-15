@@ -82,7 +82,7 @@ android {
         buildConfig = true
     }
 
-    // Sprachauswahl pro App in den Android-Einstellungen (Englisch, Deutsch)
+    // Sprachauswahl pro App in den Android-Einstellungen (Englisch, Bengalisch)
     androidResources {
         generateLocaleConfig = true
     }
@@ -100,7 +100,7 @@ android {
 }
 
 /**
- * Kopiert die Änderungslisten aus fastlane/metadata in die App (assets/changelogs/de|en/<versionCode>.txt),
+ * Kopiert die Änderungslisten aus fastlane/metadata in die App (assets/changelogs/bn|en/<versionCode>.txt),
  * damit sie nach einem Update als „Neu in dieser Version“ erscheinen. Eine Quelle für Stores und App.
  */
 abstract class CopyChangelogs : DefaultTask() {
@@ -115,7 +115,7 @@ abstract class CopyChangelogs : DefaultTask() {
     fun copy() {
         val out = output.get().asFile
         out.deleteRecursively()
-        mapOf("de-DE" to "de", "en-US" to "en").forEach { (folder, lang) ->
+        mapOf("bn-BD" to "bn", "en-US" to "en").forEach { (folder, lang) ->
             val target = out.resolve("changelogs/$lang").apply { mkdirs() }
             metadata.get().asFile.resolve("$folder/changelogs").listFiles { f -> f.extension == "txt" }
                 ?.forEach { it.copyTo(target.resolve(it.name), overwrite = true) }

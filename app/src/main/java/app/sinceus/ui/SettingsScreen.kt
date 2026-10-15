@@ -1388,7 +1388,7 @@ private fun LanguageDialog(current: String, onDismiss: () -> Unit, onPick: (Stri
 /** Sprachen stehen immer in ihrer eigenen Sprache da, damit man sie auch in der falschen Sprache findet */
 @Composable
 private fun languageLabel(tag: String) = when (tag) {
-    "de" -> "Deutsch"
+    "bn" -> "বাংলা"
     "en" -> "English"
     else -> stringResource(R.string.language_system)
 }
@@ -1497,16 +1497,16 @@ private fun remindLabel(days: Int): Int = when (days) {
     else -> R.string.remind_off
 }
 
-/** Seiten der Website, auf Deutsch oder Englisch passend zur App-Sprache */
+/** Seiten der Website, auf Bengalisch oder Englisch passend zur App-Sprache */
 private object Web {
-    private const val BASE = "https://sinceus.de/"
+    private const val BASE = "https://mdtowfiqul.github.io/Our-Days/"
 
     fun page(name: String, context: android.content.Context): String {
-        val de = context.resources.configuration.locales[0].language == "de"
+        val bn = context.resources.configuration.locales[0].language == "bn"
         return BASE + when (name) {
-            "privacy" -> if (de) "privacy-de.html" else "privacy-en.html"
-            "imprint" -> if (de) "impressum.html" else "legal-notice.html"
-            else -> if (de) "index-de.html" else ""
+            "privacy" -> if (bn) "privacy-bn.html" else "privacy-en.html"
+            "imprint" -> "legal-notice.html"
+            else -> if (bn) "index-bn.html" else ""
         }
     }
 }

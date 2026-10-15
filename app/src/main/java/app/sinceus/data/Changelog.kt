@@ -13,7 +13,7 @@ object Changelog {
     /** Punkte aller Versionen nach [seen] bis einschließlich [current], die neueste zuerst; leer = nichts Neues */
     fun linesSince(context: Context, seen: Int, current: Int): List<String> {
         if (current <= seen) return emptyList()
-        val lang = if (context.resources.configuration.locales[0].language == "de") "de" else "en"
+        val lang = if (context.resources.configuration.locales[0].language == "bn") "bn" else "en"
         return (current downTo seen + 1).asSequence()
             .map { code -> read(context, lang, code) }
             .filter { it.isNotEmpty() }

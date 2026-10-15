@@ -195,24 +195,28 @@ fun HomeScreen(
                     modifier = Modifier.size(22.dp),
                 )
             }
-            // Auf der Momente-Seite: direkter Knopf für einen neuen Moment,
-            // damit man nicht erst ganz nach oben scrollen muss
-            if (pages[pager.currentPage] == HomePage.Moments) {
-                Box(
-                    Modifier
-                        .size(BarItemHeight)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                        .clickable(onClick = { onAddMoment(null) }),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.Rounded.Add,
-                        contentDescription = stringResource(R.string.moment_new),
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
+        }
+        // Auf der Momente-Seite: eigener schwebender Hinzufügen-Knopf rechts unten,
+        // losgelöst von der Leiste – damit man nicht erst ganz nach oben scrollen muss
+        if (pages[pager.currentPage] == HomePage.Moments) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(bottom = 16.dp, end = 16.dp)
+                    .shadow(8.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickable(onClick = { onAddMoment(null) })
+                    .size(56.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.Add,
+                    contentDescription = stringResource(R.string.moment_new),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(26.dp),
+                )
             }
         }
     }

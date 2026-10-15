@@ -1,1 +1,0 @@
-Kleine Wartungsversion: Die Website lädt jetzt direkt die neueste Version herunter.

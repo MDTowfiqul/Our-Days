@@ -1,6 +1,6 @@
 # Our Days
 
-A privacy-friendly Android app for couples: counts how long you have been together and reminds you of every special day. Available in English and German.
+A privacy-friendly Android app for couples: counts how long you have been together and reminds you of every special day. Available in English and Bengali.
 
 <p>
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" width="200" alt="Overview">
@@ -21,7 +21,7 @@ A privacy-friendly Android app for couples: counts how long you have been togeth
 - Backup as a file (all data and photos) to move to a new phone, without internet
 - Encrypted cloud backup: automatic daily or weekly backups to your own Telegram bot or Google Drive (Play version), encrypted with your password (AES-256-GCM) before upload, with Wi-Fi-only option and restore from the cloud
 - Sync between phones without a server: pair once with a QR code, then send each other an encrypted file (AES-256-GCM) that opens right in the app and only on your paired phones
-- Light and dark mode, English and German, language can be changed right in the app
+- Light and dark mode, English and Bengali, language can be changed right in the app
 - No account, no ads, no tracking, all data stays on the device unless you enable cloud backup yourself
 - Poly mode: more than two people and several relationships, each with its own date, special days and reminders, plus a discreet mode with initials only
 - For every kind of love, no matter who you are, whom you love or how many of you there are, with a little rainbow decoration in Pride Month (June)
@@ -62,7 +62,7 @@ Kotlin, Jetpack Compose (Material 3), Glance widgets, DataStore, Coil. Minimum A
 
 ## Website
 
-https://mdtowfiqul.github.io/Our-Days/ (privacy policy: [English](docs/privacy-en.html), [Deutsch](docs/privacy-de.html))
+https://mdtowfiqul.github.io/Our-Days/ (privacy policy: [English](docs/privacy-en.html), [বাংলা](docs/privacy-bn.html))
 
 ## How this app was made
 

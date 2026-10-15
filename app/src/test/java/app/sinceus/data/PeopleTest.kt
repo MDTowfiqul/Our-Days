@@ -17,7 +17,7 @@ import java.time.LocalTime
 
 /** Poly-Modus: mehrere Menschen und Beziehungen */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], qualifiers = "de")
+@Config(sdk = [35], qualifiers = "bn")
 class PeopleTest {
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 

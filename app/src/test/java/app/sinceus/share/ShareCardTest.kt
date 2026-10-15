@@ -26,20 +26,20 @@ class ShareCardTest {
     private val today = LocalDate.of(2025, 8, 15)
 
     @Test
-    @Config(qualifiers = "de")
-    fun german() = save("de", Locale.GERMANY)
+    @Config(qualifiers = "bn")
+    fun bengali() = save("bn", Locale.forLanguageTag("bn-BD"))
 
     @Test
     @Config(qualifiers = "en")
     fun english() = save("en", Locale.US)
 
     @Test
-    @Config(qualifiers = "de")
+    @Config(qualifiers = "bn")
     fun longNamesStayInside() {
-        Locale.setDefault(Locale.GERMANY)
+        Locale.setDefault(Locale.forLanguageTag("bn-BD"))
         val bitmap = ShareCard.render(context, LoveSettings.couple("Maximiliane-Sophie", "Konstantin-Alexander", LocalDate.of(2025, 3, 15)), today)
         assertEquals(ShareCard.WIDTH, bitmap.width)
-        save("de_long", Locale.GERMANY, LoveSettings.couple("Maximiliane-Sophie", "Konstantin-Alexander", LocalDate.of(2025, 3, 15)))
+        save("bn_long", Locale.forLanguageTag("bn-BD"), LoveSettings.couple("Maximiliane-Sophie", "Konstantin-Alexander", LocalDate.of(2025, 3, 15)))
     }
 
     private fun save(name: String, locale: Locale, s: LoveSettings = settings) {
@@ -51,9 +51,9 @@ class ShareCardTest {
     }
 
     @Test
-    @Config(qualifiers = "de")
+    @Config(qualifiers = "bn")
     fun momentAndYearCards() {
-        Locale.setDefault(Locale.GERMANY)
+        Locale.setDefault(Locale.forLanguageTag("bn-BD"))
         val moment = Moment("m", "Unser erster gemeinsamer Urlaub am Meer in Portugal", LocalDate.of(2025, 6, 1))
         val card = ShareCard.renderMoment(context, settings, moment, today)
         assertEquals(ShareCard.WIDTH, card.width)

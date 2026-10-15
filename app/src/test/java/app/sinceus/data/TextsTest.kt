@@ -19,21 +19,21 @@ class TextsTest {
     private val day = LocalDate.of(2026, 3, 15)
 
     @Test
-    @Config(qualifiers = "de")
-    fun german() {
-        Locale.setDefault(Locale.GERMANY)
-        assertEquals("1 Jahr, 2 Monate und 1 Tag", Texts.period(context, period))
-        assertEquals("5 Monaten", Texts.period(context, Period.ofMonths(5), dative = true))
-        assertEquals("1. Jahrestag", Texts.milestoneTitle(context, Milestone(MilestoneKind.YEARS, 1, day)))
+    @Config(qualifiers = "bn")
+    fun bengali() {
+        Locale.setDefault(Locale.forLanguageTag("bn-BD"))
+        assertEquals("১ বছর, ২ মাস ও ১ দিন", Texts.period(context, period))
+        assertEquals("৫ মাস", Texts.period(context, Period.ofMonths(5), dative = true))
+        assertEquals("১তম বছরপূর্তি", Texts.milestoneTitle(context, Milestone(MilestoneKind.YEARS, 1, day)))
         assertEquals(
-            "Heute seid ihr genau 5 Monate zusammen.",
+            "আজ তোমরা ঠিক ৫ মাস ধরে একসাথে আছো।",
             Texts.milestoneMessage(context, Milestone(MilestoneKind.MONTHS, 5, day)),
         )
-        assertEquals("1.000 Tage", Texts.milestoneTitle(context, Milestone(MilestoneKind.DAYS, 1000, day)))
-        assertEquals("Heute vor 2 Jahren: Erstes Date", Texts.momentMessage(context, Moment("a", "Erstes Date", day), 2))
+        assertEquals("১,০০০ দিন", Texts.milestoneTitle(context, Milestone(MilestoneKind.DAYS, 1000, day)))
+        assertEquals("২ বছর আগে আজ: Erstes Date", Texts.momentMessage(context, Moment("a", "Erstes Date", day), 2))
         val moment = Milestone(MilestoneKind.MOMENT, 2, day, "Erstes Date")
-        assertEquals("Erstes Date (2 Jahre)", Texts.milestoneTitle(context, moment))
-        assertEquals("Heute vor 2 Jahren: Erstes Date", Texts.milestoneMessage(context, moment))
+        assertEquals("Erstes Date (২ বছর)", Texts.milestoneTitle(context, moment))
+        assertEquals("২ বছর আগে আজ: Erstes Date", Texts.milestoneMessage(context, moment))
     }
 
     @Test

@@ -35,26 +35,26 @@ class ScreenshotTest {
     fun home() = shot("home") { HomeScreen(settings, today, {}, {}) }
 
     @Test
-    fun homeGerman() = shot("home", lang = "de") { HomeScreen(settings, today, {}, {}) }
+    fun homeBengali() = shot("home", lang = "bn") { HomeScreen(settings, today, {}, {}) }
 
     @Test
-    fun homeDistanceGerman() = shot("home_distance", lang = "de") {
+    fun homeDistanceBengali() = shot("home_distance", lang = "bn") {
         val far = settings.relationships.map { it.copy(distance = true, farZone = "America/New_York", nextMeeting = today.plusDays(12)) }
         HomeScreen(settings.copy(relationships = far), today, {}, {})
     }
 
     @Test
-    fun liveGerman() = shot("live", lang = "de") {
+    fun liveBengali() = shot("live", lang = "bn") {
         LiveScreen(settings, active = false, now = java.time.LocalDateTime.of(2025, 8, 15, 12, 46, 33))
     }
 
     @Test
-    fun settingsGerman() = shot("settings", lang = "de") {
+    fun settingsBengali() = shot("settings", lang = "bn") {
         SettingsScreen(settings, true)
     }
 
     @Test
-    fun settingsPhotoGerman() = shot("settings_photo", lang = "de") {
+    fun settingsPhotoBengali() = shot("settings_photo", lang = "bn") {
         SettingsScreen(
             settings, true,
             initialPage = SettingsPage.Photo,
@@ -70,7 +70,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun settingsResetGerman() = shot("settings_reset", lang = "de") {
+    fun settingsResetBengali() = shot("settings_reset", lang = "bn") {
         SettingsScreen(
             settings, true,
             initialPage = SettingsPage.Reset,
@@ -91,18 +91,18 @@ class ScreenshotTest {
     )
 
     @Test
-    fun homePolyGerman() = shot("home_poly", lang = "de") { HomeScreen(poly, today, {}, {}) }
+    fun homePolyBengali() = shot("home_poly", lang = "bn") { HomeScreen(poly, today, {}, {}) }
 
     @Test
-    fun homePolyOneGerman() = shot("home_poly_one", lang = "de") { HomeScreen(poly.copy(selected = "r2"), today, {}, {}) }
+    fun homePolyOneBengali() = shot("home_poly_one", lang = "bn") { HomeScreen(poly.copy(selected = "r2"), today, {}, {}) }
 
     @Test
-    fun settingsPeopleGerman() = shot("settings_people", lang = "de") {
+    fun settingsPeopleBengali() = shot("settings_people", lang = "bn") {
         SettingsScreen(poly, true, initialPage = SettingsPage.Couple)
     }
 
     @Test
-    fun settingsPeopleCoupleGerman() = shot("settings_people_couple", lang = "de") {
+    fun settingsPeopleCoupleBengali() = shot("settings_people_couple", lang = "bn") {
         SettingsScreen(settings, true, initialPage = SettingsPage.Couple)
     }
 
@@ -118,7 +118,7 @@ class ScreenshotTest {
     fun sync() = shot("sync") { SettingsScreen(settings, true, initialPage = SettingsPage.Sync) }
 
     @Test
-    fun syncGerman() = shot("sync", lang = "de") { SettingsScreen(settings, true, initialPage = SettingsPage.Sync) }
+    fun syncBengali() = shot("sync", lang = "bn") { SettingsScreen(settings, true, initialPage = SettingsPage.Sync) }
 
     @Test
     fun privacy() = shot("privacy") {
@@ -126,21 +126,21 @@ class ScreenshotTest {
     }
 
     @Test
-    fun privacyGerman() = shot("privacy", lang = "de") {
+    fun privacyBengali() = shot("privacy", lang = "bn") {
         SettingsScreen(settings.copy(discreet = true), true, appLock = true, initialPage = SettingsPage.Privacy)
     }
 
     @Test
-    fun homePrideGerman() = shot("home_pride", lang = "de") {
+    fun homePrideBengali() = shot("home_pride", lang = "bn") {
         androidx.compose.runtime.CompositionLocalProvider(LocalPrideMonth provides true) {
             HomeScreen(settings, today, {}, {})
         }
     }
 
     @Test
-    fun liveFocusedGerman() = shot(
+    fun liveFocusedBengali() = shot(
         "live_focused",
-        lang = "de",
+        lang = "bn",
         before = { compose.onNodeWithText("33 Sekunden").performClick() },
     ) {
         LiveScreen(settings, active = false, now = java.time.LocalDateTime.of(2025, 8, 15, 12, 46, 33))
@@ -148,8 +148,8 @@ class ScreenshotTest {
 
     @Test
     fun liveFocusEndsAfterAFewSeconds() {
-        java.util.Locale.setDefault(java.util.Locale.GERMANY)
-        org.robolectric.RuntimeEnvironment.setQualifiers("+de")
+        java.util.Locale.setDefault(java.util.Locale.forLanguageTag("bn-BD"))
+        org.robolectric.RuntimeEnvironment.setQualifiers("+bn")
         compose.mainClock.autoAdvance = false
         compose.setContent {
             LoveTheme { LiveScreen(settings, active = false, now = java.time.LocalDateTime.of(2025, 8, 15, 12, 46, 33)) }
@@ -163,7 +163,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun homeWithoutLiveAndMoments() = shot("home_only_overview", lang = "de") {
+    fun homeWithoutLiveAndMoments() = shot("home_only_overview", lang = "bn") {
         HomeScreen(settings.copy(showLive = false, showMoments = false), today, {}, {})
     }
 
@@ -184,7 +184,7 @@ class ScreenshotTest {
     fun onboardingWelcome() = onboarding(0)
 
     @Test
-    fun onboardingDarkGerman() = shot("onboarding_1_dark", dark = true, lang = "de") {
+    fun onboardingDarkBengali() = shot("onboarding_1_dark", dark = true, lang = "bn") {
         OnboardingScreen(
             settings, false, {}, {}, {}, {}, {}, {}, { _, _ -> }, {}, {},
             step = 1, onStep = {},
@@ -212,15 +212,15 @@ class ScreenshotTest {
     )
 
     @Test
-    fun momentsEmpty() = shot("moments_empty", lang = "de") { MomentsScreen(settings, today, {}, {}) }
+    fun momentsEmpty() = shot("moments_empty", lang = "bn") { MomentsScreen(settings, today, {}, {}) }
 
     @Test
-    fun moments() = shot("moments", lang = "de") { MomentsScreen(withMoments, today, {}, {}) }
+    fun moments() = shot("moments", lang = "bn") { MomentsScreen(withMoments, today, {}, {}) }
 
     @Test
     fun momentsCalendar() = shot(
         "moments_calendar",
-        lang = "de",
+        lang = "bn",
         before = { compose.onNodeWithText("Kalender").performClick() },
     ) { MomentsScreen(withMoments, today.withDayOfMonth(20).minusMonths(5), {}, {}) }
 
@@ -241,21 +241,21 @@ class ScreenshotTest {
     }
 
     @Test
-    fun momentEditor()= shot("moment_editor", lang = "de") {
+    fun momentEditor()= shot("moment_editor", lang = "bn") {
         MomentEditorScreen(withMoments.moments[1], null, today, {}, { _, _, _ -> }, {})
     }
 
     @Test
-    fun homeWithMomentsTab() = shot("home_moments_tab", lang = "de") { HomeScreen(withMoments, today, {}, {}) }
+    fun homeWithMomentsTab() = shot("home_moments_tab", lang = "bn") { HomeScreen(withMoments, today, {}, {}) }
 
     @Test
-    fun licenses() = shot("licenses", lang = "de") { LicensesScreen(onBack = {}) }
+    fun licenses() = shot("licenses", lang = "bn") { LicensesScreen(onBack = {}) }
 
     @Test
     fun editor() = shot("editor") { PhotoEditorScreen(settings, {}, {}, { _, _, _ -> }) }
 
     @Test
-    fun onboardingPhotoGerman() = shot("onboarding_3", lang = "de") {
+    fun onboardingPhotoBengali() = shot("onboarding_3", lang = "bn") {
         OnboardingScreen(
             settings, false, {}, {}, {}, {}, {}, {}, { _, _ -> }, {}, {},
             step = 3, onStep = {},
@@ -276,7 +276,7 @@ class ScreenshotTest {
         before: () -> Unit = {},
         content: @androidx.compose.runtime.Composable () -> Unit,
     ) {
-        java.util.Locale.setDefault(if (lang == "de") java.util.Locale.GERMANY else java.util.Locale.US)
+        java.util.Locale.setDefault(if (lang == "bn") java.util.Locale.forLanguageTag("bn-BD") else java.util.Locale.US)
         org.robolectric.RuntimeEnvironment.setQualifiers("+$lang")
         if (dark) org.robolectric.RuntimeEnvironment.setQualifiers("+night")
         compose.setContent { LoveTheme(content = content) }

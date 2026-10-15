@@ -30,7 +30,7 @@ class WidgetRenderTest {
 
     private fun setUp(): Unit = runBlocking {
         java.util.Locale.setDefault(
-            if (context.resources.configuration.locales[0].language == "de") java.util.Locale.GERMANY else java.util.Locale.US,
+            if (context.resources.configuration.locales[0].language == "bn") java.util.Locale.forLanguageTag("bn-BD") else java.util.Locale.US,
         )
         val repo = LoveRepository(context)
         repo.setNames(listOf("Alex", "Sam"))

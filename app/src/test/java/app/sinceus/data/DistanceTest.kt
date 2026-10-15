@@ -38,7 +38,7 @@ class DistanceTest {
 
     @Test
     fun citiesCanBeFound() {
-        val cities = Distance.cities(Locale.GERMANY)
+        val cities = Distance.cities(Locale.US)
         assertTrue(cities.any { it.zone == "America/New_York" && it.name == "New York" })
         assertTrue(cities.filter { Distance.matches(it, "tokyo") }.any { it.zone == "Asia/Tokyo" })
         assertTrue(cities.none { it.zone.startsWith("Etc/") })

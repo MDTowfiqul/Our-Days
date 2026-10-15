@@ -28,21 +28,21 @@ SCREENS = {
         ("moments", "Keep your special moments", "With notes, photos and reminders"),
         ("live", "Every second counts", "Live mode counts along with you"),
     ],
-    "de": [
-        ("home", "Zählt eure gemeinsamen Tage", "Kostenlos, ohne Konto, ohne Werbung"),
-        ("home_poly", "Für jede Art von Liebe", "Poly-Modus, Pronomen und mehr"),
-        ("sync", "Abgleich ohne Cloud", "Per QR-Code koppeln, komplett verschlüsselt"),
-        ("privacy", "Eure Daten bleiben bei euch", "Kein Server, kein Tracking, App-Sperre"),
-        ("moments", "Haltet besondere Momente fest", "Mit Notiz, Foto und Erinnerung"),
-        ("live", "Jede Sekunde zählt", "Der Live-Modus zählt mit"),
+    "bn": [
+        ("home", "একসাথে কাটানো দিন গুনো", "ফ্রি, অ্যাকাউন্ট ছাড়া, বিজ্ঞাপন ছাড়া"),
+        ("home_poly", "সব ভালোবাসার জন্য", "পলি মোড, সর্বনাম আর আরও"),
+        ("sync", "ক্লাউড ছাড়াই সিঙ্ক", "QR কোডে পেয়ার করো, সম্পূর্ণ এনক্রিপ্ট করা"),
+        ("privacy", "তোমাদের ডেটা তোমাদের কাছেই", "সার্ভার নেই, ট্র্যাকিং নেই, অ্যাপ লক"),
+        ("moments", "বিশেষ মুহূর্ত ধরে রাখো", "নোট, ছবি আর রিমাইন্ডারসহ"),
+        ("live", "প্রতি সেকেন্ড গোনে", "লাইভ মোড তোমাদের সাথে গুনবে"),
     ],
 }
 
 FEATURE = {
     "en": ("Free, private and made for every kind of love", ["No account", "No ads", "Open source"]),
-    "de": ("Kostenlos, privat und für jede Art von Liebe", ["Ohne Konto", "Ohne Werbung", "Open Source"]),
+    "bn": ("ফ্রি, প্রাইভেট, সব ভালোবাসার জন্য", ["অ্যাকাউন্ট নেই", "বিজ্ঞাপন নেই", "ওপেন সোর্স"]),
 }
-LANGS = {"en": "en-US", "de": "de-DE"}
+LANGS = {"en": "en-US", "bn": "bn-BD"}
 
 
 def font(size: int, weight: int) -> ImageFont.FreeTypeFont:

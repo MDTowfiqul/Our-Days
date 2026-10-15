@@ -11,7 +11,7 @@ DOCS = Path("docs/img")
 
 # Website: Startbereich (1 bis 3) und Abschnitt Momente
 SCREENS = {"1": "home", "2": "live", "3": "settings"}
-LANGS = {"de": "de-DE", "en": "en-US"}
+LANGS = {"bn": "bn-BD", "en": "en-US"}
 
 
 def screen(lang: str, name: str) -> Image.Image:
@@ -24,7 +24,7 @@ for lang, store_lang in LANGS.items():
     screen(lang, "moments").save(DOCS / f"moments-{lang}.webp", quality=82, method=6)
 
     # Liebeskarte mit durchsichtigen runden Ecken
-    widget = "card_3x2" if lang == "de" else "card_3x2_en"
+    widget = "card_3x2" if lang == "bn" else "card_3x2_en"
     Image.open(SHOTS / "widgets" / f"{widget}.png").convert("RGBA").save(
         DOCS / f"widget-{lang}.webp", quality=90, method=6
     )

@@ -70,5 +70,27 @@ object CloudBackupStore {
         )
     }
 
+    /** Lokales Verzeichnis hochgeladener Sicherungen (id = Telegram-Stempel oder Drive-Datei-ID). */
+    data class BackupRecord(val provider: CloudProvider, val id: String, val date: Long, val label: String)
+
+    fun ledger(context: Context): List<BackupRecord> {
+        return prefs(context).getString("ledger", "").orEmpty().lines()
+            .mapNotNull { line ->
+                val p = line.split(";", limit = 4)
+                if (p.size < 4) return@mapNotNull null
+                val provider = runCatching { CloudProvider.valueOf(p[0]) }.getOrNull() ?: return@mapNotNull null
+                BackupRecord(provider, p[1], p[2].toLongOrNull() ?: 0L, p[3])
+            }
+            .sortedByDescending { it.date }
+    }
+
+    fun addRecord(context: Context, provider: CloudProvider, id: String, label: String) {
+        val line = "${provider.name};$id;${System.currentTimeMillis()};${label.replace(";", " ")}"
+        val existing = prefs(context).getString("ledger", "").orEmpty()
+        // Höchstens 50 Einträge behalten
+        val lines = (listOf(line) + existing.lines()).filter { it.isNotBlank() }.take(50)
+        prefs(context).edit().putString("ledger", lines.joinToString("\n")).apply()
+    }
+
     fun clear(context: Context) = prefs(context).edit().clear().apply()
 }

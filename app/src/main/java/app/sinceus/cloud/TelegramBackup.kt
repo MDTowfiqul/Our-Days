@@ -40,7 +40,7 @@ object TelegramBackup {
     fun sendTestMessage(token: String, chatId: String) {
         val body = MultipartBody.Builder().setType(MultipartBody.FORM)
             .addFormDataPart("chat_id", chatId)
-            .addFormDataPart("text", "Our-Days: Cloud-Sicherung ist eingerichtet. ✅")
+            .addFormDataPart("text", "Our-Days: cloud backup is set up. ✅")
             .build()
         http.newCall(Request.Builder().url(api(token, "sendMessage")).post(body).build())
             .execute().use { resp ->

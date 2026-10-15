@@ -109,26 +109,50 @@ fun CloudBackupScreen() {
         }
     }
 
-    // Ferne Sicherungen laden, sobald Anbieter und Zugangsdaten stehen
+    // Ferne Sicherungen laden, sobald Anbieter und Zugangsdaten stehen.
+    // Das lokale Verzeichnis ist die Hauptquelle (hängt nicht von Telegram-Updates ab),
+    // die Cloud-Liste ergänzt Sicherungen von anderen Geräten.
     LaunchedEffect(config.provider, config.botToken, config.chatId, config.driveAccount) {
         remote = null
-        if (config.provider == CloudProvider.TELEGRAM && config.botToken.isNotBlank()) {
-            remote = runCatching {
+        val local = CloudBackupStore.ledger(context)
+            .filter { it.provider == config.provider }
+            .map {
+                when (it.provider) {
+                    CloudProvider.TELEGRAM -> RemoteItem.Telegram(it.id, it.date)
+                    CloudProvider.DRIVE -> RemoteItem.Drive(it.id, it.label, it.date)
+                    CloudProvider.NONE -> null
+                }
+            }.filterNotNull()
+        val cloud = if (config.provider == CloudProvider.TELEGRAM && config.botToken.isNotBlank()) {
+            runCatching {
                 withContext(Dispatchers.IO) {
                     TelegramBackup.listBackups(config.botToken).map {
                         RemoteItem.Telegram(it.stamp, it.date)
                     }
                 }
-            }.getOrNull()
+            }.getOrNull().orEmpty()
         } else if (config.provider == CloudProvider.DRIVE && config.driveAccount.isNotBlank() && driveBackend != null) {
-            remote = runCatching {
+            runCatching {
                 withContext(Dispatchers.IO) {
                     driveBackend.listBackups(config.driveAccount).map {
                         RemoteItem.Drive(it.id, it.name, it.modified)
                     }
                 }
-            }.getOrNull()
+            }.getOrNull().orEmpty()
+        } else emptyList()
+        val keys = local.mapTo(mutableSetOf()) {
+            when (it) {
+                is RemoteItem.Telegram -> "t:${it.stamp}"
+                is RemoteItem.Drive -> "d:${it.id}"
+            }
         }
+        val merged = local + cloud.filter {
+            when (it) {
+                is RemoteItem.Telegram -> keys.add("t:${it.stamp}")
+                is RemoteItem.Drive -> keys.add("d:${it.id}")
+            }
+        }
+        remote = merged.sortedByDescending { it.date }
     }
 
     val accountPicker = rememberLauncherForActivityResult(
@@ -304,8 +328,14 @@ fun CloudBackupScreen() {
             Button(
                 onClick = {
                     runBusy("now") {
-                        withContext(Dispatchers.IO) {
-                            runCloudBackup(context, CloudBackupStore.load(context))
+                        try {
+                            withContext(Dispatchers.IO) {
+                                runCloudBackup(context, CloudBackupStore.load(context))
+                            }
+                            CloudBackupStore.recordResult(context, true)
+                        } catch (e: Exception) {
+                            CloudBackupStore.recordResult(context, false, e.message?.take(200))
+                            throw e
                         }
                         config = CloudBackupStore.load(context)
                         context.getString(R.string.cloud_backup_ok)

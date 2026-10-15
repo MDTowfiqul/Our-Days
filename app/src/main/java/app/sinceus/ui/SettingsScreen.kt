@@ -106,6 +106,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.rounded.Backup
+import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CardGiftcard
 import app.sinceus.data.REMIND_OPTIONS
@@ -435,6 +436,7 @@ fun SettingsScreen(
                         Row(Icons.Rounded.Widgets, stringResource(R.string.add_widget), null, onClick = onAddWidget)
                     }
                     SettingsPage.Sync -> SyncPage(settings, pairing, sync)
+                    SettingsPage.Cloud -> CloudBackupScreen()
                     SettingsPage.Backup -> Section(null) {
                         ListItem(
                             headlineContent = { Text(stringResource(R.string.backup_export)) },
@@ -761,6 +763,7 @@ enum class SettingsPage(
     Home(R.string.settings_home, Icons.Rounded.Dashboard, R.string.settings_group_app),
     Privacy(R.string.section_privacy, Icons.Rounded.Lock, R.string.settings_group_app),
     Backup(R.string.section_backup, Icons.Rounded.Backup, R.string.settings_group_data),
+    Cloud(R.string.cloud_title, Icons.Rounded.CloudUpload, R.string.settings_group_data),
     Sync(R.string.section_sync, Icons.Rounded.Sync, R.string.settings_group_data),
     Reset(R.string.section_reset, Icons.Rounded.RestartAlt, R.string.settings_group_data),
     About(R.string.settings_about, Icons.Rounded.Info, R.string.settings_group_info),
@@ -814,6 +817,7 @@ private fun Overview(
         },
         SettingsPage.Home to stringResource(R.string.settings_home_summary),
         SettingsPage.Backup to stringResource(R.string.settings_backup_summary),
+        SettingsPage.Cloud to cloudBackupSummary(),
         SettingsPage.Sync to stringResource(if (pairing != null) R.string.sync_paired else R.string.sync_summary),
         SettingsPage.Reset to stringResource(R.string.reset_summary),
         SettingsPage.About to if (updateReady) {

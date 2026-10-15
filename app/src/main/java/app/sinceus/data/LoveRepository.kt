@@ -355,21 +355,22 @@ class LoveRepository(private val context: Context) {
     suspend fun setDiscreet(on: Boolean) = context.dataStore.edit { it[Keys.discreet] = on }
 
     /**
-     * Speichert einen neuen oder geänderten Moment. [newPhoto] ersetzt das bisherige Foto,
-     * [removePhoto] entfernt es.
+     * Speichert einen neuen oder geänderten Moment. [newPhotos] werden in den App-Speicher
+     * kopiert und angehängt, [removedPhotos] sind bisherige Pfade, die dabei gelöscht werden.
      */
-    suspend fun saveMoment(moment: Moment, newPhoto: Uri?, removePhoto: Boolean) {
+    suspend fun saveMoment(moment: Moment, newPhotos: List<Uri>, removedPhotos: List<String>) {
         val old = current().moments.firstOrNull { it.id == moment.id }
-        var photo = if (removePhoto) null else old?.photoPath
-        if (newPhoto != null) {
-            photo = withContext(Dispatchers.IO) {
-                val file = File(momentDir(), "${moment.id}_${System.currentTimeMillis()}.jpg")
-                if (!PhotoShrink.copy(context, newPhoto, file)) return@withContext photo
-                file.absolutePath
+        val removed = removedPhotos.toSet()
+        val kept = old?.photoPaths.orEmpty().filter { it !in removed && File(it).exists() }
+        val added = withContext(Dispatchers.IO) {
+            newPhotos.mapIndexedNotNull { index, uri ->
+                val file = File(momentDir(), "${moment.id}_${System.currentTimeMillis()}_$index.jpg")
+                if (PhotoShrink.copy(context, uri, file)) file.absolutePath else null
             }
         }
+        val photos = (kept + added).distinct()
         val saved = moment.copy(
-            photoPath = photo,
+            photoPaths = photos,
             updatedAt = System.currentTimeMillis(),
             addedBy = old?.addedBy ?: moment.addedBy ?: PairingStore.load(context)?.me,
         )
@@ -377,8 +378,8 @@ class LoveRepository(private val context: Context) {
             val list = MomentCodec.decode(prefs[Keys.moments]).filterNot { it.id == moment.id } + saved
             prefs[Keys.moments] = MomentCodec.encode(list)
         }
-        // Altes Foto erst löschen, wenn der Moment gespeichert ist
-        if (old?.photoPath != null && old.photoPath != photo) deleteFile(old.photoPath)
+        // Entfernte und ersetzte Fotos erst löschen, wenn der Moment gespeichert ist
+        (removed + old?.photoPaths.orEmpty().filter { it !in photos.toSet() }).forEach { deleteFile(it) }
     }
 
     suspend fun setShowMoments(show: Boolean) = context.dataStore.edit { it[Keys.showMoments] = show }
@@ -391,7 +392,7 @@ class LoveRepository(private val context: Context) {
 
     suspend fun deleteMoment(id: String) {
         val old = current().moments.firstOrNull { it.id == id } ?: return
-        old.photoPath?.let { deleteFile(it) }
+        old.photoPaths.forEach { deleteFile(it) }
         context.dataStore.edit { prefs ->
             prefs[Keys.moments] = MomentCodec.encode(MomentCodec.decode(prefs[Keys.moments]).filterNot { it.id == id })
             // Merker fürs Löschen, damit der Abgleich den Moment nicht wiederbringt
@@ -418,11 +419,13 @@ class LoveRepository(private val context: Context) {
                     zip.closeEntry()
                     val written = mutableSetOf<String>()
                     s.moments.forEach { m ->
-                        val file = m.photoPath?.let(::File)?.takeIf { it.isFile } ?: return@forEach
-                        if (!written.add(file.name)) return@forEach
-                        zip.putNextEntry(ZipEntry("${Backup.MOMENTS}/${file.name}"))
-                        file.inputStream().use { it.copyTo(zip) }
-                        zip.closeEntry()
+                        m.photoPaths.forEach { path ->
+                            val file = File(path).takeIf { it.isFile } ?: return@forEach
+                            if (!written.add(file.name)) return@forEach
+                            zip.putNextEntry(ZipEntry("${Backup.MOMENTS}/${file.name}"))
+                            file.inputStream().use { it.copyTo(zip) }
+                            zip.closeEntry()
+                        }
                     }
                 }
                 out.buffered().use { o -> zipFile.inputStream().buffered().use { SyncCrypto.encrypt(it, o, pairing.key) } }
@@ -474,13 +477,16 @@ class LoveRepository(private val context: Context) {
         val moments = withContext(Dispatchers.IO) {
             val merged = result.moments.map { m ->
                 if (m.id !in takenIds) return@map m
-                val source = m.photoPath?.let { File(File(dir, Backup.MOMENTS), it) }?.takeIf { it.isFile }
-                val target = source?.let { File(momentDir(), it.name) }
-                if (source != null && target != null) source.copyTo(target, overwrite = true)
-                m.copy(photoPath = target?.absolutePath)
+                val targets = m.photoPaths.mapNotNull { name ->
+                    val source = File(File(dir, Backup.MOMENTS), name).takeIf { it.isFile } ?: return@mapNotNull null
+                    val target = File(momentDir(), source.name)
+                    source.copyTo(target, overwrite = true)
+                    target.absolutePath
+                }
+                m.copy(photoPaths = targets)
             }
-            val keep = merged.mapNotNull { it.photoPath }.toSet()
-            local.moments.mapNotNull { it.photoPath }.filter { it !in keep }.forEach { File(it).delete() }
+            val keep = merged.flatMap { it.photoPaths }.toSet()
+            local.moments.flatMap { it.photoPaths }.filter { it !in keep }.forEach { File(it).delete() }
             dir.deleteRecursively()
             merged
         }
@@ -552,7 +558,7 @@ class LoveRepository(private val context: Context) {
                 }
                 add(Backup.PHOTOS, s.photoPath)
                 s.slides.forEach { add(Backup.SLIDES, it) }
-                s.moments.forEach { add(Backup.MOMENTS, it.photoPath) }
+                s.moments.forEach { m -> m.photoPaths.forEach { add(Backup.MOMENTS, it) } }
             }
         }
     }
@@ -597,7 +603,9 @@ class LoveRepository(private val context: Context) {
             val result = data.copy(
                 photoPath = move(Backup.PHOTOS, photoDir(), data.photoPath),
                 slides = data.slides.mapNotNull { move(Backup.SLIDES, slideDir(), it) },
-                moments = data.moments.map { it.copy(photoPath = move(Backup.MOMENTS, momentDir(), it.photoPath)) },
+                moments = data.moments.map { m ->
+                    m.copy(photoPaths = m.photoPaths.mapNotNull { move(Backup.MOMENTS, momentDir(), it) })
+                },
             )
             restore.deleteRecursively()
             result

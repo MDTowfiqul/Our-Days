@@ -119,7 +119,7 @@ object TelegramBackup {
      * NICHT bestätigt, damit die Liste bei jedem Aufruf wieder da ist.
      */
     fun listBackups(token: String): List<RemoteBackup> {
-        val url = api(token, "getUpdates") + "?allowed_updates=%5B%22message%22%5D&limit=100"
+        val url = api(token, "getUpdates") + "?allowed_updates=%5B%22message%22%2C%22channel_post%22%5D&limit=100"
         val text = http.newCall(Request.Builder().url(url).get().build())
             .execute().use { resp ->
                 if (!resp.isSuccessful) throw java.io.IOException("telegram http ${resp.code}")
@@ -128,7 +128,9 @@ object TelegramBackup {
         val byStamp = mutableMapOf<String, MutableList<Pair<Int, String>>>()
         val result = JSONObject(text).getJSONArray("result")
         for (i in 0 until result.length()) {
-            val msg = result.getJSONObject(i).optJSONObject("message") ?: continue
+            val update = result.getJSONObject(i)
+            // Eigene Nachrichten kommen als "message", in Kanälen als "channel_post"
+            val msg = update.optJSONObject("message") ?: update.optJSONObject("channel_post") ?: continue
             val doc = msg.optJSONObject("document") ?: continue
             val caption = msg.optString("caption", "")
             if (!caption.startsWith(CAPTION_PREFIX)) continue

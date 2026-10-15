@@ -164,7 +164,7 @@ dependencies {
     // HTTP-Client für Telegram-Bot-API und Google-Drive-REST
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     // Google-Anmeldung nur in der Play-Variante (F-Droid bleibt proprietär-frei)
-    playImplementation("com.google.android.gms:play-services-auth:21.4.0")
+    add("playImplementation", "com.google.android.gms:play-services-auth:21.4.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.16.1")

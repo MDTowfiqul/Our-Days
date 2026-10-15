@@ -5,16 +5,22 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -22,19 +28,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
@@ -46,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -66,7 +72,7 @@ import androidx.compose.material3.FilterChip
 
 /**
  * Neuen Moment anlegen ([existing] = null, optional mit [suggestedTitle]) oder bestehenden bearbeiten.
- * [onSave] bekommt den Moment, ein neu gewähltes Foto und ob das alte Foto entfernt werden soll.
+ * [onSave] bekommt den Moment, neu gewählte Fotos (Uris) und die Pfade entfernter Fotos.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -75,7 +81,7 @@ fun MomentEditorScreen(
     suggestedTitle: String?,
     defaultDate: LocalDate,
     onClose: () -> Unit,
-    onSave: (Moment, Uri?, Boolean) -> Unit,
+    onSave: (Moment, List<Uri>, List<String>) -> Unit,
     onDelete: (Moment) -> Unit,
     /** Beziehungen zur Auswahl als ID und Titel; nur bei mehreren wird gefragt, zu wem der Moment gehört */
     relationships: List<Pair<String, String>> = emptyList(),
@@ -91,21 +97,27 @@ fun MomentEditorScreen(
     var relationship by rememberSaveable {
         mutableStateOf(if (existing != null) existing.relationshipId else defaultRelationship)
     }
-    var newPhoto by rememberSaveable { mutableStateOf<String?>(null) }
-    var removePhoto by rememberSaveable { mutableStateOf(false) }
+    /** Bereits gespeicherte Fotos (Pfade), die bleiben sollen */
+    var keptPhotos by rememberSaveable { mutableStateOf<List<String>>(existing?.photoPaths.orEmpty()) }
+    /** Neu gewählte Fotos (Uri-Strings), die beim Speichern in den App-Speicher kopiert werden */
+    var newPhotos by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
     var dateDialog by rememberSaveable { mutableStateOf(false) }
     var deleteDialog by rememberSaveable { mutableStateOf(false) }
 
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) {
-            newPhoto = uri.toString()
-            removePhoto = false
-        }
+    // Mehrfachauswahl, wo das Gerät sie kann; sonst einzelne Auswahl als Rückfall
+    val singlePicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) newPhotos = (newPhotos + uri.toString()).distinct()
     }
-    val shownPhoto: Any? = when {
-        newPhoto != null -> Uri.parse(newPhoto)
-        !removePhoto && existing?.photoPath != null -> File(existing.photoPath)
-        else -> null
+    val multiPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(25)) { uris ->
+        if (uris.isNotEmpty()) newPhotos = (newPhotos + uris.map { it.toString() }).distinct()
+    }
+    fun launchPhotoPicker() {
+        val request = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        try {
+            multiPicker.launch(request)
+        } catch (e: Exception) {
+            singlePicker.launch(request)
+        }
     }
 
     BackHandler(onBack = onClose)
@@ -169,32 +181,68 @@ fun MomentEditorScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            if (shownPhoto != null) {
-                AsyncImage(
-                    model = shownPhoto,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 10f)
-                        .clip(RoundedCornerShape(20.dp)),
+            // Fotos im Diarium-Stil: waagerecht scrollbare Vorschaubilder,
+            // jedes mit eigenem Entfernen-Knopf, dazu eine Kachel zum Hinzufügen
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    stringResource(R.string.moment_photos),
+                    style = MaterialTheme.typography.titleSmall,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = {
-                        picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    }) { Text(stringResource(R.string.moment_change_photo)) }
-                    TextButton(onClick = {
-                        newPhoto = null
-                        removePhoto = true
-                    }) { Text(stringResource(R.string.moment_remove_photo)) }
-                }
-            } else {
-                FilledTonalButton(
-                    onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Icon(Icons.Rounded.AddPhotoAlternate, null)
-                    Text(stringResource(R.string.moment_add_photo), Modifier.padding(start = 8.dp))
+                    items(keptPhotos + newPhotos, key = { it }) { item ->
+                        val isNew = item in newPhotos
+                        Box(
+                            Modifier
+                                .size(96.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+                        ) {
+                            AsyncImage(
+                                model = if (isNew) Uri.parse(item) else File(item),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            IconButton(
+                                onClick = {
+                                    if (isNew) newPhotos = newPhotos - item else keptPhotos = keptPhotos - item
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(4.dp)
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.Black.copy(alpha = 0.55f)),
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Close,
+                                    contentDescription = stringResource(R.string.moment_remove_photo),
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
+                        }
+                    }
+                    item(key = "add") {
+                        Box(
+                            Modifier
+                                .size(96.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
+                                .clickable { launchPhotoPicker() },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Rounded.AddPhotoAlternate,
+                                contentDescription = stringResource(R.string.moment_add_photos),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(32.dp),
+                            )
+                        }
+                    }
                 }
             }
 
@@ -237,11 +285,12 @@ fun MomentEditorScreen(
                         title = title.trim(),
                         date = LocalDate.ofEpochDay(epochDay),
                         note = note.trim(),
-                        photoPath = existing?.photoPath,
+                        photoPaths = existing?.photoPaths.orEmpty(),
                         yearlyReminder = remind,
                         relationshipId = relationship?.takeIf { id -> relationships.any { it.first == id } },
                     )
-                    onSave(moment, newPhoto?.let(Uri::parse), removePhoto)
+                    val removedPhotos = existing?.photoPaths.orEmpty() - keptPhotos.toSet()
+                    onSave(moment, newPhotos.map(Uri::parse), removedPhotos)
                 },
                 enabled = title.isNotBlank(),
                 modifier = Modifier

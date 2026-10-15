@@ -159,6 +159,12 @@ dependencies {
     // QR-Code für die Kopplung zum Abgleich (erzeugen und scannen, Apache 2.0)
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("com.google.zxing:core:3.5.3")
+    // Hintergrund-Arbeit für die geplante Cloud-Sicherung
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    // HTTP-Client für Telegram-Bot-API und Google-Drive-REST
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Google-Anmeldung nur in der Play-Variante (F-Droid bleibt proprietär-frei)
+    add("playImplementation", "com.google.android.gms:play-services-auth:21.4.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.16.1")

@@ -28,7 +28,7 @@ class ScreenshotTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
-    private val settings = LoveSettings.couple("Alex", "Sam", LocalDate.of(2025, 3, 15)).copy(onboardingDone = true)
+    private val settings = LoveSettings.couple("Towfiqul", "Ainon", LocalDate.of(2025, 3, 15)).copy(onboardingDone = true)
     private val today = LocalDate.of(2025, 8, 15)
 
     @Test
@@ -79,8 +79,8 @@ class ScreenshotTest {
 
     private val poly = settings.copy(
         people = listOf(
-            app.sinceus.data.Person("a", "Alex"),
-            app.sinceus.data.Person("s", "Sam", "they/them"),
+            app.sinceus.data.Person("a", "Towfiqul"),
+            app.sinceus.data.Person("s", "Ainon", "they/them"),
             app.sinceus.data.Person("k", "Kim", "sie/ihr"),
         ),
         relationships = listOf(

@@ -4,8 +4,8 @@ A privacy-friendly Android app for couples: counts how long you have been togeth
 
 <p>
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" width="200" alt="Overview">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.jpg" width="200" alt="Live counter">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.jpg" width="200" alt="Setup">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/moments.jpg" width="200" alt="Moments">
 </p>
 
 ## Features

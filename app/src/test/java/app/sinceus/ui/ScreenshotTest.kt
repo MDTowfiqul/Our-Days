@@ -141,7 +141,7 @@ class ScreenshotTest {
     fun liveFocusedBengali() = shot(
         "live_focused",
         lang = "bn",
-        before = { compose.onNodeWithText("33 Sekunden").performClick() },
+        before = { compose.onNodeWithText("৩৩ সেকেন্ড").performClick() },
     ) {
         LiveScreen(settings, active = false, now = java.time.LocalDateTime.of(2025, 8, 15, 12, 46, 33))
     }
@@ -155,11 +155,11 @@ class ScreenshotTest {
             LoveTheme { LiveScreen(settings, active = false, now = java.time.LocalDateTime.of(2025, 8, 15, 12, 46, 33)) }
         }
         compose.mainClock.advanceTimeBy(500)
-        compose.onNodeWithText("33 Sekunden").performClick()
+        compose.onNodeWithText("৩৩ সেকেন্ড").performClick()
         compose.mainClock.advanceTimeBy(1000)
-        compose.onNodeWithText("33 Sekunden").assertDoesNotExist()
+        compose.onNodeWithText("৩৩ সেকেন্ড").assertDoesNotExist()
         compose.mainClock.advanceTimeBy(4000)
-        compose.onNodeWithText("33 Sekunden").assertExists()
+        compose.onNodeWithText("৩৩ সেকেন্ড").assertExists()
     }
 
     @Test
@@ -221,7 +221,7 @@ class ScreenshotTest {
     fun momentsCalendar() = shot(
         "moments_calendar",
         lang = "bn",
-        before = { compose.onNodeWithText("Kalender").performClick() },
+        before = { compose.onNodeWithText("ক্যালেন্ডার").performClick() },
     ) { MomentsScreen(withMoments, today.withDayOfMonth(20).minusMonths(5), {}, {}) }
 
     @Test

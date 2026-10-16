@@ -527,6 +527,7 @@
     <string name="cloud_restore_title">ব্যাকআপ ফিরিয়ে আনো</string>
     <string name="cloud_restore_warning">এতে বর্তমান সব ডেটা ব্যাকআপ দিয়ে বদলে যাবে। চালিয়ে যাবে?</string>
     <string name="cloud_restore_confirm">ফিরিয়ে আনো</string>
+        <string name="cloud_restore_parts">%1$dটি অংশ</string>
     <string name="cloud_restore_ok">ব্যাকআপ ফিরিয়ে আনা হয়েছে।</string>
     <string name="cloud_drive_unavailable">গুগল ড্রাইভ শুধু প্লে স্টোর সংস্করণে আছে।</string>
     <string name="cloud_pick_account">গুগল অ্যাকাউন্ট বেছে নাও</string>

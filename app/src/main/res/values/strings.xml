@@ -532,6 +532,7 @@
     <string name="cloud_restore_title">Restore backup</string>
     <string name="cloud_restore_warning">This replaces all current data with the backup. Continue?</string>
     <string name="cloud_restore_confirm">Restore</string>
+        <string name="cloud_restore_parts">%1$d parts</string>
     <string name="cloud_restore_ok">Backup restored.</string>
     <string name="cloud_drive_unavailable">Google Drive is only available in the Play Store version.</string>
     <string name="cloud_pick_account">Choose Google account</string>

@@ -28,10 +28,10 @@ class UpdateCheckerTest {
         val apk = "https://github.com/MDTowfiqul/Our-Days/releases/download/v1.0.0/OurDays-v1.0.0.apk"
         val release = UpdateChecker.parse(
             JSONObject(
-                """"{"tag_name":"v1.0.0","html_url":"https://github.com/MDTowfiqul/Our-Days/releases/tag/v1.0.0",
+                """{"tag_name":"v1.0.0","html_url":"https://github.com/MDTowfiqul/Our-Days/releases/tag/v1.0.0",
                 "assets":[{"browser_download_url":"https://github.com/MDTowfiqul/Our-Days/releases/download/v1.0.0/notes.txt"},
                 {"browser_download_url":"https://github.com/MDTowfiqul/Our-Days/releases/download/v1.0.0/OurDays-v1.0.0-fdroid.apk"},
-                {"browser_download_url":"$apk"}]}"""",
+                {"browser_download_url":"$apk"}]}""",
             ),
         )
         assertEquals("1.0.0", release.version)
@@ -42,12 +42,12 @@ class UpdateCheckerTest {
     fun ignoresForeignOrMissingApk() {
         val release = UpdateChecker.parse(
             JSONObject(
-                """"{"tag_name":"v2.3.0","html_url":"https://example.org",
-                "assets":[{"browser_download_url":"https://example.org/releases/download/SinceUs.apk"}]}"""",
+                """{"tag_name":"v2.3.0","html_url":"https://example.org",
+                "assets":[{"browser_download_url":"https://example.org/releases/download/SinceUs.apk"}]}""",
             ),
         )
         assertNull(release.apkUrl)
-        assertNull(UpdateChecker.parse(JSONObject(""""{"tag_name":"v1","html_url":"x"}"""")).apkUrl)
+        assertNull(UpdateChecker.parse(JSONObject("""{"tag_name":"v1","html_url":"x"}"""))).apkUrl)
         assertFalse(UpdateInstaller.isAllowed("https://github.com/someone/else/releases/download/v1/a.apk"))
     }
                                                   }

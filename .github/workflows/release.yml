@@ -52,7 +52,7 @@ jobs:
 
       - name: Check release notes
         if: steps.version.outputs.release == 'true'
-        run: .github/scripts/check-release.sh "${{ steps.version.outputs.code }}"
+        run: bash .github/scripts/check-release.sh "${{ steps.version.outputs.code }}"
 
       - uses: actions/setup-java@v6
         if: steps.version.outputs.release == 'true'

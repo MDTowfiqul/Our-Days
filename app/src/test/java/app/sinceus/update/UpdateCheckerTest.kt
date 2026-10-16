@@ -47,7 +47,7 @@ class UpdateCheckerTest {
             ),
         )
         assertNull(release.apkUrl)
-        assertNull(UpdateChecker.parse(JSONObject("""{"tag_name":"v1","html_url":"x"}"""))).apkUrl)
+        assertNull(UpdateChecker.parse(JSONObject("""{"tag_name":"v1","html_url":"x"}""")).apkUrl)
         assertFalse(UpdateInstaller.isAllowed("https://github.com/someone/else/releases/download/v1/a.apk"))
     }
                                                   }

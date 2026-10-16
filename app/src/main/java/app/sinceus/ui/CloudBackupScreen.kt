@@ -65,7 +65,7 @@ import java.time.format.DateTimeFormatter
 private sealed interface RemoteItem {
     val label: String
     val date: Long
-    data class Telegram(val stamp: String, override val date: Long) : RemoteItem {
+    data class Telegram(val stamp: String, override val date: Long, val parts: Int = 1) : RemoteItem {
         override val label: String = "Backup $stamp"
     }
     data class Drive(val id: String, val name: String, override val date: Long) : RemoteItem {
@@ -118,7 +118,11 @@ fun CloudBackupScreen() {
             .filter { it.provider == config.provider }
             .map {
                 when (it.provider) {
-                    CloudProvider.TELEGRAM -> RemoteItem.Telegram(it.id, it.date)
+                    CloudProvider.TELEGRAM -> {
+                        val parts = Regex("""\((\d+) parts?\)""").find(it.label)
+                            ?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
+                        RemoteItem.Telegram(it.id, it.date, parts)
+                    }
                     CloudProvider.DRIVE -> RemoteItem.Drive(it.id, it.label, it.date)
                     CloudProvider.NONE -> null
                 }
@@ -127,7 +131,7 @@ fun CloudBackupScreen() {
             runCatching {
                 withContext(Dispatchers.IO) {
                     TelegramBackup.listBackups(config.botToken).map {
-                        RemoteItem.Telegram(it.stamp, it.date)
+                        RemoteItem.Telegram(it.stamp, it.date, it.parts.size)
                     }
                 }
             }.getOrNull().orEmpty()
@@ -359,17 +363,26 @@ fun CloudBackupScreen() {
                 else -> if (r.isEmpty()) {
                     Text(stringResource(R.string.cloud_restore_empty), style = MaterialTheme.typography.bodySmall)
                 } else {
-                    r.take(10).forEach { item ->
+                    r.forEach { item ->
                         val date = DateTimeFormatter.ofPattern("d.M.yyyy HH:mm")
                             .format(Instant.ofEpochMilli(item.date).atZone(ZoneId.systemDefault()))
+                        val partInfo = (item as? RemoteItem.Telegram)
+                            ?.takeIf { it.parts > 1 }
+                            ?.let { " • " + context.getString(R.string.cloud_restore_parts, it.parts) }
+                            .orEmpty()
                         ListItem(
                             headlineContent = { Text(item.label) },
-                            supportingContent = { Text(date) },
+                            supportingContent = { Text("$date$partInfo") },
                             leadingContent = { Icon(Icons.Rounded.Restore, null) },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                            modifier = Modifier.clickable(enabled = busy == null) {
-                                restoreTarget = item
-                                restorePassword = ""
+                            trailingContent = {
+                                TextButton(
+                                    onClick = {
+                                        restoreTarget = item
+                                        restorePassword = ""
+                                    },
+                                    enabled = busy == null,
+                                ) { Text(stringResource(R.string.cloud_restore_confirm)) }
                             },
                         )
                     }

@@ -1,0 +1,33 @@
+# Template for F-Droid inclusion (merge request to https://gitlab.com/fdroid/fdroiddata,
+# file metadata/app.ourdays.yml). Before submitting, sync version and commit with the latest release.
+# Reproducible builds: F-Droid rebuilds the fdroid flavor, compares it with the signed file from the
+# GitHub release (Binaries) and, if they match, ships our signature (AllowedAPKSigningKeys).
+Categories:
+  - Calendar & Agenda
+License: GPL-3.0-or-later
+AuthorName: Md. Towfiqul Islam
+WebSite: https://mdtowfiqul.github.io/Our-Days/
+SourceCode: https://github.com/MDTowfiqul/Our-Days
+IssueTracker: https://github.com/MDTowfiqul/Our-Days/issues
+Changelog: https://github.com/MDTowfiqul/Our-Days/releases
+
+AutoName: Our Days
+
+RepoType: git
+Repo: https://github.com/MDTowfiqul/Our-Days.git
+Binaries: https://github.com/MDTowfiqul/Our-Days/releases/download/v%v/OurDays-v%v-fdroid.apk.bin
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: 2180abb9fcd4c0c8a93f84ab91e282031ce9de5b
+    subdir: app
+    gradle:
+      - fdroid
+
+AllowedAPKSigningKeys: eae37e89d024ebe65a739a08ab70e8b1627f4dc20c2006178d9de750f87b94f3
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1

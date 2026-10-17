@@ -12,11 +12,11 @@ val releaseKeystore = rootProject.file("keystore.properties").takeIf { it.exists
 }
 
 android {
-    namespace = "app.sinceus"
+    namespace = "app.ourdays"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "app.sinceus"
+        applicationId = "app.ourdays"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

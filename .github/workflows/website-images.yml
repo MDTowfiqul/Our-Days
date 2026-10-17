@@ -23,9 +23,9 @@ jobs:
       - name: Render screens, widgets and share pictures
         run: >
           ./gradlew testGithubDebugUnitTest
-          --tests 'app.sinceus.ui.ScreenshotTest'
-          --tests 'app.sinceus.widget.WidgetRenderTest'
-          --tests 'app.sinceus.share.ShareCardTest'
+          --tests 'app.ourdays.ui.ScreenshotTest'
+          --tests 'app.ourdays.widget.WidgetRenderTest'
+          --tests 'app.ourdays.share.ShareCardTest'
 
       - name: Convert into website and store images
         run: |

@@ -1,34 +1,33 @@
-# Vorlage für die Aufnahme in F-Droid (Merge Request an https://gitlab.com/fdroid/fdroiddata,
-# Datei metadata/app.sinceus.yml). Vor dem Einreichen Version und commit mit dem neuesten Release abgleichen.
-# Reproducible Builds: F-Droid baut den fdroid-Flavor nach, vergleicht ihn mit der signierten Datei aus dem
-# GitHub Release (Binaries) und liefert bei Gleichheit unsere Signatur aus (AllowedAPKSigningKeys).
+# Template for F-Droid inclusion (merge request to https://gitlab.com/fdroid/fdroiddata,
+# file metadata/app.sinceus.yml). Before submitting, sync version and commit with the latest release.
+# Reproducible builds: F-Droid rebuilds the fdroid flavor, compares it with the signed file from the
+# GitHub release (Binaries) and, if they match, ships our signature (AllowedAPKSigningKeys).
 Categories:
   - Calendar & Agenda
 License: GPL-3.0-or-later
-AuthorName: DerDieDasLian
-WebSite: https://sinceus.de/
-SourceCode: https://github.com/DerDieDasLian/sinceus
-IssueTracker: https://github.com/DerDieDasLian/sinceus/issues
-Changelog: https://github.com/DerDieDasLian/sinceus/releases
+AuthorName: Md. Towfiqul Islam
+WebSite: https://mdtowfiqul.github.io/Our-Days/
+SourceCode: https://github.com/MDTowfiqul/Our-Days
+IssueTracker: https://github.com/MDTowfiqul/Our-Days/issues
+Changelog: https://github.com/MDTowfiqul/Our-Days/releases
 
-AutoName: Since Us
+AutoName: Our Days
 
 RepoType: git
-Repo: https://github.com/DerDieDasLian/sinceus.git
-Binaries: 
-  https://github.com/DerDieDasLian/sinceus/releases/download/v%v/SinceUs-v%v-fdroid.apk.bin
+Repo: https://github.com/MDTowfiqul/Our-Days.git
+Binaries: https://github.com/MDTowfiqul/Our-Days/releases/download/v%v/OurDays-v%v-fdroid.apk.bin
 
 Builds:
-  - versionName: 2.5.0
-    versionCode: 16
-    commit: 234adf428cf9d6b1b14280dd6ffbd5fc676e8735
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: 2180abb9fcd4c0c8a93f84ab91e282031ce9de5b
     subdir: app
     gradle:
       - fdroid
 
-AllowedAPKSigningKeys: 3912bc3b5859653b47dad00ad35bd934e361b4513871736544b9b8fa633f6b5b
+AllowedAPKSigningKeys: eae37e89d024ebe65a739a08ab70e8b1627f4dc20c2006178d9de750f87b94f3
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 2.5.0
-CurrentVersionCode: 16
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1

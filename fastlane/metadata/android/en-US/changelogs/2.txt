@@ -1,0 +1,3 @@
+- New app identity for F-Droid and the Play Store: back up your data, uninstall the old version, then install this release and restore your backup
+
+- Easier cloud restore: dedicated Restore button on every backup, complete backup list, and part counts for large backups

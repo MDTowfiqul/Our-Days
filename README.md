@@ -6,6 +6,8 @@ A privacy-friendly Android app for couples: counts how long you have been togeth
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" width="200" alt="Overview">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.jpg" width="200" alt="Setup">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/moments.jpg" width="200" alt="Moments">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/backup.jpg" width="200" alt="Encrypted backup">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/moment-editor.jpg" width="200" alt="Moment editor">
 </p>
 
 ## Features
@@ -42,7 +44,7 @@ Tip: if notifications arrive late, set *Settings → Apps → Our Days → Batte
 ## Build variants
 
 | Variant | Gradle task | Internet | Updates |
-| --- | --- | --- | --- |
+| --- | --- | --- |
 | `github` | `./gradlew assembleGithubRelease` | update check and cloud backup | GitHub Releases |
 | `fdroid` | `./gradlew assembleFdroidRelease` | none | F-Droid |
 | `play` | `./gradlew bundlePlayRelease` | update check and cloud backup | Google Play |

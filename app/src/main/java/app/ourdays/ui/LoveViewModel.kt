@@ -11,9 +11,27 @@ import app.ourdays.data.LoveRepository
 import app.ourdays.update.UpdateChecker
 import app.ourdays.update.UpdateInstaller
 import app.ourdays.data.LoveSettings
+import app.ourdays.data.AiLevel
+import app.ourdays.data.DotsBoxes
+import app.ourdays.data.DotsMove
+import app.ourdays.data.GameKind
+import app.ourdays.data.GameMerge
+import app.ourdays.data.GameMode
+import app.ourdays.data.GameState
+import app.ourdays.data.GameAi
+import app.ourdays.data.Gomoku
+import app.ourdays.data.GomokuMove
+import app.ourdays.data.KnowMeAttempt
+import app.ourdays.data.KnowMeSheet
 import app.ourdays.data.Pairing
 import app.ourdays.data.PairingStore
+import app.ourdays.data.QuizSyncData
 import app.ourdays.data.SyncCodec
+import app.ourdays.data.WrAnswers
+import app.ourdays.data.dotsBoard
+import app.ourdays.data.emptyDotsBoard
+import app.ourdays.data.emptyGomokuBoard
+import app.ourdays.data.gomokuBoard
 import app.ourdays.notify.DailyScheduler
 import app.ourdays.notify.Notifier
 import app.ourdays.widget.LoveWidget
@@ -223,12 +241,149 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
                 ?: throw java.io.IOException("no input stream")
             val result = input.use { repo.importSync(it, p) }
             _pairing.value = PairingStore.load(app)
+            // Our Entertainment: Zug an dieses Handy gegangen -> Bescheid geben
+            if (result.newlyMyTurn.isNotEmpty()) {
+                val first = result.newlyMyTurn.first()
+                val label = app.getString(if (first.kind == GameKind.DOTS) R.string.game_dots_boxes else R.string.game_gomoku)
+                Notifier.showYourTurn(app, label, result.newlyMyTurn.size - 1)
+            }
             app.getString(R.string.sync_done, result.added, result.changed, result.removed)
         } catch (e: Exception) {
             android.util.Log.w("SinceUs", "Abgleich fehlgeschlagen", e)
             app.getString(R.string.sync_failed)
         }
         Toast.makeText(app, message, Toast.LENGTH_LONG).show()
+    }
+
+    // ---- Our Entertainment: Spiele und Quiz-Daten ----
+
+    val games: StateFlow<List<GameState>> =
+        repo.gamesFlow().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val quizData: StateFlow<QuizSyncData> =
+        repo.quizFlow().stateIn(viewModelScope, SharingStarted.Eagerly, QuizSyncData())
+
+    /** Neues Spiel gegen den Partner: Ersteller (Spieler 1) zieht zuerst. */
+    fun startPartnerGame(kind: GameKind) = viewModelScope.launch {
+        val p = _pairing.value ?: return@launch
+        val me = p.me ?: "player1"
+        val others = settings.value?.people?.map { it.id }.orEmpty()
+        val other = others.firstOrNull { it != me } ?: "player2"
+        val game = GameState(
+            id = java.util.UUID.randomUUID().toString(),
+            kind = kind,
+            mode = GameMode.PARTNER,
+            player1 = me,
+            player2 = other,
+            turn = 1,
+            board = if (kind == GameKind.DOTS) emptyDotsBoard() else emptyGomokuBoard(),
+            finished = false,
+            winner = 0,
+            updatedAt = System.currentTimeMillis(),
+        )
+        repo.saveGame(game)
+    }
+
+    /** Neues Spiel gegen die KI: Mensch ist Spieler 1 und zieht zuerst. */
+    fun startAiGame(kind: GameKind, level: AiLevel) = viewModelScope.launch {
+        val me = _pairing.value?.me ?: "player1"
+        val game = GameState(
+            id = java.util.UUID.randomUUID().toString(),
+            kind = kind,
+            mode = if (level == AiLevel.EASY) GameMode.AI_EASY else GameMode.AI_HARD,
+            player1 = me,
+            player2 = "ai",
+            turn = 1,
+            board = if (kind == GameKind.DOTS) emptyDotsBoard() else emptyGomokuBoard(),
+            finished = false,
+            winner = 0,
+            updatedAt = System.currentTimeMillis(),
+        )
+        repo.saveGame(game)
+    }
+
+    fun deleteGame(id: String) = viewModelScope.launch { repo.deleteGame(id) }
+
+    /** Zug in Dots and Boxes; bei KI-Spielen antwortet die KI gleich danach. */
+    fun playDotsMove(gameId: String, move: DotsMove) = viewModelScope.launch {
+        val game = games.value.firstOrNull { it.id == gameId } ?: return@launch
+        if (game.mode == GameMode.PARTNER && !GameMerge.turnIsMine(game, _pairing.value?.me)) return@launch
+        val state = game.dotsState() ?: return@launch
+        val next = DotsBoxes.apply(state, move) ?: return@launch
+        val mover = if (game.mode == GameMode.PARTNER) _pairing.value?.me ?: "player1" else game.player1
+        var updated = game.copy(
+            board = dotsBoard(next),
+            turn = next.turn,
+            finished = next.finished,
+            winner = next.winner,
+            updatedAt = System.currentTimeMillis(),
+            lastMoveBy = mover,
+        )
+        repo.saveGame(updated)
+        if (game.mode != GameMode.PARTNER && !next.finished && next.turn == 2) {
+            val level = if (game.mode == GameMode.AI_EASY) AiLevel.EASY else AiLevel.HARD
+            val aiMove = withContext(Dispatchers.Default) { GameAi.dotsMove(next, 2, level) } ?: return@launch
+            val after = DotsBoxes.apply(next, aiMove) ?: return@launch
+            updated = updated.copy(
+                board = dotsBoard(after),
+                turn = after.turn,
+                finished = after.finished,
+                winner = after.winner,
+                updatedAt = System.currentTimeMillis(),
+                lastMoveBy = "ai",
+            )
+            repo.saveGame(updated)
+        }
+    }
+
+    /** Zug in Gomoku; bei KI-Spielen antwortet die KI gleich danach. */
+    fun playGomokuMove(gameId: String, move: GomokuMove) = viewModelScope.launch {
+        val game = games.value.firstOrNull { it.id == gameId } ?: return@launch
+        if (game.mode == GameMode.PARTNER && !GameMerge.turnIsMine(game, _pairing.value?.me)) return@launch
+        val state = game.gomokuState() ?: return@launch
+        val next = Gomoku.apply(state, move) ?: return@launch
+        val mover = if (game.mode == GameMode.PARTNER) _pairing.value?.me ?: "player1" else game.player1
+        var updated = game.copy(
+            board = gomokuBoard(next),
+            turn = next.turn,
+            finished = next.finished,
+            winner = next.winner,
+            updatedAt = System.currentTimeMillis(),
+            lastMoveBy = mover,
+        )
+        repo.saveGame(updated)
+        if (game.mode != GameMode.PARTNER && !next.finished && next.turn == 2) {
+            val level = if (game.mode == GameMode.AI_EASY) AiLevel.EASY else AiLevel.HARD
+            val aiMove = withContext(Dispatchers.Default) { GameAi.gomokuMove(next, 2, level) } ?: return@launch
+            val after = Gomoku.apply(next, aiMove) ?: return@launch
+            updated = updated.copy(
+                board = gomokuBoard(after),
+                turn = after.turn,
+                finished = after.finished,
+                winner = after.winner,
+                updatedAt = System.currentTimeMillis(),
+                lastMoveBy = "ai",
+            )
+            repo.saveGame(updated)
+        }
+    }
+
+    /** Eigene Antworten zum Know-me-Set (überschreibt ältere Antworten). */
+    fun saveKnowMeSheet(answers: Map<String, Int>) = viewModelScope.launch {
+        val me = _pairing.value?.me ?: "player1"
+        repo.saveKnowMeSheet(KnowMeSheet(me, answers, System.currentTimeMillis()))
+    }
+
+    /** Vermutete Antworten auf das Know-me-Blatt des Partners. */
+    fun saveKnowMeAttempt(sheetOwner: String, answers: Map<String, Int>) = viewModelScope.launch {
+        val me = _pairing.value?.me ?: "player1"
+        repo.saveKnowMeAttempt(KnowMeAttempt(sheetOwner, me, answers, System.currentTimeMillis()))
+    }
+
+    /** Would-you-rather-Antworten für einen Tag (ISO-Datum) oder "casual". */
+    fun saveWrAnswers(date: String, answers: Map<String, Int>) = viewModelScope.launch {
+        val me = _pairing.value?.me ?: "player1"
+        repo.saveWrAnswers(WrAnswers(date, me, answers, System.currentTimeMillis()))
     }
 
     fun setUpdateCheck(enabled: Boolean) = viewModelScope.launch { repo.setUpdateCheck(enabled) }

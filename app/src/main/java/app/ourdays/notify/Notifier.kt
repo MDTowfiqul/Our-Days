@@ -37,6 +37,7 @@ object Notifier {
     private const val NOTIFICATION_ID = 1
     private const val UPDATE_CHANNEL_ID = "updates"
     private const val UPDATE_NOTIFICATION_ID = 2
+    private const val YOUR_TURN_NOTIFICATION_ID = 3
 
     fun createChannel(context: Context) {
         val channel = NotificationChannel(
@@ -144,6 +145,23 @@ object Notifier {
         post(context, title, lines.first(), lines.joinToString("\n"))
     }
 
+    /** Our Entertainment: der Zug in einem Spiel ist an dieses Handy gegangen. */
+    fun showYourTurn(context: Context, gameLabel: String, moreGames: Int = 0) {
+        if (!canNotify(context)) return
+        val text = if (moreGames > 0) {
+            context.getString(R.string.your_turn_many, moreGames + 1)
+        } else {
+            context.getString(R.string.your_turn_text, gameLabel)
+        }
+        post(
+            context,
+            context.getString(R.string.your_turn_title),
+            text,
+            null,
+            YOUR_TURN_NOTIFICATION_ID,
+        )
+    }
+
     fun showTest(context: Context, settings: LoveSettings) {
         if (!canNotify(context)) return
         post(
@@ -159,7 +177,7 @@ object Notifier {
 
     private const val HEART_PX = 128
 
-    private fun post(context: Context, title: String, text: String, big: String?) {
+    private fun post(context: Context, title: String, text: String, big: String?, id: Int = NOTIFICATION_ID) {
         val open = PendingIntent.getActivity(
             context, 0,
             Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
@@ -177,7 +195,7 @@ object Notifier {
             .setAutoCancel(true)
             .build()
         try {
-            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+            NotificationManagerCompat.from(context).notify(id, notification)
         } catch (_: SecurityException) {
             // Berechtigung wurde zwischenzeitlich entzogen
         }

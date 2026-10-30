@@ -14,7 +14,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import app.ourdays.data.DotsBoxes

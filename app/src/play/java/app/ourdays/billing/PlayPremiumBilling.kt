@@ -29,7 +29,7 @@ class PlayPremiumBilling(context: Context) : PremiumBilling {
 
     private var pending = CompletableDeferred<PremiumEntitlement?>()
 
-    private val listener = PurchasesUpdatedListener { billingResult, purchases ->
+    private val listener: PurchasesUpdatedListener = PurchasesUpdatedListener { billingResult, purchases ->
         if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
             pending.complete(null)
             return@PurchasesUpdatedListener
@@ -52,7 +52,7 @@ class PlayPremiumBilling(context: Context) : PremiumBilling {
         }
     }
 
-    private val client = BillingClient.newBuilder(context)
+    private val client: BillingClient = BillingClient.newBuilder(context)
         .setListener(listener)
         .enablePendingPurchases()
         .build()

@@ -32,15 +32,15 @@ class ScreenshotTest {
     private val today = LocalDate.of(2025, 8, 15)
 
     @Test
-    fun home() = shot("home") { HomeScreen(settings, today, {}, {}) }
+    fun home() = shot("home") { HomeScreen(settings, today, {}, {}, onPageChange = { _ -> }) }
 
     @Test
-    fun homeBengali() = shot("home", lang = "bn") { HomeScreen(settings, today, {}, {}) }
+    fun homeBengali() = shot("home", lang = "bn") { HomeScreen(settings, today, {}, {}, onPageChange = { _ -> }) }
 
     @Test
     fun homeDistanceBengali() = shot("home_distance", lang = "bn") {
         val far = settings.relationships.map { it.copy(distance = true, farZone = "America/New_York", nextMeeting = today.plusDays(12)) }
-        HomeScreen(settings.copy(relationships = far), today, {}, {})
+        HomeScreen(settings.copy(relationships = far), today, {}, {}, onPageChange = { _ -> })
     }
 
     @Test
@@ -91,10 +91,10 @@ class ScreenshotTest {
     )
 
     @Test
-    fun homePolyBengali() = shot("home_poly", lang = "bn") { HomeScreen(poly, today, {}, {}) }
+    fun homePolyBengali() = shot("home_poly", lang = "bn") { HomeScreen(poly, today, {}, {}, onPageChange = { _ -> }) }
 
     @Test
-    fun homePolyOneBengali() = shot("home_poly_one", lang = "bn") { HomeScreen(poly.copy(selected = "r2"), today, {}, {}) }
+    fun homePolyOneBengali() = shot("home_poly_one", lang = "bn") { HomeScreen(poly.copy(selected = "r2"), today, {}, {}, onPageChange = { _ -> }) }
 
     @Test
     fun settingsPeopleBengali() = shot("settings_people", lang = "bn") {
@@ -112,7 +112,7 @@ class ScreenshotTest {
     )
 
     @Test
-    fun homePoly() = shot("home_poly") { HomeScreen(polyEnglish, today, {}, {}) }
+    fun homePoly() = shot("home_poly") { HomeScreen(polyEnglish, today, {}, {}, onPageChange = { _ -> }) }
 
     @Test
     fun sync() = shot("sync") { SettingsScreen(settings, true, initialPage = SettingsPage.Sync) }
@@ -133,7 +133,7 @@ class ScreenshotTest {
     @Test
     fun homePrideBengali() = shot("home_pride", lang = "bn") {
         androidx.compose.runtime.CompositionLocalProvider(LocalPrideMonth provides true) {
-            HomeScreen(settings, today, {}, {})
+            HomeScreen(settings, today, {}, {}, onPageChange = { _ -> })
         }
     }
 
@@ -164,11 +164,11 @@ class ScreenshotTest {
 
     @Test
     fun homeWithoutLiveAndMoments() = shot("home_only_overview", lang = "bn") {
-        HomeScreen(settings.copy(showLive = false, showMoments = false), today, {}, {})
+        HomeScreen(settings.copy(showLive = false, showMoments = false), today, {}, {}, onPageChange = { _ -> })
     }
 
     @Test
-    fun homeDark() = shot("home_dark", dark = true) { HomeScreen(settings.copy(presetIndex = 3), today, {}, {}) }
+    fun homeDark() = shot("home_dark", dark = true) { HomeScreen(settings.copy(presetIndex = 3), today, {}, {}, onPageChange = { _ -> }) }
 
     @Test
     fun settings() = shot("settings") {
@@ -246,7 +246,7 @@ class ScreenshotTest {
     }
 
     @Test
-    fun homeWithMomentsTab() = shot("home_moments_tab", lang = "bn") { HomeScreen(withMoments, today, {}, {}) }
+    fun homeWithMomentsTab() = shot("home_moments_tab", lang = "bn") { HomeScreen(withMoments, today, {}, {}, onPageChange = { _ -> }) }
 
     @Test
     fun licenses() = shot("licenses", lang = "bn") { LicensesScreen(onBack = {}) }

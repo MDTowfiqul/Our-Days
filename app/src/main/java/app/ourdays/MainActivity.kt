@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ourdays.data.Backup
 import app.ourdays.ui.ChangelogDialog
+import app.ourdays.ui.ChatScreen
 import app.ourdays.data.Changelog
 import app.ourdays.data.MAX_SLIDES
 import app.ourdays.notify.Notifier
@@ -99,6 +100,7 @@ class MainActivity : ComponentActivity() {
                 val autoBackup by vm.autoBackup.collectAsStateWithLifecycle()
                 val scope = rememberCoroutineScope()
                 var showSettings by rememberSaveable { mutableStateOf(false) }
+                var showChat by rememberSaveable { mutableStateOf(false) }
                 var editingPhoto by rememberSaveable { mutableStateOf(false) }
                 var showLicenses by rememberSaveable { mutableStateOf(false) }
                 // Moment-Editor: null = zu, "" = neuer Moment, sonst ID; dazu optional ein vorgeschlagener Titel
@@ -144,6 +146,7 @@ class MainActivity : ComponentActivity() {
                     if (settings?.onboardingDone != true) return@LaunchedEffect
                     vm.jump.value = null
                     showSettings = false
+                    showChat = false
                     showLicenses = false
                     editingPhoto = false
                     if (target == "moment") {
@@ -231,8 +234,9 @@ class MainActivity : ComponentActivity() {
                 // ob es wirklich eine Sicherung ist, prüft die App beim Laden selbst
                 fun loadBackup() = backupLoader.launch(arrayOf("*/*"))
 
-                BackHandler(enabled = showSettings || editingPhoto || editingMoment != null || showLicenses) {
+                BackHandler(enabled = showSettings || showChat || editingPhoto || editingMoment != null || showLicenses) {
                     when {
+                        showChat -> showChat = false
                         showLicenses -> showLicenses = false
                         editingMoment != null -> editingMoment = null
                         editingPhoto -> editingPhoto = false
@@ -246,6 +250,7 @@ class MainActivity : ComponentActivity() {
                     editingPhoto && s.photoPath != null -> "editor"
                     editingMoment != null && s.onboardingDone -> "moment"
                     !s.onboardingDone -> "onboarding"
+                    showChat -> "chat"
                     showSettings && showLicenses -> "licenses"
                     showSettings -> "settings"
                     else -> "home"
@@ -276,6 +281,15 @@ class MainActivity : ComponentActivity() {
                         ) { target ->
                             if (s == null) return@AnimatedContent
                             when (target) {
+                                "chat" -> ChatScreen(
+                                    settings = s,
+                                    pairing = pairing,
+                                    onBack = { showChat = false },
+                                    onOpenSettings = {
+                                        showChat = false
+                                        showSettings = true
+                                    },
+                                )
                                 "licenses" -> LicensesScreen(onBack = { showLicenses = false })
                                 "moment" -> MomentEditorScreen(
                                     existing = s.moments.firstOrNull { it.id == editingMoment },
@@ -395,6 +409,7 @@ class MainActivity : ComponentActivity() {
                                     s,
                                     today,
                                     onOpenSettings = { showSettings = true },
+                                    onOpenChat = { showChat = true },
                                     onPageChange = vm::setHomePage,
                                     onAddMoment = { title ->
                                         momentSuggestion = title

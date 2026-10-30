@@ -537,4 +537,57 @@
     <string name="cloud_drive_unavailable">Google Drive is only available in the Play Store version.</string>
     <string name="cloud_pick_account">Choose Google account</string>
     <string name="cloud_sign_out">Sign out</string>
+
+    <!-- Our Dates (Premium) -->
+    <string name="tab_dates">Our Dates</string>
+    <string name="dates_title">Our Dates</string>
+    <string name="dates_upcoming">Upcoming</string>
+    <string name="dates_past">Past dates</string>
+    <string name="dates_empty_title">No dates planned yet</string>
+    <string name="dates_empty_sub">Plan something nice together — dinner, a trip, a walk.</string>
+    <string name="dates_add">Plan a date</string>
+    <string name="date_new">New date</string>
+    <string name="date_edit">Edit date</string>
+    <string name="date_field_title">Title</string>
+    <string name="date_field_date">Date</string>
+    <string name="date_field_time">Time</string>
+    <string name="date_field_time_none">No time</string>
+    <string name="date_field_place">Place (optional)</string>
+    <string name="date_field_note">Notes</string>
+    <string name="date_field_remind">Remind me</string>
+    <string name="date_remind_none">On the day</string>
+    <string name="date_remind_day_before">1 day before</string>
+    <string name="date_remind_week_before">1 week before</string>
+    <string name="date_delete_question">Delete this date?</string>
+    <string name="date_delete_text">The date will be removed from this device.</string>
+    <string name="date_next">Next date</string>
+    <string name="msg_date">Date today: %1$s</string>
+    <plurals name="dates_count">
+        <item quantity="one">%s date</item>
+        <item quantity="other">%s dates</item>
+    </plurals>
+    <string name="premium_title">Premium</string>
+    <string name="premium_active">Premium active</string>
+    <string name="premium_free">Free version</string>
+    <string name="premium_source_play">Bought on Google Play</string>
+    <string name="premium_source_code">Unlocked with a code</string>
+    <string name="premium_source_sync">Shared by your partner</string>
+    <string name="premium_buy">Unlock premium</string>
+    <string name="premium_buy_summary">One-time purchase, no subscription. One partner\'s purchase unlocks premium for both of you.</string>
+    <string name="premium_buy_failed">The purchase could not be completed.</string>
+    <string name="premium_unlocked">Premium unlocked.</string>
+    <string name="premium_code_hint">Unlock code from your partner</string>
+    <string name="premium_code_enter">Enter code</string>
+    <string name="premium_code_invalid">That code is not valid. Check it and try again.</string>
+    <string name="premium_code_text">If your partner bought premium on Google Play, they can show you a code in their premium settings. Enter it here to unlock premium on this phone too.</string>
+    <string name="premium_sync_hint">Or send a sync file after buying: your partner unlocks automatically when they open it.</string>
+    <string name="premium_not_available">Buying is only available in the Play Store version. Ask your partner to buy it there and share the unlock code with you.</string>
+    <string name="premium_restore">Restore purchase</string>
+    <string name="premium_restore_none">No purchase found on this Google account.</string>
+    <string name="premium_locked_title">Our Dates is a premium feature</string>
+    <string name="premium_locked_text">Plan dates together, with a countdown and reminders. Unlock premium once — it covers both of you.</string>
+    <string name="premium_show_code">Show my unlock code</string>
+    <string name="premium_code_title">Your unlock code</string>
+    <string name="premium_code_share_text">Share this code only with your partner. It unlocks premium on their phone too.</string>
+    <string name="premium_no_code">No code yet — buy premium first, then your code appears here.</string>
 </resources>

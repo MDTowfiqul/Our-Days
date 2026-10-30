@@ -61,6 +61,7 @@ import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Celebration
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Star
@@ -88,6 +89,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.ourdays.data.LoveMath
 import app.ourdays.data.LoveSettings
+import app.ourdays.data.DatePlanMath
 import app.ourdays.data.BirthdayMath
 import app.ourdays.data.Milestone
 import app.ourdays.data.MilestoneKind
@@ -113,6 +115,12 @@ fun HomeScreen(
     onPageChange: (Int) -> Unit,
     onAddMoment: (String?) -> Unit = {},
     onOpenMoment: (app.ourdays.data.Moment) -> Unit = {},
+    /** Neues Date anlegen (Our Dates, nur mit Premium) */
+    onAddDate: () -> Unit = {},
+    /** Gespeichertes Date öffnen */
+    onOpenDate: (app.ourdays.data.DatePlan) -> Unit = {},
+    /** Einstellungen auf der Premium-Seite öffnen (aus der gesperrten Dates-Ansicht) */
+    onOpenPremium: () -> Unit = {},
     /** Reihenfolge der Momente umdrehen (neueste oben) */
     onNewestFirst: (Boolean) -> Unit = {},
     /** Andere Beziehung zeigen (Poly-Modus), [app.ourdays.data.ALL_RELATIONSHIPS] = alle */
@@ -126,6 +134,8 @@ fun HomeScreen(
         HomePage.Overview,
         HomePage.Live.takeIf { settings.showLive },
         HomePage.Moments.takeIf { settings.showMoments },
+        // Our Dates ist immer sichtbar; ohne Premium zeigt die Seite die Freischaltung
+        HomePage.Dates,
     )
     val pageCount = pages.size
     val pager = rememberPagerState(initialPage = settings.homePage.coerceIn(0, pageCount - 1)) { pageCount }
@@ -158,6 +168,13 @@ fun HomeScreen(
                     onAdd = onAddMoment,
                     onOpen = onOpenMoment,
                     onNewestFirst = onNewestFirst,
+                )
+                HomePage.Dates -> DatesScreen(
+                    settings,
+                    today,
+                    onAdd = onAddDate,
+                    onOpen = onOpenDate,
+                    onOpenPremium = onOpenPremium,
                 )
             }
         }
@@ -219,6 +236,28 @@ fun HomeScreen(
                 )
             }
         }
+        // Gleicher Knopf auf der Dates-Seite, nur mit Premium
+        if (pages[pager.currentPage] == HomePage.Dates && settings.isPremium) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(bottom = 16.dp, end = 16.dp)
+                    .shadow(8.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickable(onClick = onAddDate)
+                    .size(56.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.Add,
+                    contentDescription = stringResource(R.string.dates_add),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+        }
     }
 }
 
@@ -233,6 +272,7 @@ private enum class HomePage(@androidx.annotation.StringRes val label: Int) {
     Overview(R.string.tab_overview),
     Live(R.string.tab_live),
     Moments(R.string.tab_moments),
+    Dates(R.string.tab_dates),
 }
 
 private val BarItemHeight = 40.dp
@@ -273,10 +313,12 @@ private fun Overview(settings: LoveSettings, today: LocalDate, onSelect: (String
     val members = settings.members()
     val todays = LoveMath.milestonesOn(start, today) + MomentMath.milestonesOn(moments, today) +
         BirthdayMath.milestonesOn(members, today) +
-        MomentMath.plannedOn(moments, today).map { Milestone(MilestoneKind.PLANNED, 0, today, it.title) }
+        MomentMath.plannedOn(moments, today).map { Milestone(MilestoneKind.PLANNED, 0, today, it.title) } +
+        DatePlanMath.dueOn(settings.visibleDates, today).map { Milestone(MilestoneKind.DATE, 0, today, it.title) }
     val upcoming = (
         LoveMath.upcoming(start, today, 4) + MomentMath.upcoming(moments, today, 4) + BirthdayMath.upcoming(members, today, 4) +
-            MomentMath.planned(moments, today, 4)
+            MomentMath.planned(moments, today, 4) +
+            DatePlanMath.upcoming(settings.visibleDates, today, 4).map { Milestone(MilestoneKind.DATE, 0, it.date, it.title) }
         )
         .sortedBy { it.date }
         .take(4)
@@ -667,4 +709,5 @@ private fun MilestoneKind.icon(): ImageVector = when (this) {
     MilestoneKind.MOMENT -> Icons.Rounded.AutoAwesome
     MilestoneKind.BIRTHDAY -> Icons.Rounded.CardGiftcard
     MilestoneKind.PLANNED -> Icons.Rounded.Event
+    MilestoneKind.DATE -> Icons.Rounded.DateRange
 }

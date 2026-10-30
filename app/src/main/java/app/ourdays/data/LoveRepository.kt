@@ -76,6 +76,10 @@ data class LoveSettings(
     val updateApkUrl: String? = null,
     /** Wichtige Momente der Beziehung, sortiert nach Datum */
     val moments: List<Moment> = emptyList(),
+    /** Geplante Dates (Our Dates), sortiert nach Datum */
+    val dates: List<DatePlan> = emptyList(),
+    /** Premium-Nachweis, null = kein Premium (Our Dates und künftige Premium-Features) */
+    val premium: PremiumEntitlement? = null,
     /** Bereich „Momente“ anzeigen (lässt sich ausblenden, die Daten bleiben erhalten) */
     val showMoments: Boolean = true,
     /** Live-Zähler anzeigen (lässt sich ausblenden) */
@@ -135,6 +139,16 @@ data class LoveSettings(
     /** Momente der gezeigten Beziehung, bei „alle“ sämtliche */
     val visibleMoments: List<Moment> get() = if (showAll) moments else momentsOf(relationship)
 
+    /** true, wenn Premium freigeschaltet ist (Kauf, Code oder Abgleich vom Partner) */
+    val isPremium: Boolean get() = premium != null
+
+    /** Dates einer Beziehung: ihre eigenen und die für alle */
+    fun datesOf(r: Relationship): List<DatePlan> =
+        dates.filter { it.relationshipId == null || it.relationshipId == r.id || relationships.none { x -> x.id == it.relationshipId } }
+
+    /** Dates der gezeigten Beziehung, bei „alle“ sämtliche */
+    val visibleDates: List<DatePlan> get() = if (showAll) dates else datesOf(relationship)
+
     companion object {
         /** Ein Paar mit einer Beziehung, z. B. für Tests und Vorschauen */
         fun couple(name1: String, name2: String, startDate: LocalDate, startTime: LocalTime? = null) = LoveSettings(
@@ -179,6 +193,9 @@ private object Keys {
     val updateApkUrl = stringPreferencesKey("update_apk_url")
     val updateNotified = stringPreferencesKey("update_notified")
     val moments = stringPreferencesKey("moments")
+    val dates = stringPreferencesKey("dates")
+    val premium = stringPreferencesKey("premium_entitlement")
+    val deletedDates = stringPreferencesKey("deleted_dates")
     val showMoments = booleanPreferencesKey("show_moments")
     val showLive = booleanPreferencesKey("show_live")
     val showFacts = booleanPreferencesKey("show_facts")
@@ -261,6 +278,8 @@ class LoveRepository(private val context: Context) {
             updateUrl = this[Keys.updateUrl],
             updateApkUrl = this[Keys.updateApkUrl],
             moments = MomentCodec.decode(this[Keys.moments]).sortedBy { it.date },
+            dates = DatePlanCodec.decode(this[Keys.dates]).sortedBy { it.date },
+            premium = PremiumEntitlementCodec.decode(this[Keys.premium]),
             showMoments = this[Keys.showMoments] ?: d.showMoments,
             showLive = this[Keys.showLive] ?: d.showLive,
             showFacts = this[Keys.showFacts] ?: d.showFacts,
@@ -344,6 +363,9 @@ class LoveRepository(private val context: Context) {
         prefs[Keys.moments] = MomentCodec.encode(
             MomentCodec.decode(prefs[Keys.moments]).map { if (it.relationshipId == id) it.copy(relationshipId = null) else it },
         )
+        prefs[Keys.dates] = DatePlanCodec.encode(
+            DatePlanCodec.decode(prefs[Keys.dates]).map { if (it.relationshipId == id) it.copy(relationshipId = null) else it },
+        )
         if (prefs[Keys.selected] == id) prefs.remove(Keys.selected)
         if (prefs[Keys.widgetRelationship] == id) prefs.remove(Keys.widgetRelationship)
     }
@@ -384,6 +406,36 @@ class LoveRepository(private val context: Context) {
 
     suspend fun setShowMoments(show: Boolean) = context.dataStore.edit { it[Keys.showMoments] = show }
 
+    /** Speichert ein neues oder geändertes Date (Our Dates). Nur mit Premium nutzbar. */
+    suspend fun saveDate(plan: DatePlan) {
+        val old = current().dates.firstOrNull { it.id == plan.id }
+        val saved = plan.copy(
+            updatedAt = System.currentTimeMillis(),
+            addedBy = old?.addedBy ?: plan.addedBy ?: PairingStore.load(context)?.me,
+        )
+        context.dataStore.edit { prefs ->
+            val list = DatePlanCodec.decode(prefs[Keys.dates]).filterNot { it.id == plan.id } + saved
+            prefs[Keys.dates] = DatePlanCodec.encode(list)
+        }
+    }
+
+    /** Löscht ein Date; der Merker verhindert, dass der Abgleich es wiederbringt. */
+    suspend fun deleteDate(id: String) {
+        if (current().dates.none { it.id == id }) return
+        context.dataStore.edit { prefs ->
+            prefs[Keys.dates] = DatePlanCodec.encode(DatePlanCodec.decode(prefs[Keys.dates]).filterNot { it.id == id })
+            prefs[Keys.deletedDates] = encodeDeleted(decodeDeleted(prefs[Keys.deletedDates]) + (id to System.currentTimeMillis()))
+        }
+    }
+
+    /** Premium-Nachweis speichern (Kauf, Code oder Abgleich vom Partner). */
+    suspend fun savePremiumEntitlement(entitlement: PremiumEntitlement) = context.dataStore.edit {
+        it[Keys.premium] = PremiumEntitlementCodec.encode(entitlement)
+    }
+
+    /** Premium wieder entziehen (nur für Tests und Fehlersuche). */
+    suspend fun clearPremiumEntitlement() = context.dataStore.edit { it.remove(Keys.premium) }
+
     suspend fun setShowLive(show: Boolean) = context.dataStore.edit { it[Keys.showLive] = show }
 
     suspend fun setShowFacts(show: Boolean) = context.dataStore.edit { it[Keys.showFacts] = show }
@@ -407,14 +459,25 @@ class LoveRepository(private val context: Context) {
     suspend fun exportSync(out: OutputStream, pairing: Pairing) {
         val s = current()
         val deleted = decodeDeleted(context.dataStore.data.first()[Keys.deleted])
+        val deletedDates = decodeDeleted(context.dataStore.data.first()[Keys.deletedDates])
         withContext(Dispatchers.IO) {
             val zipFile = File(context.cacheDir, "sync-out.zip")
             try {
                 ZipOutputStream(zipFile.outputStream().buffered()).use { zip ->
                     zip.putNextEntry(ZipEntry(SyncCodec.JSON))
                     zip.write(
-                        SyncCodec.encode(SyncData(s.people, s.relationships, s.moments, deleted, pairing.me))
-                            .toByteArray(Charsets.UTF_8),
+                        SyncCodec.encode(
+                            SyncData(
+                                s.people,
+                                s.relationships,
+                                s.moments,
+                                deleted,
+                                pairing.me,
+                                s.dates,
+                                deletedDates,
+                                s.premium,
+                            ),
+                        ).toByteArray(Charsets.UTF_8),
                     )
                     zip.closeEntry()
                     val written = mutableSetOf<String>()
@@ -471,6 +534,9 @@ class LoveRepository(private val context: Context) {
             local.moments,
             decodeDeleted(context.dataStore.data.first()[Keys.deleted]),
             remote,
+            local.dates,
+            decodeDeleted(context.dataStore.data.first()[Keys.deletedDates]),
+            local.premium,
         )
         // Fotos der übernommenen Momente in den App-Speicher holen, alte Fotos aufräumen
         val takenIds = result.taken.map { it.id }.toSet()
@@ -494,6 +560,9 @@ class LoveRepository(private val context: Context) {
             prefs.writeModel(result.people, result.relationships)
             prefs[Keys.moments] = MomentCodec.encode(moments)
             prefs[Keys.deleted] = encodeDeleted(result.deleted)
+            prefs[Keys.dates] = DatePlanCodec.encode(result.dates)
+            prefs[Keys.deletedDates] = encodeDeleted(result.deletedDates)
+            if (result.premium != null) prefs[Keys.premium] = PremiumEntitlementCodec.encode(result.premium)
         }
         PairingStore.save(context, pairing.copy(lastSync = System.currentTimeMillis()))
         return result
@@ -614,8 +683,12 @@ class LoveRepository(private val context: Context) {
         context.dataStore.edit { p ->
             // Merker für schon verschickte Mitteilungen behalten, damit nichts doppelt kommt
             val lastNotified = p[Keys.lastNotified]
+            // Premium bleibt bei einer Wiederherstellung erhalten: Es ist kein Sicherungsinhalt,
+            // sondern ein Nachweis auf diesem Handy (wie die Kopplung, die ebenfalls nicht gesichert wird)
+            val keptPremium = p[Keys.premium]
             p.clear()
             lastNotified?.let { p[Keys.lastNotified] = it }
+            keptPremium?.let { p[Keys.premium] = it }
             p.writeModel(restored.people, restored.relationships)
             p[Keys.selected] = restored.selected
             if (restored.widgetRelationship.isNotEmpty()) p[Keys.widgetRelationship] = restored.widgetRelationship
@@ -635,6 +708,7 @@ class LoveRepository(private val context: Context) {
             p[Keys.homePage] = restored.homePage
             p[Keys.updateCheck] = restored.updateCheck
             p[Keys.moments] = MomentCodec.encode(restored.moments)
+            p[Keys.dates] = DatePlanCodec.encode(restored.dates)
             p[Keys.showMoments] = restored.showMoments
             p[Keys.showLive] = restored.showLive
             p[Keys.showFacts] = restored.showFacts

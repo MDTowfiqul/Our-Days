@@ -148,7 +148,7 @@ object GameMerge {
     }
 
     /** True if it is [myId]'s turn in [g]. Player 1 moves when turn == 1. */
-    fun turnIsMine(g: GameState, myId: String): Boolean {
+    fun turnIsMine(g: GameState, myId: String?): Boolean {
         val myNumber = when (myId) {
             g.player1 -> 1
             g.player2 -> 2

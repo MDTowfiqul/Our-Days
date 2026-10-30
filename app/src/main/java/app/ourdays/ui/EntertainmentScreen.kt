@@ -110,10 +110,13 @@ fun EntertainmentScreen(
         )
     }
 
+    val aiName = stringResource(R.string.game_ai)
+    val playerOneName = stringResource(R.string.game_player_one)
+    val playerTwoName = stringResource(R.string.game_player_two)
     fun nameOf(id: String): String = when (id) {
-        "ai" -> stringResource(R.string.game_ai)
-        "player1" -> stringResource(R.string.game_player_one)
-        "player2" -> stringResource(R.string.game_player_two)
+        "ai" -> aiName
+        "player1" -> playerOneName
+        "player2" -> playerTwoName
         else -> peopleNames[id] ?: id
     }
 
@@ -139,15 +142,17 @@ fun EntertainmentScreen(
         }
 
         when {
-            openGame != null -> GameView(
-                game = openGame,
-                myId = myId,
-                nameOf = ::nameOf,
-                onDotsMove = { onDotsMove(openGame.id, it) },
-                onGomokuMove = { onGomokuMove(openGame.id, it) },
-                onSendGame = onSendGame,
-                onDelete = { deleteId = openGame.id },
-            )
+            openGame != null -> openGame.let { game ->
+                GameView(
+                    game = game,
+                    myId = myId,
+                    nameOf = ::nameOf,
+                    onDotsMove = { onDotsMove(game.id, it) },
+                    onGomokuMove = { onGomokuMove(game.id, it) },
+                    onSendGame = onSendGame,
+                    onDelete = { deleteId = game.id },
+                )
+            }
 
             quizView is QuizView.KnowMeAnswer -> {
                 val mySheet = quiz.sheets.firstOrNull { it.owner == myId }
@@ -174,12 +179,13 @@ fun EntertainmentScreen(
                             modifier = Modifier.padding(top = 16.dp),
                         )
                     }
+                    val sheetOwner = sheet.owner
                     KnowMeForm(
                         questions = KNOW_ME_QUESTIONS,
                         initialAnswers = attempt?.answers.orEmpty(),
                         bengali = bengali,
                         onDone = { answers ->
-                            onSaveKnowMeAttempt(sheet.owner, answers)
+                            onSaveKnowMeAttempt(sheetOwner, answers)
                             Toast.makeText(context, R.string.quiz_saved, Toast.LENGTH_SHORT).show()
                             quizView = null
                         },
@@ -200,12 +206,13 @@ fun EntertainmentScreen(
                         modifier = Modifier.padding(top = 16.dp),
                     )
                 }
+                val viewKey = view.key
                 WrForm(
                     questions = view.questions,
                     initialAnswers = mineRec?.answers.orEmpty(),
                     bengali = bengali,
                     onDone = { answers ->
-                        onSaveWr(view.key, answers)
+                        onSaveWr(viewKey, answers)
                         Toast.makeText(context, R.string.quiz_saved, Toast.LENGTH_SHORT).show()
                         quizView = null
                     },

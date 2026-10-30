@@ -41,6 +41,7 @@ private val BOARD_PAD = 28.dp
  * Dots and Boxes board. Dots are drawn, claimed edges are solid, unclaimed edges
  * are faint so the grid stays visible. Tapping near an edge plays it.
  */
+@OptIn(ExperimentalStdlibApi::class)
 @Composable
 fun DotsBoxesBoard(
     state: DotsBoxesState,
@@ -147,6 +148,7 @@ fun DotsBoxesBoard(
  * Gomoku board: 13x13 intersections with star points. Tapping near an
  * intersection plays there.
  */
+@OptIn(ExperimentalStdlibApi::class)
 @Composable
 fun GomokuBoard(
     state: GomokuState,

@@ -91,7 +91,7 @@ object GameAi {
                 best = move
             }
         }
-        return best ?: GomokuMove(candidates.first())
+        return best ?: candidates.first()
     }
 
     /** A move that wins immediately for [player], if one exists. */

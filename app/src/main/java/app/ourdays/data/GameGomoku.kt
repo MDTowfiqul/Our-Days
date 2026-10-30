@@ -5,7 +5,7 @@ package app.ourdays.data
  * Cells: 0 = empty, 1 = player 1, 2 = player 2. Index = row * SIZE + col.
  */
 data class GomokuState(
-    val cells: List<Int> = List(SIZE * SIZE) { 0 },
+    val cells: List<Int> = List(Gomoku.SIZE * Gomoku.SIZE) { 0 },
     val turn: Int = 1,
     val finished: Boolean = false,
     /** Winner: 1, 2, or 0 for a draw; only meaningful when finished */

@@ -537,4 +537,27 @@
     <string name="cloud_drive_unavailable">Google Drive is only available in the Play Store version.</string>
     <string name="cloud_pick_account">Choose Google account</string>
     <string name="cloud_sign_out">Sign out</string>
+
+    <string name="chat_title">Our Chat</string>
+    <string name="chat_open_settings">Open settings</string>
+    <string name="chat_not_paired_title">Not paired yet</string>
+    <string name="chat_not_paired_text">To chat, first pair this phone with your partner\'s phone in Settings → Sync.</string>
+    <string name="chat_setup_title">Set up Our Chat</string>
+    <string name="chat_setup_intro">Both phones must use the same Telegram channel:\n1. Create a bot with @BotFather.\n2. Create a channel and make the bot an admin.\n3. Enter the same bot token and channel ID on both phones.</string>
+    <string name="chat_bot_token">Bot token</string>
+    <string name="chat_channel_id">Channel ID</string>
+    <string name="chat_reuse_cloud">Use cloud backup Telegram settings</string>
+    <string name="chat_save">Save</string>
+    <string name="chat_test">Test connection</string>
+    <string name="chat_test_ok">Connection works.</string>
+    <string name="chat_test_failed">Connection failed. Check the token and channel ID.</string>
+    <string name="chat_hint">Message…</string>
+    <string name="chat_send">Send</string>
+    <string name="chat_refresh">Refresh</string>
+    <string name="chat_empty">No messages yet. Send the first one.</string>
+    <string name="chat_you">You</string>
+    <string name="chat_partner">Partner</string>
+    <string name="chat_error">Something went wrong. Try again.</string>
+    <string name="chat_disable">Disable chat</string>
+    <string name="chat_fdroid_note">The F-Droid version has no internet, so chat cannot work here.</string>
 </resources>

@@ -57,6 +57,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Cake
 import androidx.compose.material.icons.rounded.CardGiftcard
+import androidx.compose.material.icons.rounded.Chat
 import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -110,6 +111,7 @@ fun HomeScreen(
     settings: LoveSettings,
     today: LocalDate,
     onOpenSettings: () -> Unit,
+    onOpenChat: () -> Unit = {},
     onPageChange: (Int) -> Unit,
     onAddMoment: (String?) -> Unit = {},
     onOpenMoment: (app.ourdays.data.Moment) -> Unit = {},
@@ -191,6 +193,20 @@ fun HomeScreen(
                 Icon(
                     Icons.Rounded.Settings,
                     contentDescription = stringResource(R.string.settings),
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            Box(
+                Modifier
+                    .size(BarItemHeight)
+                    .clip(CircleShape)
+                    .clickable(onClick = onOpenChat),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.Chat,
+                    contentDescription = stringResource(R.string.chat_title),
                     tint = Color.White,
                     modifier = Modifier.size(22.dp),
                 )

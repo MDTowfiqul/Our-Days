@@ -532,4 +532,27 @@
     <string name="cloud_drive_unavailable">গুগল ড্রাইভ শুধু প্লে স্টোর সংস্করণে আছে।</string>
     <string name="cloud_pick_account">গুগল অ্যাকাউন্ট বেছে নাও</string>
     <string name="cloud_sign_out">সাইন আউট</string>
+
+    <string name="chat_title">আমাদের চ্যাট</string>
+    <string name="chat_open_settings">সেটিংস খুলুন</string>
+    <string name="chat_not_paired_title">এখনো পেয়ার করা হয়নি</string>
+    <string name="chat_not_paired_text">চ্যাট করতে প্রথমে সেটিংস → সিঙ্ক থেকে আপনার সঙ্গীর ফোনের সাথে পেয়ার করুন।</string>
+    <string name="chat_setup_title">আমাদের চ্যাট সেটআপ</string>
+    <string name="chat_setup_intro">দুটি ফোনেই একই টেলিগ্রাম চ্যানেল ব্যবহার করতে হবে:\n১. @BotFather থেকে একটি বট বানান।\n২. একটি চ্যানেল বানিয়ে বটটিকে অ্যাডমিন করুন।\n৩. দুটি ফোনেই একই বট টোকেন ও চ্যানেল আইডি দিন।</string>
+    <string name="chat_bot_token">বট টোকেন</string>
+    <string name="chat_channel_id">চ্যানেল আইডি</string>
+    <string name="chat_reuse_cloud">ক্লাউড ব্যাকআপের টেলিগ্রাম সেটিংস ব্যবহার করুন</string>
+    <string name="chat_save">সংরক্ষণ করুন</string>
+    <string name="chat_test">সংযোগ পরীক্ষা করুন</string>
+    <string name="chat_test_ok">সংযোগ ঠিক আছে।</string>
+    <string name="chat_test_failed">সংযোগ ব্যর্থ হয়েছে। টোকেন ও চ্যানেল আইডি ঠিক আছে কি না দেখুন।</string>
+    <string name="chat_hint">বার্তা লিখুন…</string>
+    <string name="chat_send">পাঠান</string>
+    <string name="chat_refresh">রিফ্রেশ করুন</string>
+    <string name="chat_empty">এখনো কোনো বার্তা নেই। প্রথম বার্তাটি পাঠান।</string>
+    <string name="chat_you">আপনি</string>
+    <string name="chat_partner">সঙ্গী</string>
+    <string name="chat_error">কিছু ভুল হয়েছে। আবার চেষ্টা করুন।</string>
+    <string name="chat_disable">চ্যাট বন্ধ করুন</string>
+    <string name="chat_fdroid_note">F-Droid সংস্করণে ইন্টারনেট নেই, তাই চ্যাট এখানে কাজ করবে না।</string>
 </resources>

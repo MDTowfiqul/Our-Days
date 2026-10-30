@@ -538,10 +538,10 @@
     <string name="chat_not_paired_title">এখনো পেয়ার করা হয়নি</string>
     <string name="chat_not_paired_text">চ্যাট করতে প্রথমে সেটিংস → সিঙ্ক থেকে আপনার সঙ্গীর ফোনের সাথে পেয়ার করুন।</string>
     <string name="chat_setup_title">আমাদের চ্যাট সেটআপ</string>
-    <string name="chat_setup_intro">দুটি ফোনেই একই টেলিগ্রাম চ্যানেল ব্যবহার করতে হবে:\n১. @BotFather থেকে একটি বট বানান।\n২. একটি চ্যানেল বানিয়ে বটটিকে অ্যাডমিন করুন।\n৩. দুটি ফোনেই একই বট টোকেন ও চ্যানেল আইডি দিন।</string>
-    <string name="chat_bot_token">বট টোকেন</string>
+    <string name="chat_setup_intro">দুটি ফোনে একই চ্যানেল ব্যবহার করতে হবে, কিন্তু প্রতিটি ফোনের আলাদা বট লাগবে। টেলিগ্রাম একটি বটকে তার নিজের বার্তা দেখায় না, তাই একই বট দুটি ফোনে ব্যবহার করলে বার্তা পৌঁছাবে না:\n১. @BotFather থেকে দুটি বট বানান।\n২. একটি চ্যানেল বানিয়ে দুটি বটকেই অ্যাডমিন করুন।\n৩. দুটি ফোনে একই চ্যানেল আইডি দিন, কিন্তু প্রতিটি ফোনে শুধু তার নিজের বট টোকেন দিন।</string>
+    <string name="chat_bot_token">আমার বট টোকেন (এই ফোনের)</string>
     <string name="chat_channel_id">চ্যানেল আইডি</string>
-    <string name="chat_reuse_cloud">ক্লাউড ব্যাকআপের টেলিগ্রাম সেটিংস ব্যবহার করুন</string>
+    <string name="chat_reuse_cloud">ক্লাউড ব্যাকআপের চ্যানেল আইডি ব্যবহার করুন</string>
     <string name="chat_save">সংরক্ষণ করুন</string>
     <string name="chat_test">সংযোগ পরীক্ষা করুন</string>
     <string name="chat_test_ok">সংযোগ ঠিক আছে।</string>
@@ -555,4 +555,15 @@
     <string name="chat_error">কিছু ভুল হয়েছে। আবার চেষ্টা করুন।</string>
     <string name="chat_disable">চ্যাট বন্ধ করুন</string>
     <string name="chat_fdroid_note">F-Droid সংস্করণে ইন্টারনেট নেই, তাই চ্যাট এখানে কাজ করবে না।</string>
+    <string name="chat_settings">চ্যাট সেটিংস</string>
+    <string name="chat_attach">ছবি বা ভিডিও যুক্ত করুন</string>
+    <string name="chat_photo">ছবি</string>
+    <string name="chat_video">ভিডিও</string>
+    <string name="chat_media_too_large">ফাইলটি অনেক বড়। সর্বোচ্চ ৫০ MB পাঠানো যাবে।</string>
+    <string name="chat_media_failed">ছবি বা ভিডিও পাঠানো যায়নি। আবার চেষ্টা করুন।</string>
+    <string name="chat_decrypt_failed">কিছু বার্তা খোলা যায়নি। দুটি ফোনের পেয়ারিং কী এক নাও হতে পারে — সেটিংস → সিঙ্ক থেকে আবার পেয়ার করুন।</string>
+    <string name="chat_tap_to_play">চালাতে ট্যাপ করুন</string>
+    <string name="chat_shared_photo">শেয়ার করা ছবি</string>
+    <string name="chat_shared_video">শেয়ার করা ভিডিও</string>
+    <string name="chat_sending">পাঠানো হচ্ছে…</string>
 </resources>

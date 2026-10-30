@@ -573,7 +573,7 @@
     <string name="premium_source_code">Unlocked with a code</string>
     <string name="premium_source_sync">Shared by your partner</string>
     <string name="premium_buy">Unlock premium</string>
-    <string name="premium_buy_summary">One-time purchase, no subscription. One partner's purchase unlocks premium for both of you.</string>
+    <string name="premium_buy_summary">One-time purchase, no subscription. One partner\'s purchase unlocks premium for both of you.</string>
     <string name="premium_buy_failed">The purchase could not be completed.</string>
     <string name="premium_unlocked">Premium unlocked.</string>
     <string name="premium_code_hint">Unlock code from your partner</string>

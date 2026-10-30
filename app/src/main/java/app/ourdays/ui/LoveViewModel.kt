@@ -13,6 +13,7 @@ import app.ourdays.data.AutoBackup
 import app.ourdays.data.DatePlan
 import app.ourdays.data.LoveRepository
 import app.ourdays.data.PremiumUnlockCode
+import app.ourdays.data.PremiumEntitlement
 import app.ourdays.update.UpdateChecker
 import app.ourdays.update.UpdateInstaller
 import app.ourdays.data.LoveSettings
@@ -137,7 +138,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
             return@launch
         }
         repo.savePremiumEntitlement(
-            app.ourdays.data.PremiumEntitlement("code:$payload", System.currentTimeMillis(), "code"),
+            PremiumEntitlement("code:$payload", System.currentTimeMillis(), "code"),
         )
         Toast.makeText(app, app.getString(R.string.premium_unlocked), Toast.LENGTH_SHORT).show()
     }

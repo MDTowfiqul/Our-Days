@@ -79,6 +79,14 @@ object PremiumUnlockCode {
         if (orderId.startsWith("code:")) codeFromPayload(orderId.removePrefix("code:")) else codeFromOrderId(orderId)
 
     /**
+     * Derives a payload from a Play order ID (SHA-256, mapped through the
+     * same alphabet), then formats it via [codeFromPayload] so [parse]
+     * accepts the resulting code. The real order ID is never shown.
+     */
+    fun codeFromOrderId(orderId: String): String =
+        codeFromPayload(encodeChars(sha("ourdays-premium-order:$orderId"), PAYLOAD_LEN))
+
+    /**
      * Returns the payload when [code] is well-formed (dashes, spaces and
      * lowercase are ignored), null otherwise. The payload becomes the
      * entitlement ID ("code:<payload>") — the real order ID is never shared.

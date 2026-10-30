@@ -543,10 +543,10 @@
     <string name="chat_not_paired_title">Not paired yet</string>
     <string name="chat_not_paired_text">To chat, first pair this phone with your partner\'s phone in Settings → Sync.</string>
     <string name="chat_setup_title">Set up Our Chat</string>
-    <string name="chat_setup_intro">Both phones must use the same Telegram channel:\n1. Create a bot with @BotFather.\n2. Create a channel and make the bot an admin.\n3. Enter the same bot token and channel ID on both phones.</string>
-    <string name="chat_bot_token">Bot token</string>
+    <string name="chat_setup_intro">Both phones use the same channel, but each phone needs its own bot. Telegram never shows a bot its own messages, so one shared bot can never deliver messages:\n1. Create two bots with @BotFather.\n2. Create a channel and make both bots admins.\n3. Enter the same channel ID on both phones, but each phone only its own bot token.</string>
+    <string name="chat_bot_token">My bot token (this phone)</string>
     <string name="chat_channel_id">Channel ID</string>
-    <string name="chat_reuse_cloud">Use cloud backup Telegram settings</string>
+    <string name="chat_reuse_cloud">Use cloud backup channel ID</string>
     <string name="chat_save">Save</string>
     <string name="chat_test">Test connection</string>
     <string name="chat_test_ok">Connection works.</string>
@@ -560,4 +560,15 @@
     <string name="chat_error">Something went wrong. Try again.</string>
     <string name="chat_disable">Disable chat</string>
     <string name="chat_fdroid_note">The F-Droid version has no internet, so chat cannot work here.</string>
+    <string name="chat_settings">Chat settings</string>
+    <string name="chat_attach">Attach photo or video</string>
+    <string name="chat_photo">Photo</string>
+    <string name="chat_video">Video</string>
+    <string name="chat_media_too_large">That file is too large to send (max 50 MB).</string>
+    <string name="chat_media_failed">Could not send that photo or video. Try again.</string>
+    <string name="chat_decrypt_failed">Some messages could not be opened. The two phones may not share the same pairing key — re-pair them in Settings → Sync and try again.</string>
+    <string name="chat_tap_to_play">Tap to play</string>
+    <string name="chat_shared_photo">Shared photo</string>
+    <string name="chat_shared_video">Shared video</string>
+    <string name="chat_sending">Sending…</string>
 </resources>

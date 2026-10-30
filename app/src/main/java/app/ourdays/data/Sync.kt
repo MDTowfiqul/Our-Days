@@ -195,6 +195,12 @@ data class SyncData(
     val deleted: Map<String, Long>,
     /** Wer die Datei geschickt hat (ID einer [Person]) */
     val from: String?,
+    /** Geplante Dates (Our Dates), leer = keine oder alte Version ohne Dates */
+    val dates: List<DatePlan> = emptyList(),
+    /** ID gelöschter Dates mit Zeitpunkt des Löschens */
+    val deletedDates: Map<String, Long> = emptyMap(),
+    /** Premium-Nachweis (Our Dates), null = kein Premium auf dem sendenden Handy */
+    val premium: PremiumEntitlement? = null,
 )
 
 object SyncCodec {
@@ -217,6 +223,12 @@ object SyncCodec {
             JSONArray(MomentCodec.encode(d.moments.map { m -> m.copy(photoPaths = m.photoPaths.map { java.io.File(it).name }) })),
         )
         .put("deleted", JSONObject().apply { d.deleted.forEach { (id, time) -> put(id, time) } })
+        .put("dates", JSONArray(DatePlanCodec.encode(d.dates)))
+        .put("deletedDates", JSONObject().apply { d.deletedDates.forEach { (id, time) -> put(id, time) } })
+        .put(
+            "premium",
+            d.premium?.let { JSONObject(PremiumEntitlementCodec.encode(it)) } ?: JSONObject.NULL,
+        )
         .toString()
 
     fun decode(json: String): SyncData {
@@ -224,6 +236,7 @@ object SyncCodec {
         require(o.optString("app") == APP || o.optString("app") == "app.sinceus") { "not an Our Days sync file" }
         require(o.optInt("format", 0) in 1..FORMAT) { "unsupported sync format" }
         val deleted = o.optJSONObject("deleted")
+        val deletedDates = o.optJSONObject("deletedDates")
         return SyncData(
             people = PeopleCodec.decodePeople(o.optJSONArray("people")?.toString()).orEmpty(),
             relationships = PeopleCodec.decodeRelationships(o.optJSONArray("relationships")?.toString()).orEmpty(),
@@ -231,6 +244,9 @@ object SyncCodec {
                 .map { m -> m.copy(photoPaths = m.photoPaths.mapNotNull { it.takeIf { name -> Backup.isSafeName(name) } }) },
             deleted = deleted?.keys()?.asSequence()?.associateWith { deleted.optLong(it) }.orEmpty(),
             from = if (o.isNull("from")) null else o.optString("from").ifBlank { null },
+            dates = DatePlanCodec.decode(o.optJSONArray("dates")?.toString()),
+            deletedDates = deletedDates?.keys()?.asSequence()?.associateWith { deletedDates.optLong(it) }.orEmpty(),
+            premium = if (o.isNull("premium")) null else PremiumEntitlementCodec.decode(o.optJSONObject("premium")?.toString()),
         )
     }
 }
@@ -246,6 +262,11 @@ data class MergeResult(
     val added: Int,
     val changed: Int,
     val removed: Int,
+    /** Zusammengeführte Dates (Our Dates), sortiert nach Datum */
+    val dates: List<DatePlan> = emptyList(),
+    val deletedDates: Map<String, Long> = emptyMap(),
+    /** Zusammengeführter Premium-Nachweis, null = keine Seite hat Premium */
+    val premium: PremiumEntitlement? = null,
 )
 
 object SyncMerge {
@@ -260,6 +281,9 @@ object SyncMerge {
         moments: List<Moment>,
         deleted: Map<String, Long>,
         remote: SyncData,
+        dates: List<DatePlan> = emptyList(),
+        deletedDates: Map<String, Long> = emptyMap(),
+        premium: PremiumEntitlement? = null,
     ): MergeResult {
         val allDeleted = (deleted.keys + remote.deleted.keys).associateWith { maxOf(deleted[it] ?: 0, remote.deleted[it] ?: 0) }
         val byId = moments.associateBy { it.id }.toMutableMap()
@@ -295,6 +319,21 @@ object SyncMerge {
             ).take(MAX_PEOPLE)
         val mergedRelationships = (relationships + remote.relationships.filter { r -> relationships.none { it.id == r.id } })
             .take(MAX_RELATIONSHIPS)
+        // Dates: gleiche Regel wie bei Momenten — jüngere Änderung gewinnt, gelöschte bleiben gelöscht
+        val allDeletedDates = (deletedDates.keys + remote.deletedDates.keys)
+            .associateWith { maxOf(deletedDates[it] ?: 0, remote.deletedDates[it] ?: 0) }
+        val datesById = dates.associateBy { it.id }.toMutableMap()
+        remote.dates.forEach { d ->
+            val gone = allDeletedDates[d.id]
+            if (gone != null && gone >= d.updatedAt) return@forEach
+            val local = datesById[d.id]
+            if (local != null && local.updatedAt >= d.updatedAt) return@forEach
+            datesById[d.id] = d
+        }
+        allDeletedDates.forEach { (id, time) ->
+            val local = datesById[id]
+            if (local != null && local.updatedAt <= time) datesById.remove(id)
+        }
         return MergeResult(
             people = mergedPeople,
             relationships = mergedRelationships,
@@ -305,6 +344,9 @@ object SyncMerge {
             added = added,
             changed = changed,
             removed = removed,
+            dates = datesById.values.sortedBy { it.date },
+            deletedDates = allDeletedDates.filterValues { it > System.currentTimeMillis() - YEAR_MS },
+            premium = mergePremium(premium, remote.premium),
         )
     }
 

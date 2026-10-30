@@ -107,6 +107,19 @@ object Notifier {
                 lines += line(r, context.getString(res, Texts.milestoneTitle(context, m)))
             }
         }
+        // Our Dates: eigene Vorab-Erinnerung je Date (nicht die globale oben),
+        // nur wenn die Beziehung des Dates Mitteilungen nicht ausgeschaltet hat
+        fun dateRelation(plan: app.ourdays.data.DatePlan) =
+            settings.relationships.firstOrNull { it.id == plan.relationshipId }
+        settings.dates.filter { dateRelation(it)?.notify != false }.forEach { plan ->
+            when {
+                plan.date == today -> lines += line(dateRelation(plan), context.getString(R.string.msg_date, plan.title))
+                plan.remindBefore > 0 && plan.date == today.plusDays(plan.remindBefore.toLong()) -> {
+                    val res = if (plan.remindBefore == 1) R.string.remind_tomorrow else R.string.remind_in_week
+                    lines += line(dateRelation(plan), context.getString(res, plan.title))
+                }
+            }
+        }
         if (lines.isEmpty()) return null
         val title = when {
             involved.size == 1 -> shown(involved.first())

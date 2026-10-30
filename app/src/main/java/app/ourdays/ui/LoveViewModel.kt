@@ -1,13 +1,18 @@
 package app.ourdays.ui
 
+import android.app.Activity
 import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import android.widget.Toast
+import app.ourdays.BuildConfig
 import app.ourdays.R
+import app.ourdays.billing.PremiumBillingProvider
 import app.ourdays.data.AutoBackup
+import app.ourdays.data.DatePlan
 import app.ourdays.data.LoveRepository
+import app.ourdays.data.PremiumUnlockCode
 import app.ourdays.update.UpdateChecker
 import app.ourdays.update.UpdateInstaller
 import app.ourdays.data.LoveSettings
@@ -50,6 +55,14 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
         }
         // Große Fotos (z. B. aus älteren Versionen) einmal verkleinern, damit Sicherungen klein bleiben
         viewModelScope.launch { if (repo.shrinkPhotos() > 0) LoveWidget.refresh(app) }
+        // Play-Variante: gekaufte Premium-Freischaltung nach Neuinstallation wiederherstellen
+        if (BuildConfig.FLAVOR == "play") {
+            viewModelScope.launch {
+                runCatching { PremiumBillingProvider.create(app).queryOwned() }.getOrNull()?.let { owned ->
+                    if (repo.current().premium != owned) repo.savePremiumEntitlement(owned)
+                }
+            }
+        }
     }
 
     /** Gewünschter Sprung von einer App-Abkürzung: "moment" oder "live", null = keiner */
@@ -94,6 +107,51 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
     fun saveMoment(moment: app.ourdays.data.Moment, newPhotos: List<Uri>, removedPhotos: List<String>) =
         viewModelScope.launch { repo.saveMoment(moment, newPhotos, removedPhotos) }
     fun deleteMoment(id: String) = viewModelScope.launch { repo.deleteMoment(id) }
+
+    /** Our Dates: Date speichern (nur mit Premium erreichbar, die Prüfung liegt in der UI) */
+    fun saveDate(plan: DatePlan) = viewModelScope.launch { repo.saveDate(plan) }
+    fun deleteDate(id: String) = viewModelScope.launch { repo.deleteDate(id) }
+
+    /** Our Dates: Premium über Google Play kaufen (nur Play-Variante). */
+    fun buyPremium(activity: Activity) = viewModelScope.launch {
+        val app = getApplication<Application>()
+        try {
+            val entitlement = PremiumBillingProvider.create(app).launchPurchase(activity)
+            if (entitlement != null) {
+                repo.savePremiumEntitlement(entitlement)
+                Toast.makeText(app, app.getString(R.string.premium_unlocked), Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("SinceUs", "Premium-Kauf fehlgeschlagen", e)
+            Toast.makeText(app, app.getString(R.string.premium_buy_failed), Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /** Our Dates: Premium mit einem Code des Partners freischalten (alle Varianten). */
+    fun unlockPremiumWithCode(code: String) = viewModelScope.launch {
+        val app = getApplication<Application>()
+        val payload = PremiumUnlockCode.parse(code)
+        if (payload == null) {
+            Toast.makeText(app, app.getString(R.string.premium_code_invalid), Toast.LENGTH_LONG).show()
+            return@launch
+        }
+        repo.savePremiumEntitlement(
+            app.ourdays.data.PremiumEntitlement("code:$payload", System.currentTimeMillis(), "code"),
+        )
+        Toast.makeText(app, app.getString(R.string.premium_unlocked), Toast.LENGTH_SHORT).show()
+    }
+
+    /** Our Dates: gekauften Premium-Zugang erneut bei Play abfragen (nur Play-Variante). */
+    fun restorePremium() = viewModelScope.launch {
+        val app = getApplication<Application>()
+        val owned = runCatching { PremiumBillingProvider.create(app).queryOwned() }.getOrNull()
+        if (owned != null) {
+            repo.savePremiumEntitlement(owned)
+            Toast.makeText(app, app.getString(R.string.premium_unlocked), Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(app, app.getString(R.string.premium_restore_none), Toast.LENGTH_LONG).show()
+        }
+    }
     fun setShowMoments(show: Boolean) = viewModelScope.launch { repo.setShowMoments(show) }
     fun setShowLive(show: Boolean) = viewModelScope.launch { repo.setShowLive(show) }
     fun setShowFacts(show: Boolean) = viewModelScope.launch { repo.setShowFacts(show) }

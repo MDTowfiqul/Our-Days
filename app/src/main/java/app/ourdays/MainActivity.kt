@@ -51,6 +51,8 @@ import app.ourdays.data.Changelog
 import app.ourdays.data.MAX_SLIDES
 import app.ourdays.notify.Notifier
 import app.ourdays.share.ShareCard
+import app.ourdays.ui.DateEditorScreen
+import app.ourdays.ui.SettingsPage
 import app.ourdays.ui.HomeScreen
 import app.ourdays.ui.LicensesScreen
 import app.ourdays.ui.LockScreen
@@ -99,11 +101,15 @@ class MainActivity : ComponentActivity() {
                 val autoBackup by vm.autoBackup.collectAsStateWithLifecycle()
                 val scope = rememberCoroutineScope()
                 var showSettings by rememberSaveable { mutableStateOf(false) }
+                // Einstellungen direkt auf einer Unterseite öffnen (z. B. Premium aus Our Dates)
+                var settingsPage by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
                 var editingPhoto by rememberSaveable { mutableStateOf(false) }
                 var showLicenses by rememberSaveable { mutableStateOf(false) }
                 // Moment-Editor: null = zu, "" = neuer Moment, sonst ID; dazu optional ein vorgeschlagener Titel
                 var editingMoment by rememberSaveable { mutableStateOf<String?>(null) }
                 var momentSuggestion by rememberSaveable { mutableStateOf<String?>(null) }
+                // Date-Editor (Our Dates): null = zu, "" = neues Date, sonst ID
+                var editingDate by rememberSaveable { mutableStateOf<String?>(null) }
                 var onboardingStep by rememberSaveable { mutableIntStateOf(0) }
                 // Ändert sich bei jedem Zurückkehren, damit der Berechtigungsstatus neu gelesen wird
                 var resumeCount by rememberSaveable { mutableIntStateOf(0) }
@@ -231,12 +237,16 @@ class MainActivity : ComponentActivity() {
                 // ob es wirklich eine Sicherung ist, prüft die App beim Laden selbst
                 fun loadBackup() = backupLoader.launch(arrayOf("*/*"))
 
-                BackHandler(enabled = showSettings || editingPhoto || editingMoment != null || showLicenses) {
+                BackHandler(enabled = showSettings || editingPhoto || editingMoment != null || editingDate != null || showLicenses) {
                     when {
                         showLicenses -> showLicenses = false
                         editingMoment != null -> editingMoment = null
+                        editingDate != null -> editingDate = null
                         editingPhoto -> editingPhoto = false
-                        else -> showSettings = false
+                        else -> {
+                            showSettings = false
+                            settingsPage = null
+                        }
                     }
                 }
 
@@ -245,6 +255,7 @@ class MainActivity : ComponentActivity() {
                     s == null -> "loading"
                     editingPhoto && s.photoPath != null -> "editor"
                     editingMoment != null && s.onboardingDone -> "moment"
+                    editingDate != null && s.onboardingDone -> "date"
                     !s.onboardingDone -> "onboarding"
                     showSettings && showLicenses -> "licenses"
                     showSettings -> "settings"
@@ -294,6 +305,21 @@ class MainActivity : ComponentActivity() {
                                     defaultRelationship = if (s.showAll) null else s.relationship.id,
                                     onShare = { ShareCard.shareMoment(this@MainActivity, s, it, today) },
                                 )
+                                "date" -> DateEditorScreen(
+                                    existing = s.dates.firstOrNull { it.id == editingDate },
+                                    defaultDate = today,
+                                    onClose = { editingDate = null },
+                                    onSave = { plan ->
+                                        vm.saveDate(plan)
+                                        editingDate = null
+                                    },
+                                    onDelete = {
+                                        vm.deleteDate(it.id)
+                                        editingDate = null
+                                    },
+                                    relationships = s.relationships.map { it.id to s.namesOf(it) },
+                                    defaultRelationship = if (s.showAll) null else s.relationship.id,
+                                )
                                 "editor" -> PhotoEditorScreen(
                                     settings = s,
                                     onPickOther = ::pickPhoto,
@@ -325,7 +351,10 @@ class MainActivity : ComponentActivity() {
                                 "settings" -> SettingsScreen(
                                     settings = s,
                                     notificationsAllowed = allowed,
-                                    onBack = { showSettings = false },
+                                    onBack = {
+                                        showSettings = false
+                                        settingsPage = null
+                                    },
                                     onPickPhoto = ::pickPhoto,
                                     onPreset = vm::setPreset,
                                     onResetPhoto = vm::resetPhoto,
@@ -390,6 +419,10 @@ class MainActivity : ComponentActivity() {
                                         onSend = { vm.shareSync() },
                                         onOpen = { syncOpener.launch(arrayOf("*/*")) },
                                     ),
+                                    initialPage = settingsPage,
+                                    onBuyPremium = { vm.buyPremium(this@MainActivity) },
+                                    onUnlockWithCode = vm::unlockPremiumWithCode,
+                                    onRestorePurchase = vm::restorePremium,
                                 )
                                 else -> HomeScreen(
                                     s,
@@ -406,6 +439,12 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onNewestFirst = vm::setNewestFirst,
                                     onSelect = vm::setSelected,
+                                    onAddDate = { editingDate = "" },
+                                    onOpenDate = { editingDate = it.id },
+                                    onOpenPremium = {
+                                        settingsPage = SettingsPage.Premium
+                                        showSettings = true
+                                    },
                                     jumpTo = homeJump,
                                     onJumped = { homeJump = null },
                                 )

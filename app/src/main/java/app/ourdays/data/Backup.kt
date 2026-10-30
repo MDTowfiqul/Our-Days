@@ -79,6 +79,7 @@ object BackupCodec {
             "moments",
             JSONArray(MomentCodec.encode(s.moments.map { m -> m.copy(photoPaths = m.photoPaths.map { File(it).name }) })),
         )
+        .put("dates", JSONArray(DatePlanCodec.encode(s.dates)))
         .toString(2)
 
     /** Liest eine Sicherung; wirft eine Exception, wenn es keine (passende) Sicherung von Since Us ist. */
@@ -137,6 +138,7 @@ object BackupCodec {
             moments = MomentCodec.decode(o.optJSONArray("moments")?.toString())
                 .map { m -> m.copy(photoPaths = m.photoPaths.mapNotNull { fileName(it) }) }
                 .sortedBy { it.date },
+            dates = DatePlanCodec.decode(o.optJSONArray("dates")?.toString()).sortedBy { it.date },
             showMoments = o.optBoolean("showMoments", d.showMoments),
             showLive = o.optBoolean("showLive", d.showLive),
             showFacts = o.optBoolean("showFacts", d.showFacts),

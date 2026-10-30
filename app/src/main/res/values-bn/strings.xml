@@ -532,4 +532,57 @@
     <string name="cloud_drive_unavailable">গুগল ড্রাইভ শুধু প্লে স্টোর সংস্করণে আছে।</string>
     <string name="cloud_pick_account">গুগল অ্যাকাউন্ট বেছে নাও</string>
     <string name="cloud_sign_out">সাইন আউট</string>
+
+    <!-- Our Dates (Premium) -->
+    <string name="tab_dates">ডেট</string>
+    <string name="dates_title">আমাদের ডেটগুলো</string>
+    <string name="dates_upcoming">আসন্ন</string>
+    <string name="dates_past">পেরিয়ে যাওয়া ডেট</string>
+    <string name="dates_empty_title">এখনো কোনো ডেট ঠিক করা হয়নি</string>
+    <string name="dates_empty_sub">একসাথে কিছু সুন্দর পরিকল্পনা করো — রাতের খাবার, ভ্রমণ, হাঁটা।</string>
+    <string name="dates_add">ডেট ঠিক করো</string>
+    <string name="date_new">নতুন ডেট</string>
+    <string name="date_edit">ডেট সম্পাদনা করো</string>
+    <string name="date_field_title">শিরোনাম</string>
+    <string name="date_field_date">তারিখ</string>
+    <string name="date_field_time">সময়</string>
+    <string name="date_field_time_none">সময় নেই</string>
+    <string name="date_field_place">স্থান (ঐচ্ছিক)</string>
+    <string name="date_field_note">নোট</string>
+    <string name="date_field_remind">মনে করিয়ে দাও</string>
+    <string name="date_remind_none">সেদিনই</string>
+    <string name="date_remind_day_before">১ দিন আগে</string>
+    <string name="date_remind_week_before">১ সপ্তাহ আগে</string>
+    <string name="date_delete_question">এই ডেট মুছে ফেলবে?</string>
+    <string name="date_delete_text">ডেটটি এই ফোন থেকে সরিয়ে দেওয়া হবে।</string>
+    <string name="date_next">পরের ডেট</string>
+    <string name="msg_date">আজ ডেট: %1$s</string>
+    <plurals name="dates_count">
+        <item quantity="one">%s ডেট</item>
+        <item quantity="other">%s ডেট</item>
+    </plurals>
+    <string name="premium_title">প্রিমিয়াম</string>
+    <string name="premium_active">প্রিমিয়াম চালু আছে</string>
+    <string name="premium_free">ফ্রি সংস্করণ</string>
+    <string name="premium_source_play">গুগল প্লে থেকে কেনা</string>
+    <string name="premium_source_code">কোড দিয়ে চালু করা</string>
+    <string name="premium_source_sync">সঙ্গীর কাছ থেকে পাওয়া</string>
+    <string name="premium_buy">প্রিমিয়াম চালু করো</string>
+    <string name="premium_buy_summary">একবারের কেনা, কোনো সাবস্ক্রিপশন নয়। একজনের কেনা দুজনের জন্যই প্রিমিয়াম চালু করে।</string>
+    <string name="premium_buy_failed">কেনা সম্পন্ন করা যায়নি।</string>
+    <string name="premium_unlocked">প্রিমিয়াম চালু হয়েছে।</string>
+    <string name="premium_code_hint">সঙ্গীর কাছ থেকে পাওয়া আনলক কোড</string>
+    <string name="premium_code_enter">কোড দাও</string>
+    <string name="premium_code_invalid">কোডটি সঠিক নয়। আবার দেখে চেষ্টা করো।</string>
+    <string name="premium_code_text">তোমার সঙ্গী গুগল প্লেতে প্রিমিয়াম কিনলে তাদের প্রিমিয়াম সেটিংসে একটি কোড দেখাবে। সেটি এখানে দিলে এই ফোনেও প্রিমিয়াম চালু হবে।</string>
+    <string name="premium_sync_hint">অথবা কেনার পর একটি সিঙ্ক ফাইল পাঠাও: সঙ্গী সেটি খুললেই স্বয়ংক্রিয়ভাবে প্রিমিয়াম পেয়ে যাবে।</string>
+    <string name="premium_not_available">কেনা শুধু প্লে স্টোর সংস্করণে আছে। সঙ্গীকে সেখানে কিনতে বলো, তারপর তার কাছ থেকে আনলক কোড নাও।</string>
+    <string name="premium_restore">কেনা ফিরিয়ে আনো</string>
+    <string name="premium_restore_none">এই গুগল অ্যাকাউন্টে কোনো কেনা পাওয়া যায়নি।</string>
+    <string name="premium_locked_title">Our Dates একটি প্রিমিয়াম ফিচার</string>
+    <string name="premium_locked_text">একসাথে ডেট ঠিক করো, কাউন্টডাউন আর মনে করিয়ে দেওয়াসহ। প্রিমিয়াম একবার চালু করলেই দুজনের জন্য হবে।</string>
+    <string name="premium_show_code">আমার আনলক কোড দেখাও</string>
+    <string name="premium_code_title">তোমার আনলক কোড</string>
+    <string name="premium_code_share_text">এই কোড শুধু তোমার সঙ্গীর সাথে শেয়ার করো। এতে তাদের ফোনেও প্রিমিয়াম চালু হবে।</string>
+    <string name="premium_no_code">এখনো কোনো কোড নেই — আগে প্রিমিয়াম কেনো, তারপর এখানে কোড দেখা যাবে।</string>
 </resources>

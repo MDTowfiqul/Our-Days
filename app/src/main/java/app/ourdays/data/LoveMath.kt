@@ -12,7 +12,7 @@ data class Together(
     val totalDays: Long,
 )
 
-enum class MilestoneKind { YEARS, MONTHS, DAYS, WEEKS, MOMENT, BIRTHDAY, PLANNED }
+enum class MilestoneKind { YEARS, MONTHS, DAYS, WEEKS, MOMENT, BIRTHDAY, PLANNED, DATE }
 
 /**
  * Bei [MilestoneKind.MOMENT] ist [value] die Anzahl Jahre und [title] der Name des Moments,

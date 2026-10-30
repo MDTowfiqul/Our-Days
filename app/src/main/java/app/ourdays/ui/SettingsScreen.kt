@@ -222,6 +222,12 @@ fun SettingsScreen(
     /** Kopplung für den Abgleich, null = nicht gekoppelt */
     pairing: Pairing? = null,
     sync: SyncActions = SyncActions(),
+    /** Premium kaufen (nur Play-Variante) */
+    onBuyPremium: () -> Unit = {},
+    /** Premium mit einem Code des Partners freischalten */
+    onUnlockWithCode: (String) -> Unit = {},
+    /** Gekauften Premium-Zugang erneut bei Play abfragen */
+    onRestorePurchase: () -> Unit = {},
     /** Geöffnete Unterseite beim Start (für Tests), null = Übersicht */
     initialPage: SettingsPage? = null,
 ) {
@@ -579,6 +585,12 @@ fun SettingsScreen(
                             )
                         }
                     }
+                    SettingsPage.Premium -> PremiumPage(
+                        settings,
+                        onBuyPremium,
+                        onUnlockWithCode,
+                        onRestorePurchase,
+                    )
                 }
                 if (page == null) {
                     Spacer(Modifier.height(8.dp))
@@ -759,6 +771,7 @@ enum class SettingsPage(
 ) {
     Couple(R.string.settings_couple, Icons.Rounded.People, R.string.settings_group_love),
     Notifications(R.string.section_notifications, Icons.Rounded.NotificationsActive, R.string.settings_group_love),
+    Premium(R.string.premium_title, Icons.Rounded.CardGiftcard, R.string.settings_group_love),
     Photo(R.string.section_photo, Icons.Rounded.Palette, R.string.settings_group_app),
     Home(R.string.settings_home, Icons.Rounded.Dashboard, R.string.settings_group_app),
     Privacy(R.string.section_privacy, Icons.Rounded.Lock, R.string.settings_group_app),
@@ -820,6 +833,7 @@ private fun Overview(
         SettingsPage.Cloud to cloudBackupSummary(),
         SettingsPage.Sync to stringResource(if (pairing != null) R.string.sync_paired else R.string.sync_summary),
         SettingsPage.Reset to stringResource(R.string.reset_summary),
+        SettingsPage.Premium to stringResource(if (settings.isPremium) R.string.premium_active else R.string.premium_free),
         SettingsPage.About to if (updateReady) {
             stringResource(R.string.update_available, settings.updateVersion.orEmpty())
         } else {

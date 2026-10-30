@@ -106,6 +106,8 @@ class DatePlanTest {
 
     @Test
     fun mergePrefersNewerDatesAndKeepsDeletions() {
+        // Echter Zeitstempel: Merge vergisst Löschmerker, die älter als ein Jahr sind
+        val deletedAt = System.currentTimeMillis()
         val local = listOf(plan("a", today.plusDays(1), updated = 100))
         val remote = SyncData(
             people = emptyList(),
@@ -117,7 +119,7 @@ class DatePlanTest {
                 plan("a", today.plusDays(2), updated = 200),
                 plan("b", today.plusDays(3), updated = 50),
             ),
-            deletedDates = mapOf("c" to 300L),
+            deletedDates = mapOf("c" to deletedAt),
             premium = PremiumEntitlement("GPA.9999", 8000, "play"),
         )
         val merged = SyncMerge.merge(
@@ -132,7 +134,7 @@ class DatePlanTest {
         )
         assertEquals(listOf("a", "b"), merged.dates.map { it.id })
         assertEquals(today.plusDays(2), merged.dates.first { it.id == "a" }.date)
-        assertEquals(mapOf("c" to 300L), merged.deletedDates)
+        assertEquals(mapOf("c" to deletedAt), merged.deletedDates)
         assertEquals("GPA.9999", merged.premium?.orderId)
     }
 }

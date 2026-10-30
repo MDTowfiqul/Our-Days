@@ -8,23 +8,17 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import app.ourdays.data.PairingStore
 import java.util.concurrent.TimeUnit
 
 /**
- * Quiet background poll: fetches new chat messages into local history.
+ * Quiet background poll: fetches new chat messages into local history through
+ * the same ChatSync path the chat screen uses, so both see the same messages.
  * No notification yet — new messages are visible when the chat is opened.
  */
 class ChatWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        val context = applicationContext
-        val config = ChatConfigStore.load(context)
-        val pairing = PairingStore.load(context)
-        if (!config.enabled || !config.isConfigured || pairing == null) return Result.success()
         return try {
-            val raw = TelegramChat.fetch(config.botToken)
-            val decoded = raw.mapNotNull { ChatCrypto.decrypt(pairing.key, it.payload) }
-            ChatStore.merge(context, decoded)
+            ChatSync.refresh(applicationContext)
             Result.success()
         } catch (e: Exception) {
             Result.retry()

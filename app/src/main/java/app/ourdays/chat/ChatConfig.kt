@@ -2,12 +2,18 @@ package app.ourdays.chat
 
 import android.content.Context
 
-/** Our Chat setup: one shared Telegram channel for both partners. */
+/**
+ * Our Chat setup: one shared Telegram channel for both partners, but a bot per
+ * phone — see TelegramChat for why one shared bot cannot deliver messages.
+ */
 data class ChatConfig(
+    /** THIS phone's bot token (its own BotFather bot, admin of the shared channel) */
     val botToken: String = "",
     /** Shared channel chat id — the SAME value on both phones */
     val chatId: String = "",
     val enabled: Boolean = false,
+    /** Highest Telegram update id already processed by this phone's bot */
+    val lastUpdateId: Long = 0L,
 ) {
     val isConfigured: Boolean get() = botToken.isNotBlank() && chatId.isNotBlank()
 }
@@ -23,6 +29,7 @@ object ChatConfigStore {
             botToken = p.getString("bot_token", "").orEmpty(),
             chatId = p.getString("chat_id", "").orEmpty(),
             enabled = p.getBoolean("enabled", false),
+            lastUpdateId = p.getLong("last_update_id", 0L),
         )
     }
 
@@ -31,6 +38,7 @@ object ChatConfigStore {
             .putString("bot_token", config.botToken)
             .putString("chat_id", config.chatId)
             .putBoolean("enabled", config.enabled)
+            .putLong("last_update_id", config.lastUpdateId)
             .apply()
     }
 

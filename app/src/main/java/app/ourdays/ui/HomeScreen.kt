@@ -197,20 +197,6 @@ fun HomeScreen(
                     modifier = Modifier.size(22.dp),
                 )
             }
-            Box(
-                Modifier
-                    .size(BarItemHeight)
-                    .clip(CircleShape)
-                    .clickable(onClick = onOpenChat),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Rounded.Chat,
-                    contentDescription = stringResource(R.string.chat_title),
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
         }
         // Auf der Momente-Seite: eigener schwebender Hinzufügen-Knopf rechts unten,
         // losgelöst von der Leiste – damit man nicht erst ganz nach oben scrollen muss
@@ -234,6 +220,29 @@ fun HomeScreen(
                     modifier = Modifier.size(26.dp),
                 )
             }
+        }
+        // Freier Chat-Knopf, wie der Hinzufügen-Knopf der Momente: losgelöst von der
+        // Leiste, damit er nicht mit dem Einstellungs-Knopf zusammengedrängt ist. Auf
+        // der Momente-Seite sitzt er über dem Hinzufügen-Knopf, sonst unten rechts.
+        val isMomentsPage = pages[pager.currentPage] == HomePage.Moments
+        Box(
+            Modifier
+                .align(Alignment.BottomEnd)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(bottom = if (isMomentsPage) 84.dp else 16.dp, end = 16.dp)
+                .shadow(8.dp, CircleShape)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable(onClick = onOpenChat)
+                .size(56.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Rounded.Chat,
+                contentDescription = stringResource(R.string.chat_title),
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(26.dp),
+            )
         }
     }
 }

@@ -63,4 +63,49 @@ class TelegramChatParseTest {
             TelegramChat.parseUpdates(JSONObject().put("result", JSONArray())),
         )
     }
+
+    @Test
+    fun parsesMediaDocumentsWithChatCaption() {
+        val media = JSONObject()
+            .put("message_id", 20)
+            .put("date", 3000L)
+            .put("caption", "our-days-chat meta-envelope")
+            .put(
+                "document",
+                JSONObject().put("file_id", "file-1").put("file_name", "abc.jpg").put("mime_type", "image/jpeg"),
+            )
+        val notChat = JSONObject()
+            .put("message_id", 21)
+            .put("date", 3001L)
+            .put("caption", "a normal caption")
+            .put("document", JSONObject().put("file_id", "file-2"))
+        val noCaption = JSONObject()
+            .put("message_id", 22)
+            .put("date", 3002L)
+            .put("document", JSONObject().put("file_id", "file-3"))
+        val root = JSONObject().put("result", JSONArray(listOf(update(5, media), update(6, notChat), update(7, noCaption))))
+        val parsed = TelegramChat.parseMedia(root)
+        assertEquals(1, parsed.size)
+        assertEquals("file-1", parsed[0].fileId)
+        assertEquals("abc.jpg", parsed[0].fileName)
+        assertEquals("image/jpeg", parsed[0].mimeType)
+        assertEquals("our-days-chat meta-envelope", parsed[0].captionPayload)
+        assertEquals(5L, parsed[0].updateId)
+    }
+
+    @Test
+    fun maxUpdateIdTracksHighest() {
+        val root = JSONObject().put(
+            "result",
+            JSONArray(
+                listOf(
+                    update(3, null),
+                    update(9, JSONObject().put("message_id", 1).put("text", "our-days-chat x")),
+                    update(4, null),
+                ),
+            ),
+        )
+        assertEquals(9L, TelegramChat.maxUpdateId(root))
+        assertEquals(0L, TelegramChat.maxUpdateId(JSONObject()))
+    }
 }

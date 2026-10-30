@@ -216,6 +216,7 @@ fun SettingsScreen(
     onWidgetRelationship: (String) -> Unit = {},
     onDiscreet: (Boolean) -> Unit = {},
     onFont: (String) -> Unit = {},
+    onAccent: (String) -> Unit = {},
     /** App-Sperre mit Fingerabdruck, Gesicht oder PIN */
     appLock: Boolean = false,
     onAppLock: (Boolean) -> Unit = {},
@@ -324,28 +325,37 @@ fun SettingsScreen(
                             }
                         }
                     }
-                    SettingsPage.Photo -> Section(null) {
-                        Row(Icons.Rounded.AddPhotoAlternate, stringResource(R.string.pick_own_photo), null, onClick = onPickPhoto)
-                        Divider()
-                        if (settings.photoPath != null) {
-                            Row(Icons.Rounded.Crop, stringResource(R.string.adjust_crop), null, onClick = onAdjustPhoto)
+                    SettingsPage.Photo -> {
+                        Section(null) {
+                            Row(Icons.Rounded.AddPhotoAlternate, stringResource(R.string.pick_own_photo), null, onClick = onPickPhoto)
                             Divider()
+                            if (settings.photoPath != null) {
+                                Row(Icons.Rounded.Crop, stringResource(R.string.adjust_crop), null, onClick = onAdjustPhoto)
+                                Divider()
+                            }
+                            Row(Icons.Rounded.Collections, stringResource(R.string.pick_preset), null) { dialog = "presets" }
+                            Divider()
+                            Row(
+                                Icons.Rounded.Slideshow,
+                                stringResource(R.string.slideshow),
+                                if (settings.slides.isEmpty()) {
+                                    stringResource(R.string.slideshow_off)
+                                } else {
+                                    pluralStringResource(R.plurals.slideshow_count, settings.slides.size, settings.slides.size.toString())
+                                },
+                            ) { dialog = "slides" }
+                            Divider()
+                            Row(Icons.Rounded.RestartAlt, stringResource(R.string.reset_photo), null, onClick = onResetPhoto)
+                            Divider()
+                            Row(Icons.Rounded.TextFields, stringResource(R.string.font_title), AppFonts.find(settings.font).label()) { dialog = "font" }
                         }
-                        Row(Icons.Rounded.Collections, stringResource(R.string.pick_preset), null) { dialog = "presets" }
-                        Divider()
-                        Row(
-                            Icons.Rounded.Slideshow,
-                            stringResource(R.string.slideshow),
-                            if (settings.slides.isEmpty()) {
-                                stringResource(R.string.slideshow_off)
-                            } else {
-                                pluralStringResource(R.plurals.slideshow_count, settings.slides.size, settings.slides.size.toString())
-                            },
-                        ) { dialog = "slides" }
-                        Divider()
-                        Row(Icons.Rounded.RestartAlt, stringResource(R.string.reset_photo), null, onClick = onResetPhoto)
-                        Divider()
-                        Row(Icons.Rounded.TextFields, stringResource(R.string.font_title), AppFonts.find(settings.font).label()) { dialog = "font" }
+                        Section(stringResource(R.string.style_title)) {
+                            Row(
+                                Icons.Rounded.Palette,
+                                stringResource(R.string.accent_title),
+                                Accents.find(resolveAccentId(settings.accent, settings.isPremium)).label(),
+                            ) { dialog = "accent" }
+                        }
                     }
                     SettingsPage.Privacy -> Section(null) {
                         ListItem(
@@ -698,10 +708,31 @@ fun SettingsScreen(
             onLanguage(it)
         }
         "font" -> FontDialog(settings.font, onSelect = onFont, onDismiss = { dialog = null })
-        "presets" -> PresetDialog(settings.presetIndex, onDismiss = { dialog = null }) {
+        "presets" -> PresetDialog(
+            resolvePresetIndex(settings.presetIndex, settings.isPremium),
+            isPremium = settings.isPremium,
+            onDismiss = { dialog = null },
+            onLocked = {
+                dialog = null
+                page = SettingsPage.Premium
+            },
+        ) {
             onPreset(it)
             dialog = null
         }
+        "accent" -> AccentDialog(
+            settings.accent,
+            isPremium = settings.isPremium,
+            onSelect = {
+                onAccent(it)
+                dialog = null
+            },
+            onLocked = {
+                dialog = null
+                page = SettingsPage.Premium
+            },
+            onDismiss = { dialog = null },
+        )
         "slides" -> SlidesDialog(
             slides = settings.slides,
             onAdd = onAddSlides,
@@ -801,7 +832,7 @@ private fun Overview(
             if (settings.photoPath != null) {
                 stringResource(R.string.photo_own)
             } else {
-                stringResource(Presets.getOrElse(settings.presetIndex) { Presets[0] }.name)
+                stringResource(Presets.getOrElse(resolvePresetIndex(settings.presetIndex, settings.isPremium)) { Presets[0] }.name)
             },
         )
         if (settings.slides.isNotEmpty()) {
@@ -1408,7 +1439,13 @@ private fun languageLabel(tag: String) = when (tag) {
 }
 
 @Composable
-internal fun PresetDialog(selected: Int, onDismiss: () -> Unit, onPick: (Int) -> Unit) {
+internal fun PresetDialog(
+    selected: Int,
+    isPremium: Boolean = false,
+    onDismiss: () -> Unit,
+    onLocked: () -> Unit = {},
+    onPick: (Int) -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.backgrounds)) },
@@ -1420,16 +1457,25 @@ internal fun PresetDialog(selected: Int, onDismiss: () -> Unit, onPick: (Int) ->
                 contentPadding = PaddingValues(vertical = 4.dp),
             ) {
                 itemsIndexed(Presets) { i, p ->
+                    val locked = p.premium && !isPremium
                     Card(
                         shape = RoundedCornerShape(16.dp),
                         border = if (i == selected) BorderStroke(3.dp, MaterialTheme.colorScheme.primary) else null,
                         modifier = Modifier
                             .aspectRatio(0.8f)
                             .clip(RoundedCornerShape(16.dp))
-                            .selectable(selected = i == selected, role = Role.RadioButton) { onPick(i) },
+                            .selectable(selected = i == selected, role = Role.RadioButton) { if (locked) onLocked() else onPick(i) },
                     ) {
                         Box {
                             PresetBackground(p, Modifier.fillMaxSize())
+                            if (locked) {
+                                Icon(
+                                    Icons.Rounded.Lock,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.align(Alignment.TopEnd).padding(10.dp),
+                                )
+                            }
                             Text(
                                 stringResource(p.name),
                                 color = Color.White,

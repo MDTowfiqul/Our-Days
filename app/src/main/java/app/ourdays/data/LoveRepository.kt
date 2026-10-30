@@ -60,6 +60,8 @@ data class LoveSettings(
     val remindBefore: Int = 0,
     /** Gewählte Schrift (ID aus AppFonts), "" = Standardschrift der App */
     val font: String = "",
+    /** Gewählte Akzentfarbe (ID aus Accents), "" = Weinrot (Standard) */
+    val accent: String = "",
     /** Bildausschnitt: Fokuspunkt (-1..1) und Zoom (1..4) */
     val focusX: Float = 0f,
     val focusY: Float = DEFAULT_FOCUS_Y,
@@ -177,6 +179,7 @@ private object Keys {
     val notifyMinute = intPreferencesKey("notify_minute")
     val remindBefore = intPreferencesKey("remind_before")
     val font = stringPreferencesKey("font")
+    val accent = stringPreferencesKey("accent")
     val changelogSeen = intPreferencesKey("changelog_seen")
     val showChangelog = booleanPreferencesKey("show_changelog")
     val newestFirst = booleanPreferencesKey("moments_newest_first")
@@ -268,6 +271,7 @@ class LoveRepository(private val context: Context) {
             notifyMinute = this[Keys.notifyMinute] ?: d.notifyMinute,
             remindBefore = this[Keys.remindBefore] ?: d.remindBefore,
             font = this[Keys.font] ?: d.font,
+            accent = this[Keys.accent] ?: d.accent,
             focusX = this[Keys.focusX] ?: d.focusX,
             focusY = this[Keys.focusY] ?: d.focusY,
             zoom = this[Keys.zoom] ?: d.zoom,
@@ -700,6 +704,7 @@ class LoveRepository(private val context: Context) {
             p[Keys.notifyMinute] = restored.notifyMinute
             p[Keys.remindBefore] = restored.remindBefore
             p[Keys.font] = restored.font
+            p[Keys.accent] = restored.accent
             p[Keys.focusX] = restored.focusX
             p[Keys.focusY] = restored.focusY
             p[Keys.zoom] = restored.zoom
@@ -820,6 +825,8 @@ class LoveRepository(private val context: Context) {
     suspend fun setRemindBefore(days: Int) = context.dataStore.edit { it[Keys.remindBefore] = days }
 
     suspend fun setFont(id: String) = context.dataStore.edit { it[Keys.font] = id }
+
+    suspend fun setAccent(id: String) = context.dataStore.edit { it[Keys.accent] = id }
 
     suspend fun setHomePage(page: Int) = context.dataStore.edit { it[Keys.homePage] = page }
 

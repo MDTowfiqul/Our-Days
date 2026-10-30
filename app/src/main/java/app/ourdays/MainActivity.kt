@@ -94,7 +94,7 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) handleIntent(intent)
         setContent {
             val settings by vm.settings.collectAsStateWithLifecycle()
-            LoveTheme(font = settings?.font.orEmpty()) {
+            LoveTheme(font = settings?.font.orEmpty(), accent = settings?.accent.orEmpty(), isPremium = settings?.isPremium ?: false) {
                 val today by vm.today.collectAsStateWithLifecycle()
                 val updateProgress by vm.updateProgress.collectAsStateWithLifecycle()
                 val pairing by vm.pairing.collectAsStateWithLifecycle()
@@ -362,6 +362,7 @@ class MainActivity : ComponentActivity() {
                                     onNotifyTime = vm::setNotifyTime,
                                     onRemindBefore = vm::setRemindBefore,
                                 onFont = vm::setFont,
+                                onAccent = vm::setAccent,
                                     onTestNotification = {
                                         if (allowed) vm.sendTestNotification() else askPermission()
                                     },

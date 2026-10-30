@@ -52,6 +52,17 @@
     <string name="preset_night">Night sky</string>
     <string name="preset_rose">Rosé</string>
     <string name="preset_ocean">Ocean</string>
+    <string name="preset_ember">Ember</string>
+    <string name="preset_meadow">Meadow</string>
+    <string name="preset_aurora">Aurora</string>
+    <string name="preset_royal">Royal</string>
+    <string name="style_title">Our Style</string>
+    <string name="accent_title">Accent color</string>
+    <string name="accent_wine">Wine</string>
+    <string name="accent_rose">Rose</string>
+    <string name="accent_ocean">Ocean</string>
+    <string name="accent_lavender">Lavender</string>
+    <string name="accent_forest">Forest</string>
     <string name="ob_names_title">What are your names?</string>
     <string name="ob_names_sub">Your names appear big on your photo.</string>
     <string name="ob_date_title">When did you get together?</string>

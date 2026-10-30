@@ -51,6 +51,17 @@
     <string name="preset_night">রাতের আকাশ</string>
     <string name="preset_rose">গোলাপি</string>
     <string name="preset_ocean">সাগর</string>
+    <string name="preset_ember">অঙ্গার</string>
+    <string name="preset_meadow">তৃণভূমি</string>
+    <string name="preset_aurora">অরোরা</string>
+    <string name="preset_royal">রাজকীয়</string>
+    <string name="style_title">আমাদের স্টাইল</string>
+    <string name="accent_title">অ্যাকসেন্ট রঙ</string>
+    <string name="accent_wine">গাঢ় লাল</string>
+    <string name="accent_rose">গোলাপি</string>
+    <string name="accent_ocean">সাগর নীল</string>
+    <string name="accent_lavender">ল্যাভেন্ডার</string>
+    <string name="accent_forest">বন সবুজ</string>
     <string name="ob_names_title">তোমাদের নাম কী?</string>
     <string name="ob_names_sub">তোমাদের ছবির ওপর বড় করে নাম দেখা যাবে।</string>
     <string name="ob_date_title">কবে থেকে একসাথে আছো?</string>

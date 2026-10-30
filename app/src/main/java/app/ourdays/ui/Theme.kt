@@ -72,8 +72,13 @@ private val Dark = darkColorScheme(
 val LabelCaps = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.4.sp)
 
 @Composable
-fun LoveTheme(font: String = "", content: @Composable () -> Unit) {
-    val colors = if (isSystemInDarkTheme()) Dark else Light
+fun LoveTheme(font: String = "", accent: String = "", isPremium: Boolean = false, content: @Composable () -> Unit) {
+    val dark = isSystemInDarkTheme()
+    val colors = accentColorScheme(
+        if (dark) Dark else Light,
+        Accents.find(resolveAccentId(accent, isPremium)),
+        dark,
+    )
     val typography = remember(font) { AppFonts.typography(AppFonts.find(font)) }
     MaterialTheme(colorScheme = colors, typography = typography) {
         // Standard-Textfarbe passend zum Hintergrund, sonst ist Text ohne eigene Farbe im Dunkelmodus schwarz
@@ -82,7 +87,7 @@ fun LoveTheme(font: String = "", content: @Composable () -> Unit) {
 }
 
 /** Standardmotive, falls kein eigenes Foto gewählt ist. */
-data class Preset(@androidx.annotation.StringRes val name: Int, val colors: List<Color>) {
+data class Preset(@androidx.annotation.StringRes val name: Int, val colors: List<Color>, val premium: Boolean = false) {
     val brush: Brush get() = Brush.linearGradient(colors)
 }
 
@@ -93,6 +98,11 @@ val Presets = listOf(
     Preset(app.ourdays.R.string.preset_night, listOf(Color(0xFF05070F), Color(0xFF1B2450), Color(0xFF6A4C93))),
     Preset(app.ourdays.R.string.preset_rose, listOf(Color(0xFF8C4A5A), Color(0xFFE8A0A8), Color(0xFFFBE3DA))),
     Preset(app.ourdays.R.string.preset_ocean, listOf(Color(0xFF062B3A), Color(0xFF1C6E8C), Color(0xFF8FD3D1))),
+    // Our Style (Premium): these only appear with premium unlocked
+    Preset(app.ourdays.R.string.preset_ember, listOf(Color(0xFF2B0F0A), Color(0xFFB34724), Color(0xFFF2A65A)), premium = true),
+    Preset(app.ourdays.R.string.preset_meadow, listOf(Color(0xFF0E2E1A), Color(0xFF2E7D5B), Color(0xFF9ED8A8)), premium = true),
+    Preset(app.ourdays.R.string.preset_aurora, listOf(Color(0xFF0B2B3A), Color(0xFF6A4C93), Color(0xFFE0569B)), premium = true),
+    Preset(app.ourdays.R.string.preset_royal, listOf(Color(0xFF101A4A), Color(0xFF2E4B9B), Color(0xFFD4AF37)), premium = true),
 )
 
 /** Im Juni (Pride Month) ist die App ein bisschen bunter: Herzen in Regenbogenfarben und ein Gruß */

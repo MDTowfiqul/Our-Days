@@ -93,7 +93,10 @@ fun CouplePhoto(
                     },
             )
         } else {
-            PresetBackground(Presets.getOrElse(settings.presetIndex) { Presets[0] }, Modifier.fillMaxSize())
+            PresetBackground(
+                Presets.getOrElse(resolvePresetIndex(settings.presetIndex, settings.isPremium)) { Presets[0] },
+                Modifier.fillMaxSize(),
+            )
         }
     }
 }

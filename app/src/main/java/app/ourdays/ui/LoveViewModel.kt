@@ -94,6 +94,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
     fun setNotifyTime(h: Int, m: Int) = viewModelScope.launch { repo.setNotifyTime(h, m) }
     fun setRemindBefore(days: Int) = viewModelScope.launch { repo.setRemindBefore(days) }
     fun setFont(id: String) = viewModelScope.launch { repo.setFont(id) }
+    fun setAccent(id: String) = viewModelScope.launch { repo.setAccent(id) }
     fun setChangelogSeen(code: Int) = viewModelScope.launch { repo.setChangelogSeen(code) }
     fun setShowChangelog(on: Boolean) = viewModelScope.launch { repo.setShowChangelog(on) }
 

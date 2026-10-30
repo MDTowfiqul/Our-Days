@@ -51,6 +51,7 @@ import app.ourdays.data.Changelog
 import app.ourdays.data.MAX_SLIDES
 import app.ourdays.notify.Notifier
 import app.ourdays.share.ShareCard
+import app.ourdays.ui.EntertainmentScreen
 import app.ourdays.ui.HomeScreen
 import app.ourdays.ui.LicensesScreen
 import app.ourdays.ui.LockScreen
@@ -96,9 +97,12 @@ class MainActivity : ComponentActivity() {
                 val today by vm.today.collectAsStateWithLifecycle()
                 val updateProgress by vm.updateProgress.collectAsStateWithLifecycle()
                 val pairing by vm.pairing.collectAsStateWithLifecycle()
+                val games by vm.games.collectAsStateWithLifecycle()
+                val quizData by vm.quizData.collectAsStateWithLifecycle()
                 val autoBackup by vm.autoBackup.collectAsStateWithLifecycle()
                 val scope = rememberCoroutineScope()
                 var showSettings by rememberSaveable { mutableStateOf(false) }
+                var showEntertainment by rememberSaveable { mutableStateOf(false) }
                 var editingPhoto by rememberSaveable { mutableStateOf(false) }
                 var showLicenses by rememberSaveable { mutableStateOf(false) }
                 // Moment-Editor: null = zu, "" = neuer Moment, sonst ID; dazu optional ein vorgeschlagener Titel
@@ -144,6 +148,7 @@ class MainActivity : ComponentActivity() {
                     if (settings?.onboardingDone != true) return@LaunchedEffect
                     vm.jump.value = null
                     showSettings = false
+                    showEntertainment = false
                     showLicenses = false
                     editingPhoto = false
                     if (target == "moment") {
@@ -231,11 +236,12 @@ class MainActivity : ComponentActivity() {
                 // ob es wirklich eine Sicherung ist, prüft die App beim Laden selbst
                 fun loadBackup() = backupLoader.launch(arrayOf("*/*"))
 
-                BackHandler(enabled = showSettings || editingPhoto || editingMoment != null || showLicenses) {
+                BackHandler(enabled = showSettings || showEntertainment || editingPhoto || editingMoment != null || showLicenses) {
                     when {
                         showLicenses -> showLicenses = false
                         editingMoment != null -> editingMoment = null
                         editingPhoto -> editingPhoto = false
+                        showEntertainment -> showEntertainment = false
                         else -> showSettings = false
                     }
                 }
@@ -248,6 +254,7 @@ class MainActivity : ComponentActivity() {
                     !s.onboardingDone -> "onboarding"
                     showSettings && showLicenses -> "licenses"
                     showSettings -> "settings"
+                    showEntertainment -> "entertainment"
                     else -> "home"
                 }
                 // Im Juni (Pride Month) ist die App ein bisschen bunter
@@ -322,6 +329,23 @@ class MainActivity : ComponentActivity() {
                                     onStep = { onboardingStep = it },
                                     onRestoreBackup = ::loadBackup,
                                 )
+                                "entertainment" -> EntertainmentScreen(
+                                    games = games,
+                                    quiz = quizData,
+                                    pairing = pairing,
+                                    peopleNames = s.people.associate { it.id to it.name },
+                                    today = today,
+                                    onBack = { showEntertainment = false },
+                                    onStartPartner = vm::startPartnerGame,
+                                    onStartAi = vm::startAiGame,
+                                    onDeleteGame = vm::deleteGame,
+                                    onDotsMove = vm::playDotsMove,
+                                    onGomokuMove = vm::playGomokuMove,
+                                    onSendGame = { vm.shareSync() },
+                                    onSaveKnowMeSheet = vm::saveKnowMeSheet,
+                                    onSaveKnowMeAttempt = vm::saveKnowMeAttempt,
+                                    onSaveWr = vm::saveWrAnswers,
+                                )
                                 "settings" -> SettingsScreen(
                                     settings = s,
                                     notificationsAllowed = allowed,
@@ -395,6 +419,7 @@ class MainActivity : ComponentActivity() {
                                     s,
                                     today,
                                     onOpenSettings = { showSettings = true },
+                                    onOpenEntertainment = { showEntertainment = true },
                                     onPageChange = vm::setHomePage,
                                     onAddMoment = { title ->
                                         momentSuggestion = title

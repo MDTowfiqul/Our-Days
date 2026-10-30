@@ -63,6 +63,7 @@ import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Celebration
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -120,6 +121,8 @@ fun HomeScreen(
     /** Von einer App-Abkürzung: "live" springt zum Live-Zähler */
     jumpTo: String? = null,
     onJumped: () -> Unit = {},
+    /** Opens Our Entertainment from the bottom bar */
+    onOpenEntertainment: () -> Unit = {},
 ) {
     // Live und Momente lassen sich in den Einstellungen ausblenden
     val pages = listOfNotNull(
@@ -180,6 +183,20 @@ fun HomeScreen(
         ) {
             if (pages.size > 1) {
                 ModeSwitch(pager.currentPage, pages) { scope.launch { pager.animateScrollToPage(it) } }
+            }
+            Box(
+                Modifier
+                    .size(BarItemHeight)
+                    .clip(CircleShape)
+                    .clickable(onClick = onOpenEntertainment),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.SportsEsports,
+                    contentDescription = stringResource(R.string.entertainment),
+                    tint = Color.White,
+                    modifier = Modifier.size(22.dp),
+                )
             }
             Box(
                 Modifier

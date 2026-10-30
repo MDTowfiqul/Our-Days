@@ -195,6 +195,12 @@ data class SyncData(
     val deleted: Map<String, Long>,
     /** Wer die Datei geschickt hat (ID einer [Person]) */
     val from: String?,
+    /** Our Entertainment: Spiele. Fehlt der Schlüssel, ist die Liste leer (alte Dateien). */
+    val games: List<GameState> = emptyList(),
+    /** IDs gelöschter Spiele (Grabsteine, damit Löschen auch beim Partner ankommt) */
+    val gamesDeleted: Set<String> = emptySet(),
+    /** Our Entertainment: Quiz-Antworten (Know-me-Blätter, Versuche, Would-you-rather) */
+    val quiz: QuizSyncData = QuizSyncData(),
 )
 
 object SyncCodec {
@@ -217,6 +223,9 @@ object SyncCodec {
             JSONArray(MomentCodec.encode(d.moments.map { m -> m.copy(photoPaths = m.photoPaths.map { java.io.File(it).name }) })),
         )
         .put("deleted", JSONObject().apply { d.deleted.forEach { (id, time) -> put(id, time) } })
+        .put("games", JSONArray(GameCodec.encode(d.games)))
+        .put("games_deleted", JSONArray(d.gamesDeleted.sorted()))
+        .put("quiz", JSONObject(QuizCodec.encode(d.quiz)))
         .toString()
 
     fun decode(json: String): SyncData {
@@ -224,6 +233,9 @@ object SyncCodec {
         require(o.optString("app") == APP || o.optString("app") == "app.sinceus") { "not an Our Days sync file" }
         require(o.optInt("format", 0) in 1..FORMAT) { "unsupported sync format" }
         val deleted = o.optJSONObject("deleted")
+        val gamesDeleted = o.optJSONArray("games_deleted")?.let { arr ->
+            (0 until arr.length()).map { arr.optString(it) }.filter { it.isNotBlank() }.toSet()
+        }.orEmpty()
         return SyncData(
             people = PeopleCodec.decodePeople(o.optJSONArray("people")?.toString()).orEmpty(),
             relationships = PeopleCodec.decodeRelationships(o.optJSONArray("relationships")?.toString()).orEmpty(),
@@ -231,6 +243,9 @@ object SyncCodec {
                 .map { m -> m.copy(photoPaths = m.photoPaths.mapNotNull { it.takeIf { name -> Backup.isSafeName(name) } }) },
             deleted = deleted?.keys()?.asSequence()?.associateWith { deleted.optLong(it) }.orEmpty(),
             from = if (o.isNull("from")) null else o.optString("from").ifBlank { null },
+            games = GameCodec.decode(o.optJSONArray("games")?.toString()),
+            gamesDeleted = gamesDeleted,
+            quiz = QuizCodec.decode(o.optJSONObject("quiz")?.toString()),
         )
     }
 }
@@ -246,6 +261,12 @@ data class MergeResult(
     val added: Int,
     val changed: Int,
     val removed: Int,
+    /** Our Entertainment: zusammengeführte Spiele (setzt LoveRepository, nicht SyncMerge) */
+    val games: List<GameState> = emptyList(),
+    /** Our Entertainment: zusammengeführte Quiz-Daten (setzt LoveRepository) */
+    val quiz: QuizSyncData = QuizSyncData(),
+    /** Spiele, in denen durch diese Datei der Zug an dieses Handy ging */
+    val newlyMyTurn: List<GameState> = emptyList(),
 )
 
 object SyncMerge {

@@ -190,6 +190,9 @@ private object Keys {
     val widgetRelationship = stringPreferencesKey("widget_relationship")
     val discreet = booleanPreferencesKey("discreet")
     val deleted = stringPreferencesKey("deleted_moments")
+    val games = stringPreferencesKey("games")
+    val gamesDeleted = stringPreferencesKey("games_deleted")
+    val quiz = stringPreferencesKey("quiz")
 }
 
 /**
@@ -406,14 +409,17 @@ class LoveRepository(private val context: Context) {
      */
     suspend fun exportSync(out: OutputStream, pairing: Pairing) {
         val s = current()
-        val deleted = decodeDeleted(context.dataStore.data.first()[Keys.deleted])
+        val prefs = context.dataStore.data.first()
+        val deleted = decodeDeleted(prefs[Keys.deleted])
+        val games = decodeGames(prefs[Keys.games], decodeGamesDeleted(prefs[Keys.gamesDeleted]))
+        val quiz = QuizCodec.decode(prefs[Keys.quiz])
         withContext(Dispatchers.IO) {
             val zipFile = File(context.cacheDir, "sync-out.zip")
             try {
                 ZipOutputStream(zipFile.outputStream().buffered()).use { zip ->
                     zip.putNextEntry(ZipEntry(SyncCodec.JSON))
                     zip.write(
-                        SyncCodec.encode(SyncData(s.people, s.relationships, s.moments, deleted, pairing.me))
+                        SyncCodec.encode(SyncData(s.people, s.relationships, s.moments, deleted, pairing.me, games, decodeGamesDeleted(prefs[Keys.gamesDeleted]), quiz))
                             .toByteArray(Charsets.UTF_8),
                     )
                     zip.closeEntry()
@@ -472,6 +478,17 @@ class LoveRepository(private val context: Context) {
             decodeDeleted(context.dataStore.data.first()[Keys.deleted]),
             remote,
         )
+        // Our Entertainment: Spiele und Quiz-Daten aus derselben Datei zusammenführen.
+        // Gelöschte Spiele (Grabsteine) gewinnen gegen jede Version des Spiels.
+        val localPrefs = context.dataStore.data.first()
+        val localGamesDeleted = decodeGamesDeleted(localPrefs[Keys.gamesDeleted])
+        val allGamesDeleted = localGamesDeleted + remote.gamesDeleted
+        val gameMerge = GameMerge.merge(
+            decodeGames(localPrefs[Keys.games], allGamesDeleted),
+            remote.games.filter { it.id !in allGamesDeleted },
+            pairing.me,
+        )
+        val mergedQuiz = QuizMerge.merge(QuizCodec.decode(localPrefs[Keys.quiz]), remote.quiz)
         // Fotos der übernommenen Momente in den App-Speicher holen, alte Fotos aufräumen
         val takenIds = result.taken.map { it.id }.toSet()
         val moments = withContext(Dispatchers.IO) {
@@ -494,10 +511,72 @@ class LoveRepository(private val context: Context) {
             prefs.writeModel(result.people, result.relationships)
             prefs[Keys.moments] = MomentCodec.encode(moments)
             prefs[Keys.deleted] = encodeDeleted(result.deleted)
+            prefs[Keys.games] = GameCodec.encode(gameMerge.games)
+            prefs[Keys.gamesDeleted] = encodeGamesDeleted(allGamesDeleted)
+            prefs[Keys.quiz] = QuizCodec.encode(mergedQuiz)
         }
         PairingStore.save(context, pairing.copy(lastSync = System.currentTimeMillis()))
-        return result
+        return result.copy(games = gameMerge.games, quiz = mergedQuiz, newlyMyTurn = gameMerge.newlyMyTurn)
     }
+
+    // ---- Our Entertainment: Spiele und Quiz-Daten (eigener DataStore-Schlüssel) ----
+
+    fun gamesFlow(): kotlinx.coroutines.flow.Flow<List<GameState>> =
+        context.dataStore.data.map { GameCodec.decode(it[Keys.games]) }
+
+    fun quizFlow(): kotlinx.coroutines.flow.Flow<QuizSyncData> =
+        context.dataStore.data.map { QuizCodec.decode(it[Keys.quiz]) }
+
+    suspend fun saveGame(game: GameState) {
+        context.dataStore.edit { prefs ->
+            val games = GameCodec.decode(prefs[Keys.games]).filter { it.id != game.id } + game
+            prefs[Keys.games] = GameCodec.encode(games)
+        }
+    }
+
+    /** Löscht ein Spiel hier und merkt es als Grabstein, damit es beim nächsten Abgleich auch beim Partner verschwindet. */
+    suspend fun deleteGame(id: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.games] = GameCodec.encode(GameCodec.decode(prefs[Keys.games]).filter { it.id != id })
+            prefs[Keys.gamesDeleted] = encodeGamesDeleted(decodeGamesDeleted(prefs[Keys.gamesDeleted]) + id)
+        }
+    }
+
+    suspend fun saveKnowMeSheet(sheet: KnowMeSheet) {
+        context.dataStore.edit { prefs ->
+            val q = QuizCodec.decode(prefs[Keys.quiz])
+            val sheets = q.sheets.filter { it.owner != sheet.owner } + sheet
+            prefs[Keys.quiz] = QuizCodec.encode(q.copy(sheets = sheets))
+        }
+    }
+
+    suspend fun saveKnowMeAttempt(attempt: KnowMeAttempt) {
+        context.dataStore.edit { prefs ->
+            val q = QuizCodec.decode(prefs[Keys.quiz])
+            val attempts = q.attempts.filter { !(it.sheetOwner == attempt.sheetOwner && it.guesser == attempt.guesser) } + attempt
+            prefs[Keys.quiz] = QuizCodec.encode(q.copy(attempts = attempts))
+        }
+    }
+
+    suspend fun saveWrAnswers(wr: WrAnswers) {
+        context.dataStore.edit { prefs ->
+            val q = QuizCodec.decode(prefs[Keys.quiz])
+            val list = q.wr.filter { !(it.date == wr.date && it.player == wr.player) } + wr
+            prefs[Keys.quiz] = QuizCodec.encode(q.copy(wr = list))
+        }
+    }
+
+    private fun decodeGames(json: String?, deleted: Set<String>): List<GameState> =
+        GameCodec.decode(json).filter { it.id !in deleted }
+
+    private fun decodeGamesDeleted(json: String?): Set<String> {
+        if (json.isNullOrBlank()) return emptySet()
+        val arr = runCatching { org.json.JSONArray(json) }.getOrNull() ?: return emptySet()
+        return (0 until arr.length()).map { arr.optString(it) }.filter { it.isNotBlank() }.toSet()
+    }
+
+    private fun encodeGamesDeleted(ids: Set<String>): String =
+        org.json.JSONArray(ids.sorted()).toString()
 
     private fun decodeDeleted(json: String?): Map<String, Long> {
         val o = json?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return emptyMap()

@@ -554,11 +554,11 @@
     <string name="game_gomoku">Gomoku</string>
     <string name="game_gomoku_desc">Get five stones in a row first.</string>
     <string name="game_your_turn">Your turn!</string>
-    <string name="game_partner_turn">Partner's turn</string>
+    <string name="game_partner_turn">Partner\'s turn</string>
     <string name="game_you_win">You win!</string>
     <string name="game_partner_wins">Your partner wins</string>
     <string name="game_ai_wins">AI wins</string>
-    <string name="game_draw">It's a draw!</string>
+    <string name="game_draw">It\'s a draw!</string>
     <string name="game_send_to_partner">Send to partner</string>
     <string name="game_delete">Delete game</string>
     <string name="game_delete_title">Delete this game?</string>
@@ -572,10 +572,10 @@
     <string name="quiz_know_me">How well do you know me</string>
     <string name="quiz_know_me_desc">Answer about yourself first, then your partner guesses.</string>
     <string name="quiz_answer_about_me">Answer about me</string>
-    <string name="quiz_guess_partner">Guess partner's answers</string>
-    <string name="quiz_no_sheet_yet">Your partner hasn't answered yet.</string>
+    <string name="quiz_guess_partner">Guess partner\'s answers</string>
+    <string name="quiz_no_sheet_yet">Your partner hasn\'t answered yet.</string>
     <string name="quiz_would_you_rather">Would you rather</string>
-    <string name="quiz_daily_challenge">Today's challenge</string>
+    <string name="quiz_daily_challenge">Today\'s challenge</string>
     <string name="quiz_all_questions">All questions</string>
     <string name="quiz_save_answers">Save answers</string>
     <string name="quiz_saved">Answers saved.</string>
@@ -583,6 +583,6 @@
     <string name="quiz_waiting_partner">Waiting for your partner</string>
     <string name="quiz_agreement">Agreement: %1$d/%2$d</string>
     <string name="your_turn_title">Your turn!</string>
-    <string name="your_turn_text">It's your move in %1$s.</string>
-    <string name="your_turn_many">It's your move in %1$d games.</string>
+    <string name="your_turn_text">It\'s your move in %1$s.</string>
+    <string name="your_turn_many">It\'s your move in %1$d games.</string>
 </resources>

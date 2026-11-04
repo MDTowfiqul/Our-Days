@@ -1,7 +1,7 @@
 package app.ourdays.ui
 
 import androidx.annotation.PluralsRes
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.data.Texts
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke

@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.CancellationSignal
 import android.os.SystemClock
 import android.view.WindowManager
+import ourdays.app.R
 
 /**
  * App-Sperre: Beim Öffnen fragt die App nach Fingerabdruck, Gesicht oder der PIN des Handys.

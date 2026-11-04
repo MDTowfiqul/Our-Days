@@ -96,7 +96,7 @@ import app.ourdays.data.formatNumber
 import app.ourdays.data.Texts
 import app.ourdays.share.ShareCard
 import androidx.compose.material.icons.rounded.IosShare
-import app.ourdays.R
+import ourdays.app.R
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource

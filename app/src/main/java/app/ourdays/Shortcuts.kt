@@ -6,6 +6,7 @@ import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import app.ourdays.data.LoveSettings
+import ourdays.app.R
 
 /**
  * Kleine Abkürzungen beim langen Drücken auf das App-Icon: neuer Moment und Live-Zähler.

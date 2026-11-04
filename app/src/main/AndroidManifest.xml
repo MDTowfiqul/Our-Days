@@ -20,7 +20,7 @@
         android:theme="@style/Theme.Love">
 
         <activity
-            android:name=".MainActivity"
+            android:name="app.ourdays.MainActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -81,7 +81,7 @@
         </provider>
 
         <receiver
-            android:name=".notify.DailyReceiver"
+            android:name="app.ourdays.notify.DailyReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -92,7 +92,7 @@
         </receiver>
 
         <receiver
-            android:name=".widget.LoveWidgetReceiver"
+            android:name="app.ourdays.widget.LoveWidgetReceiver"
             android:exported="true"
             android:label="@string/widget_days_name">
             <intent-filter>
@@ -104,7 +104,7 @@
         </receiver>
 
         <receiver
-            android:name=".widget.PhotoWidgetReceiver"
+            android:name="app.ourdays.widget.PhotoWidgetReceiver"
             android:exported="true"
             android:label="@string/widget_photo_name">
             <intent-filter>
@@ -116,7 +116,7 @@
         </receiver>
 
         <receiver
-            android:name=".widget.CountdownWidgetReceiver"
+            android:name="app.ourdays.widget.CountdownWidgetReceiver"
             android:exported="true"
             android:label="@string/widget_countdown_name">
             <intent-filter>

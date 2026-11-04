@@ -39,7 +39,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import androidx.compose.ui.graphics.Color
 import app.ourdays.MainActivity
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.data.LoveMath
 import app.ourdays.data.LoveRepository
 import app.ourdays.data.LoveSettings

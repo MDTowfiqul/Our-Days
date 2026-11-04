@@ -3,7 +3,7 @@ package app.ourdays.data
 import android.content.Context
 import android.text.format.DateFormat
 import androidx.annotation.PluralsRes
-import app.ourdays.R
+import ourdays.app.R
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.Period

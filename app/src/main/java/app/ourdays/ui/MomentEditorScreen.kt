@@ -59,7 +59,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.data.Moment
 import app.ourdays.data.Texts
 import coil3.compose.AsyncImage

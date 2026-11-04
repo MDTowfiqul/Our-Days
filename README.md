@@ -2,12 +2,19 @@
 
 A privacy-friendly Android app for couples: counts how long you have been together and reminds you of every special day. Available in English and Bengali.
 
+Latest release: 1.0.2 (package `ourdays.app`), now in closed testing on Google Play.
+
+## Watch the trailer
+
+[![Our Days trailer](https://img.youtube.com/vi/nK2JChJ1RIY/0.jpg)](https://youtu.be/nK2JChJ1RIY)
+
+Watch how Our Days works in under a minute — also on the [website](https://mdtowfiqul.github.io/Our-Days/).
+
 <p>
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" width="200" alt="Overview">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.jpg" width="200" alt="Setup">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/moments.jpg" width="200" alt="Moments">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/backup.jpg" width="200" alt="Encrypted backup">
-  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/moment-editor.jpg" width="200" alt="Moment editor">
+  <img src="docs/img/en-1.webp" width="200" alt="Overview">
+  <img src="docs/img/en-2.webp" width="200" alt="Live counter">
+  <img src="docs/img/moments-1.webp" width="200" alt="Moments">
+  <img src="docs/img/backup-en.webp" width="200" alt="Encrypted backup">
 </p>
 
 ## Features
@@ -28,6 +35,13 @@ A privacy-friendly Android app for couples: counts how long you have been togeth
 - Poly mode: more than two people and several relationships, each with its own date, special days and reminders, plus a discreet mode with initials only
 - For every kind of love, no matter who you are, whom you love or how many of you there are, with a little rainbow decoration in Pride Month (June)
 
+## Coming soon
+
+- Our Chat: private chat between you two
+- Our Dates: premium date features, one purchase unlocking premium for both partners
+- Our Style: app customisation and themes
+- Our Entertainment: games and quizzes to play together, online or against AI
+
 ## Third-party libraries
 
 Our Days uses Android Jetpack (AndroidX, Jetpack Compose, Material 3, Glance, DataStore, WorkManager), Kotlin and kotlinx.coroutines, Coil, Okio, Guava ListenableFuture, Accompanist, JSpecify, Material Symbols, ZXing and ZXing Android Embedded (QR codes), and OkHttp. All of them are licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). The app lists them under *Settings → Open source licenses*. The Play version additionally uses Google Play services (play-services-auth) for Google Drive sign-in.
@@ -37,7 +51,7 @@ Our Days uses Android Jetpack (AndroidX, Jetpack Compose, Material 3, Glance, Da
 | Where | Updates |
 | --- | --- |
 | [GitHub Releases](https://github.com/MDTowfiqul/Our-Days/releases) | The app checks GitHub once a day, notifies you and installs the update with one tap (can be turned off). Also works with [Obtainium](https://github.com/ImranR98/Obtainium). |
-| Google Play | Through the Play Store (planned) |
+| Google Play | Closed testing in progress — public release coming soon. |
 
 Tip: if notifications arrive late, set *Settings → Apps → Our Days → Battery* to "Unrestricted".
 

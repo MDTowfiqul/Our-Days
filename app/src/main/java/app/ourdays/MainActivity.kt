@@ -62,6 +62,8 @@ import app.ourdays.ui.LoveViewModel
 import app.ourdays.ui.SettingsScreen
 import app.ourdays.widget.PhotoWidgetReceiver
 import kotlinx.coroutines.launch
+import ourdays.app.BuildConfig
+import ourdays.app.R
 
 class MainActivity : ComponentActivity() {
     private val vm: LoveViewModel by viewModels()

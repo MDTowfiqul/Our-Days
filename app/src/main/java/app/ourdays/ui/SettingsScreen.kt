@@ -78,8 +78,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneOffset
-import app.ourdays.BuildConfig
-import app.ourdays.R
+import ourdays.app.BuildConfig
+import ourdays.app.R
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Calculate

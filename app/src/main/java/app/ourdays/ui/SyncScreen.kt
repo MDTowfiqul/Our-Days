@@ -43,7 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.data.LoveSettings
 import app.ourdays.data.Pairing
 import app.ourdays.data.Texts

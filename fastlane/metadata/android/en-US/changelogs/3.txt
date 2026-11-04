@@ -1,0 +1,2 @@
+- First public release under the new app identity ourdays.app
+- No other changes: all features work as in the previous release

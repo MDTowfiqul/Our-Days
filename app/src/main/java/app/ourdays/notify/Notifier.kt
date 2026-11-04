@@ -9,7 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
-import app.ourdays.BuildConfig
+import ourdays.app.BuildConfig
 import app.ourdays.update.UpdateChecker
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -17,7 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import android.graphics.Bitmap
 import app.ourdays.MainActivity
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.data.LoveSettings
 import app.ourdays.data.BirthdayMath
 import app.ourdays.data.LoveMath

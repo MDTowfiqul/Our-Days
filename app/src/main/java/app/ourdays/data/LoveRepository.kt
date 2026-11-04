@@ -1,6 +1,6 @@
 package app.ourdays.data
 
-import app.ourdays.BuildConfig
+import ourdays.app.BuildConfig
 import android.content.Context
 import android.net.Uri
 import androidx.datastore.preferences.core.MutablePreferences

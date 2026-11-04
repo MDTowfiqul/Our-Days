@@ -75,7 +75,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.data.LoveSettings
 import app.ourdays.data.Moment
 import app.ourdays.data.MomentMath

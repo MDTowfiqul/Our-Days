@@ -3,7 +3,7 @@ package app.ourdays.ui
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material3.OutlinedButton
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.data.Texts
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource

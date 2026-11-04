@@ -12,7 +12,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
-import app.ourdays.R
+import ourdays.app.R
 
 /**
  * Eine Schrift zur Auswahl in den Einstellungen: [heading] für Überschriften und die großen Zahlen,

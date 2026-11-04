@@ -1,7 +1,7 @@
 package app.ourdays.update
 
 import android.content.Context
-import app.ourdays.BuildConfig
+import ourdays.app.BuildConfig
 import app.ourdays.data.LoveRepository
 import app.ourdays.notify.Notifier
 import kotlinx.coroutines.Dispatchers

@@ -19,8 +19,8 @@ android {
         applicationId = "ourdays.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
         // Repository, in dem die GitHub-Version nach neuen Releases sucht
         val githubRepo = providers.gradleProperty("githubRepo").getOrElse("MDTowfiqul/Our-Days")
         buildConfigField("String", "GITHUB_REPO", "\"$githubRepo\"")

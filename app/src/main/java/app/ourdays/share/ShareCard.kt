@@ -14,7 +14,7 @@ import android.graphics.Shader
 import android.graphics.Typeface
 import androidx.core.content.FileProvider
 import androidx.core.graphics.PathParser
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.data.LoveMath
 import app.ourdays.data.DEFAULT_FOCUS_Y
 import app.ourdays.data.LoveSettings

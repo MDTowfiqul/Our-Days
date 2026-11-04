@@ -1,6 +1,6 @@
 package app.ourdays.ui
 
-import app.ourdays.R
+import ourdays.app.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween

@@ -23,7 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import app.ourdays.R
+import ourdays.app.R
 
 /** Deckt die App ab, bis mit Fingerabdruck, Gesicht oder PIN entsperrt wurde */
 @Composable

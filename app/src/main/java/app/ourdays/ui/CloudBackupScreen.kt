@@ -46,7 +46,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.cloud.CloudBackupScheduler
 import app.ourdays.cloud.CloudBackupStore
 import app.ourdays.cloud.CloudConfig

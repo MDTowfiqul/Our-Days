@@ -48,7 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.data.ALL_RELATIONSHIPS
 import app.ourdays.data.BirthdayMath
 import app.ourdays.data.LoveMath

@@ -16,8 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import app.ourdays.BuildConfig
-import app.ourdays.R
+import ourdays.app.BuildConfig
+import ourdays.app.R
 
 /** Was ist neu: einmal nach einem Update, mit der Möglichkeit, es dauerhaft abzuschalten */
 @Composable

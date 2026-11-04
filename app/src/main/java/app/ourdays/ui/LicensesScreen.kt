@@ -39,8 +39,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.ourdays.BuildConfig
-import app.ourdays.R
+import ourdays.app.BuildConfig
+import ourdays.app.R
 
 /** Eine verwendete Bibliothek (alle stehen unter der Apache License 2.0). */
 private data class Library(val name: String, val author: String, val url: String)

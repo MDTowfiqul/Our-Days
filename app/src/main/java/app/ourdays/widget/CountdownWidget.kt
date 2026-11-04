@@ -27,7 +27,7 @@ import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
 import app.ourdays.MainActivity
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.data.LoveRepository
 import app.ourdays.data.LoveSettings
 import app.ourdays.data.Moment

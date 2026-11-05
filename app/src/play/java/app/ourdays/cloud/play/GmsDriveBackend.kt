@@ -2,8 +2,10 @@ package app.ourdays.cloud.play
 
 import android.content.Context
 import app.ourdays.cloud.DriveBackend
+import app.ourdays.cloud.DriveConsentNeeded
 import app.ourdays.cloud.cloudHttp
 import com.google.android.gms.auth.GoogleAuthUtil
+import com.google.android.gms.auth.UserRecoverableAuthException
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.Request
@@ -25,7 +27,11 @@ class GmsDriveBackend(private val context: Context) : DriveBackend {
     private val scope = "oauth2:https://www.googleapis.com/auth/drive.file"
 
     private fun token(account: String): String =
-        GoogleAuthUtil.getToken(context, account, scope)
+        try {
+            GoogleAuthUtil.getToken(context, account, scope)
+        } catch (e: UserRecoverableAuthException) {
+            throw DriveConsentNeeded(e.intent)
+        }
 
     private fun authGet(account: String, url: String): String {
         val t = token(account)

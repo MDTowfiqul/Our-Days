@@ -4,7 +4,6 @@ import android.accounts.AccountManager
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import com.google.android.gms.auth.UserRecoverableAuthException
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -53,6 +52,7 @@ import app.ourdays.cloud.CloudBackupStore
 import app.ourdays.cloud.CloudConfig
 import app.ourdays.cloud.CloudProvider
 import app.ourdays.cloud.DriveBackends
+import app.ourdays.cloud.DriveConsentNeeded
 import app.ourdays.cloud.TelegramBackup
 import app.ourdays.cloud.restoreCloudBackup
 import app.ourdays.cloud.runCloudBackup
@@ -111,8 +111,8 @@ fun CloudBackupScreen() {
             try {
                 val msg = withContext(Dispatchers.IO) { block() }
                 if (msg != null) notice = msg
-            } catch (e: UserRecoverableAuthException) {
-                val intent = e.intent
+            } catch (e: DriveConsentNeeded) {
+                val intent = e.consentIntent
                 if (intent != null) {
                     consentRetry = { runBusy(key, block) }
                     consentLauncher.launch(intent)
@@ -355,7 +355,7 @@ fun CloudBackupScreen() {
                                 runCloudBackup(context, CloudBackupStore.load(context))
                             }
                             CloudBackupStore.recordResult(context, true)
-                        } catch (e: UserRecoverableAuthException) {
+                        } catch (e: DriveConsentNeeded) {
                             throw e
                         } catch (e: Exception) {
                             CloudBackupStore.recordResult(context, false, e.message?.take(200))

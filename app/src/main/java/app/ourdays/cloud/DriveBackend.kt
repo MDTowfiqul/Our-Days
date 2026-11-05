@@ -1,5 +1,6 @@
 package app.ourdays.cloud
 
+import android.content.Intent
 import java.io.File
 import java.io.OutputStream
 
@@ -22,6 +23,7 @@ interface DriveBackend {
     fun invalidate(account: String)
 }
 
+class DriveConsentNeeded(val consentIntent: Intent?) : Exception("Drive consent needed")
 object DriveBackends {
     fun create(context: android.content.Context): DriveBackend? = runCatching {
         Class.forName("app.ourdays.cloud.play.GmsDriveBackend")

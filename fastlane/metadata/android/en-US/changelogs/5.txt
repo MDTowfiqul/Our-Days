@@ -1,1 +1,1 @@
-First open source release: English and German, photo widget, live counter.
+Fixed Google Drive backup sign-in. New animated intro screen.

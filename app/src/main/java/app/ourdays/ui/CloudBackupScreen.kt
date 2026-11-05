@@ -4,6 +4,7 @@ import android.accounts.AccountManager
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.gms.auth.UserRecoverableAuthException
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -94,6 +95,15 @@ fun CloudBackupScreen() {
         CloudBackupScheduler.schedule(context, next)
     }
 
+    var consentRetry by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val consentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val retry = consentRetry
+        consentRetry = null
+        if (result.resultCode == Activity.RESULT_OK) retry?.invoke()
+    }
+
     fun runBusy(key: String, block: suspend () -> String?) {
         scope.launch {
             busy = key
@@ -101,6 +111,14 @@ fun CloudBackupScreen() {
             try {
                 val msg = withContext(Dispatchers.IO) { block() }
                 if (msg != null) notice = msg
+            } catch (e: UserRecoverableAuthException) {
+                val intent = e.intent
+                if (intent != null) {
+                    consentRetry = { runBusy(key, block) }
+                    consentLauncher.launch(intent)
+                } else {
+                    notice = e.message?.take(300) ?: e.toString().take(300)
+                }
             } catch (e: Exception) {
                 notice = e.message?.take(300) ?: e.toString().take(300)
             } finally {
@@ -337,6 +355,8 @@ fun CloudBackupScreen() {
                                 runCloudBackup(context, CloudBackupStore.load(context))
                             }
                             CloudBackupStore.recordResult(context, true)
+                        } catch (e: UserRecoverableAuthException) {
+                            throw e
                         } catch (e: Exception) {
                             CloudBackupStore.recordResult(context, false, e.message?.take(200))
                             throw e

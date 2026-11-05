@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import androidx.core.content.IntentCompat
 import app.ourdays.ui.SyncActions
+import app.ourdays.ui.IntroScreen
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import android.os.Bundle
@@ -107,6 +108,7 @@ class MainActivity : ComponentActivity() {
                 var editingMoment by rememberSaveable { mutableStateOf<String?>(null) }
                 var momentSuggestion by rememberSaveable { mutableStateOf<String?>(null) }
                 var onboardingStep by rememberSaveable { mutableIntStateOf(0) }
+                var introDone by rememberSaveable { mutableStateOf(false) }
                 // Ändert sich bei jedem Zurückkehren, damit der Berechtigungsstatus neu gelesen wird
                 var resumeCount by rememberSaveable { mutableIntStateOf(0) }
 
@@ -247,6 +249,7 @@ class MainActivity : ComponentActivity() {
                     s == null -> "loading"
                     editingPhoto && s.photoPath != null -> "editor"
                     editingMoment != null && s.onboardingDone -> "moment"
+                    !s.onboardingDone && !introDone -> "intro"
                     !s.onboardingDone -> "onboarding"
                     showSettings && showLicenses -> "licenses"
                     showSettings -> "settings"
@@ -305,6 +308,7 @@ class MainActivity : ComponentActivity() {
                                         editingPhoto = false
                                     },
                                 )
+                                "intro" -> IntroScreen(onContinue = { introDone = true })
                                 "onboarding" -> OnboardingScreen(
                                     settings = s,
                                     notificationsAllowed = allowed,

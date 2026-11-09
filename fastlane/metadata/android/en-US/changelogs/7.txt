@@ -1,1 +1,1 @@
-New: Moments. Keep important moments of your relationship with date, note and photo, with a yearly reminder (can be hidden in the settings). Share as a picture with your photo, names and days together. Cleaner bottom bar.
+Fixed Google Drive backup: added the permission Google requires for the app hidden Application Data folder.

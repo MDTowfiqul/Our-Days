@@ -22,9 +22,13 @@ import java.io.OutputStream
  * Einmalig nötig (nur Play-Variante): In der Google Cloud Console ein OAuth-Projekt
  * anlegen, Drive-API aktivieren und den SHA-1 der Signatur hinterlegen, sonst lehnt
  * Google das Token ab.
+ *
+ * Der appDataFolder braucht zusätzlich den Scope drive.appdata — drive.file allein
+ * reicht nicht, die Drive-API antwortet sonst mit HTTP 403 ("The granted scopes do
+ * not allow use of the Application Data folder.").
  */
 class GmsDriveBackend(private val context: Context) : DriveBackend {
-    private val scope = "oauth2:https://www.googleapis.com/auth/drive.file"
+    private val scope = "oauth2:https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata"
 
     private fun token(account: String): String =
         try {

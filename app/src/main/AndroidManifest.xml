@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Keine Internet-Berechtigung (Ausnahme: GitHub-Variante, siehe src/github) -->
+    <!-- Internet: Cloud-Backups (Google Drive, Telegram) brauchen es in allen Varianten -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Für die App-Sperre (Fingerabdruck, Gesicht oder PIN), ohne sie stürzt die Abfrage ab -->

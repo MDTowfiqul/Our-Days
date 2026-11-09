@@ -1,1 +1,1 @@
-Mode switch and settings moved to a bar at the bottom, so nothing covers your photo. Fixed the photo widget sometimes losing its picture.
+Fixed Google Drive and Telegram cloud backup: the Play version was missing the internet permission, so backups could not upload.

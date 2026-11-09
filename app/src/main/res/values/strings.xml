@@ -537,4 +537,7 @@
     <string name="cloud_drive_unavailable">Google Drive is only available in the Play Store version.</string>
     <string name="cloud_pick_account">Choose Google account</string>
     <string name="cloud_sign_out">Sign out</string>
+    <string name="cloud_drive_connect">Connect to Google Drive</string>
+    <string name="cloud_drive_connected">Connected to Google Drive – your backups are listed below.</string>
+    <string name="cloud_restore_refresh">Refresh</string>
 </resources>

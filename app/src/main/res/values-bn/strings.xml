@@ -532,4 +532,7 @@
     <string name="cloud_drive_unavailable">গুগল ড্রাইভ শুধু প্লে স্টোর সংস্করণে আছে।</string>
     <string name="cloud_pick_account">গুগল অ্যাকাউন্ট বেছে নাও</string>
     <string name="cloud_sign_out">সাইন আউট</string>
+    <string name="cloud_drive_connect">গুগল ড্রাইভে যুক্ত করো</string>
+    <string name="cloud_drive_connected">গুগল ড্রাইভে যুক্ত হয়েছে – তোমার ব্যাকআপগুলো নিচে দেখা যাচ্ছে।</string>
+    <string name="cloud_restore_refresh">রিফ্রেশ</string>
 </resources>

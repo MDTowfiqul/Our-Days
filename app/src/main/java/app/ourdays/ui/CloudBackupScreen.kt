@@ -22,6 +22,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -84,6 +85,9 @@ fun CloudBackupScreen() {
     var busy by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     var remote by remember { mutableStateOf<List<RemoteItem>?>(null) }
+    // Zähler, der die Cloud-Liste neu lädt: nach Anmelden, Backup und Restore,
+    // damit auch Sicherungen von vor einer Neuinstallation erscheinen.
+    var remoteRefresh by remember { mutableStateOf(0) }
     var restoreTarget by remember { mutableStateOf<RemoteItem?>(null) }
     var restorePassword by remember { mutableStateOf("") }
     var showHelp by remember { mutableStateOf(false) }
@@ -130,7 +134,7 @@ fun CloudBackupScreen() {
     // Ferne Sicherungen laden, sobald Anbieter und Zugangsdaten stehen.
     // Das lokale Verzeichnis ist die Hauptquelle (hängt nicht von Telegram-Updates ab),
     // die Cloud-Liste ergänzt Sicherungen von anderen Geräten.
-    LaunchedEffect(config.provider, config.botToken, config.chatId, config.driveAccount) {
+    LaunchedEffect(config.provider, config.botToken, config.chatId, config.driveAccount, remoteRefresh) {
         remote = null
         val local = CloudBackupStore.ledger(context)
             .filter { it.provider == config.provider }
@@ -275,6 +279,24 @@ fun CloudBackupScreen() {
                         },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                     )
+                    // Eigene Anmeldung: fragt nur die Drive-Berechtigung ab und lädt
+                    // die vorhandenen Sicherungen — ohne eine neue Sicherung zu erstellen.
+                    Button(
+                        onClick = {
+                            runBusy("connect") {
+                                withContext(Dispatchers.IO) {
+                                    driveBackend?.listBackups(config.driveAccount)
+                                }
+                                remoteRefresh++
+                                context.getString(R.string.cloud_drive_connected)
+                            }
+                        },
+                        enabled = busy == null,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        if (busy == "connect") CircularProgressIndicator(Modifier.padding(4.dp))
+                        else Text(stringResource(R.string.cloud_drive_connect))
+                    }
                 }
             }
             CloudProvider.NONE -> Unit
@@ -362,6 +384,7 @@ fun CloudBackupScreen() {
                             throw e
                         }
                         config = CloudBackupStore.load(context)
+                        remoteRefresh++
                         context.getString(R.string.cloud_backup_ok)
                     }
                 },
@@ -376,8 +399,20 @@ fun CloudBackupScreen() {
                 }
             }
 
-            // Wiederherstellen
-            Text(stringResource(R.string.cloud_restore), style = MaterialTheme.typography.titleSmall)
+            // Wiederherstellen: eigener Bereich mit allen Cloud-Sicherungen,
+            // neueste zuerst — auch von vor einer Neuinstallation.
+            HorizontalDivider(Modifier.padding(vertical = 4.dp))
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.cloud_restore), style = MaterialTheme.typography.titleSmall)
+                TextButton(
+                    onClick = { remoteRefresh++ },
+                    enabled = busy == null,
+                ) { Text(stringResource(R.string.cloud_restore_refresh)) }
+            }
             when (val r = remote) {
                 null -> Text(stringResource(R.string.cloud_restore_loading), style = MaterialTheme.typography.bodySmall)
                 else -> if (r.isEmpty()) {
@@ -441,6 +476,7 @@ fun CloudBackupScreen() {
                                     restorePassword,
                                 )
                             }
+                            remoteRefresh++
                             context.getString(R.string.cloud_restore_ok)
                         }
                     },

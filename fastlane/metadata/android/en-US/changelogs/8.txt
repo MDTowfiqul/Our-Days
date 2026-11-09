@@ -1,1 +1,1 @@
-Updates in the GitHub version now install right in the app: tap the notification or the entry in the settings, and Android asks to install. Build prepared for F-Droid.
+Cloud backup: a new Connect button signs in to Google Drive without creating a backup, and Restore now lists backups from before reinstalling.

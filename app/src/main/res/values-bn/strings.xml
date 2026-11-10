@@ -234,7 +234,7 @@
     <string name="backup_import_confirm">ফিরিয়ে আনো</string>
     <string name="backup_restore_onboarding">ব্যাকআপ ফিরিয়ে আনো</string>
     <string name="backup_restore_from_device">এই ডিভাইস থেকে</string>
-    <string name="backup_restore_from_drive">গুগল ড্রাইভ থেকে</string>
+    <string name="backup_restore_from_online">অনলাইন থেকে</string>
     <string name="backup_saved">ব্যাকআপ সেভ হয়েছে</string>
     <string name="backup_save_failed">ব্যাকআপ সেভ করা যায়নি</string>
     <string name="backup_restored">ব্যাকআপ ফিরিয়ে আনা হয়েছে</string>
@@ -539,6 +539,7 @@
     <string name="cloud_restore_refresh">রিফ্রেশ</string>
     <string name="cloud_drive_not_connected">ব্যাকআপ দেখতে উপরে ‘গুগল ড্রাইভে যুক্ত করো’-তে ট্যাপ করো।</string>
     <string name="cloud_restore_same_account">যে গুগল অ্যাকাউন্ট দিয়ে ব্যাকআপ নেওয়া হয়েছিল, সেই অ্যাকাউন্ট দিয়েই সাইন ইন করো।</string>
+    <string name="cloud_restore_online_hint">নিচে টেলিগ্রাম বা গুগল ড্রাইভ বেছে নাও, যুক্ত করো, তারপর একটা ব্যাকআপ ফিরিয়ে আনো।</string>
     <string name="cloud_restore_rename">নাম বদলাও</string>
     <string name="cloud_restore_delete">মুছে ফেলো</string>
     <string name="cloud_restore_rename_title">ব্যাকআপের নাম বদলাও</string>

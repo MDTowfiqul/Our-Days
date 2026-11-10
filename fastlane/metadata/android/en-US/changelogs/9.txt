@@ -1,1 +1,1 @@
-Restore is now organised: backups are grouped by day, and Google Drive backups can be renamed or deleted. The Welcome screen can now restore from Google Drive too, not just from a file.
+Restore is now organised: backups are grouped by day, each shows its size, and Google Drive backups can be renamed or deleted. The Welcome screen can now restore from your online backup too (Telegram or Google Drive), not just from a file.

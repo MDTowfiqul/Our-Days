@@ -1,7 +1,6 @@
 package app.ourdays.ui
 
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Restore
@@ -404,7 +403,7 @@ fun OnboardingScreen(
     }
 }
 
-/** Eigene Seite zum Wiederherstellen aus Google Drive — direkt vom Willkommen-Bildschirm. */
+/** Eigene Seite zum Wiederherstellen aus der Cloud — direkt vom Willkommen-Bildschirm. */
 @Composable
 fun CloudRestoreScreen(onBack: () -> Unit, onRestored: () -> Unit) {
     Column(
@@ -413,30 +412,12 @@ fun CloudRestoreScreen(onBack: () -> Unit, onRestored: () -> Unit) {
             .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-            }
-            Text(
-                stringResource(R.string.cloud_title),
-                style = MaterialTheme.typography.titleLarge,
-            )
-        }
-        Text(
-            stringResource(R.string.cloud_restore_online_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
-        )
         Column(
             Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            CloudBackupScreen(onRestored = onRestored)
+            CloudBackupScreen(restoreOnly = true, onRestored = onRestored, onRestoreBack = onBack)
         }
     }
 }

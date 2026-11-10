@@ -1,1 +1,1 @@
-The F-Droid version is now signed with the same key as the GitHub version (reproducible builds).
+Fixed: a fresh install now finds your old Google Drive backups — the backup list was searching the wrong part of Drive. Restore is now its own screen: tap 'Restore a backup' and pick one by date. If the list can't load, the app now shows the error instead of saying no backups exist.

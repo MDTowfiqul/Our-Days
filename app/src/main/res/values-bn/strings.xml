@@ -526,6 +526,7 @@
     <string name="cloud_restore">ফিরিয়ে আনো</string>
     <string name="cloud_restore_loading">ব্যাকআপ তালিকা লোড হচ্ছে…</string>
     <string name="cloud_restore_empty">এখনো কোনো ক্লাউড ব্যাকআপ পাওয়া যায়নি।</string>
+    <string name="cloud_restore_count">%1$dটি ব্যাকআপ আছে</string>
     <string name="cloud_restore_title">ব্যাকআপ ফিরিয়ে আনো</string>
     <string name="cloud_restore_warning">এতে বর্তমান সব ডেটা ব্যাকআপ দিয়ে বদলে যাবে। চালিয়ে যাবে?</string>
     <string name="cloud_restore_confirm">ফিরিয়ে আনো</string>

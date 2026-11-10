@@ -52,6 +52,7 @@ import app.ourdays.data.Changelog
 import app.ourdays.data.MAX_SLIDES
 import app.ourdays.notify.Notifier
 import app.ourdays.share.ShareCard
+import app.ourdays.ui.CloudRestoreScreen
 import app.ourdays.ui.HomeScreen
 import app.ourdays.ui.LicensesScreen
 import app.ourdays.ui.LockScreen
@@ -102,6 +103,7 @@ class MainActivity : ComponentActivity() {
                 val autoBackup by vm.autoBackup.collectAsStateWithLifecycle()
                 val scope = rememberCoroutineScope()
                 var showSettings by rememberSaveable { mutableStateOf(false) }
+                var showCloudRestore by rememberSaveable { mutableStateOf(false) }
                 var editingPhoto by rememberSaveable { mutableStateOf(false) }
                 var showLicenses by rememberSaveable { mutableStateOf(false) }
                 // Moment-Editor: null = zu, "" = neuer Moment, sonst ID; dazu optional ein vorgeschlagener Titel
@@ -235,9 +237,10 @@ class MainActivity : ComponentActivity() {
                 // ob es wirklich eine Sicherung ist, prüft die App beim Laden selbst
                 fun loadBackup() = backupLoader.launch(arrayOf("*/*"))
 
-                BackHandler(enabled = showSettings || editingPhoto || editingMoment != null || showLicenses) {
+                BackHandler(enabled = showSettings || showCloudRestore || editingPhoto || editingMoment != null || showLicenses) {
                     when {
                         showLicenses -> showLicenses = false
+                        showCloudRestore -> showCloudRestore = false
                         editingMoment != null -> editingMoment = null
                         editingPhoto -> editingPhoto = false
                         else -> showSettings = false
@@ -250,6 +253,7 @@ class MainActivity : ComponentActivity() {
                     editingPhoto && s.photoPath != null -> "editor"
                     editingMoment != null && s.onboardingDone -> "moment"
                     !s.onboardingDone && !introDone -> "intro"
+                    showCloudRestore -> "cloud-restore"
                     !s.onboardingDone -> "onboarding"
                     showSettings && showLicenses -> "licenses"
                     showSettings -> "settings"
@@ -309,6 +313,10 @@ class MainActivity : ComponentActivity() {
                                     },
                                 )
                                 "intro" -> IntroScreen(onContinue = { introDone = true })
+                                "cloud-restore" -> CloudRestoreScreen(
+                                    onBack = { showCloudRestore = false },
+                                    onRestored = { showCloudRestore = false },
+                                )
                                 "onboarding" -> OnboardingScreen(
                                     settings = s,
                                     notificationsAllowed = allowed,
@@ -327,6 +335,7 @@ class MainActivity : ComponentActivity() {
                                     step = onboardingStep,
                                     onStep = { onboardingStep = it },
                                     onRestoreBackup = ::loadBackup,
+                                    onRestoreFromDrive = { showCloudRestore = true },
                                 )
                                 "settings" -> SettingsScreen(
                                     settings = s,

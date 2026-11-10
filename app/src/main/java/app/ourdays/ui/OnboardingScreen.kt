@@ -1,7 +1,12 @@
 package app.ourdays.ui
 
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.Cloud
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Restore
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import ourdays.app.R
 import app.ourdays.data.Texts
@@ -99,9 +104,12 @@ fun OnboardingScreen(
     onStep: (Int) -> Unit,
     /** Daten aus einer Sicherungsdatei laden, z. B. auf einem neuen Handy */
     onRestoreBackup: (() -> Unit)? = null,
+    /** Sicherung aus Google Drive wiederherstellen (eigene Seite mit Anmeldung) */
+    onRestoreFromDrive: (() -> Unit)? = null,
 ) {
     // Alle Namen; mit „Weitere Person“ kommen Felder dazu (Poly-Modus)
     var names by rememberSaveable { mutableStateOf(ArrayList(settings.people.map { it.name })) }
+    var restoreChoice by rememberSaveable { mutableStateOf(false) }
     var presets by remember { mutableStateOf(false) }
     var time by remember { mutableStateOf(false) }
     var startTime by remember { mutableStateOf(false) }
@@ -307,7 +315,7 @@ fun OnboardingScreen(
                     Text(stringResource(R.string.lets_go))
                 }
                 if (onRestoreBackup != null) {
-                    OutlinedButton(onClick = onRestoreBackup, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                    OutlinedButton(onClick = { restoreChoice = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                         Icon(Icons.Rounded.Restore, null, Modifier.size(20.dp))
                         Text(stringResource(R.string.backup_restore_onboarding), Modifier.padding(start = 8.dp))
                     }
@@ -333,6 +341,35 @@ fun OnboardingScreen(
                 }
             }
         }
+    }
+
+    if (restoreChoice) {
+        AlertDialog(
+            onDismissRequest = { restoreChoice = false },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { restoreChoice = false }) { Text(stringResource(R.string.cancel)) } },
+            title = { Text(stringResource(R.string.backup_restore_onboarding)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { restoreChoice = false; onRestoreBackup?.invoke() },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Rounded.Description, null, Modifier.size(20.dp))
+                        Text(stringResource(R.string.backup_restore_from_device), Modifier.padding(start = 8.dp))
+                    }
+                    if (onRestoreFromDrive != null) {
+                        Button(
+                            onClick = { restoreChoice = false; onRestoreFromDrive() },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(Icons.Rounded.Cloud, null, Modifier.size(20.dp))
+                            Text(stringResource(R.string.backup_restore_from_drive), Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            },
+        )
     }
 
     if (presets) {
@@ -363,6 +400,43 @@ fun OnboardingScreen(
         ) {
             onStartTime(it)
             startTime = false
+        }
+    }
+}
+
+/** Eigene Seite zum Wiederherstellen aus Google Drive — direkt vom Willkommen-Bildschirm. */
+@Composable
+fun CloudRestoreScreen(onBack: () -> Unit, onRestored: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .windowInsetsPadding(WindowInsets.safeDrawing),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+            }
+            Text(
+                stringResource(R.string.cloud_restore_title),
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
+        Text(
+            stringResource(R.string.cloud_restore_same_account),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 24.dp, bottom = 8.dp),
+        )
+        Column(
+            Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+        ) {
+            CloudBackupScreen(onRestored = onRestored)
         }
     }
 }

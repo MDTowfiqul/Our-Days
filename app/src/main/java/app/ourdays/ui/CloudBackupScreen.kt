@@ -16,6 +16,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.CloudUpload
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -24,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -77,7 +80,7 @@ private sealed interface RemoteItem {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CloudBackupScreen() {
+fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var config by remember { mutableStateOf(CloudBackupStore.load(context)) }
@@ -88,6 +91,12 @@ fun CloudBackupScreen() {
     // Zähler, der die Cloud-Liste neu lädt: nach Anmelden, Backup und Restore,
     // damit auch Sicherungen von vor einer Neuinstallation erscheinen.
     var remoteRefresh by remember { mutableStateOf(0) }
+    // True, wenn Drive die Liste wegen fehlender Berechtigung verweigert hat:
+    // dann heißt leer noch nicht "keine Backups", sondern "erst verbinden".
+    var driveNeedsConnect by remember { mutableStateOf(false) }
+    var renameTarget by remember { mutableStateOf<RemoteItem.Drive?>(null) }
+    var renameText by remember { mutableStateOf("") }
+    var deleteTarget by remember { mutableStateOf<RemoteItem.Drive?>(null) }
     var restoreTarget by remember { mutableStateOf<RemoteItem?>(null) }
     var restorePassword by remember { mutableStateOf("") }
     var showHelp by remember { mutableStateOf(false) }
@@ -136,6 +145,7 @@ fun CloudBackupScreen() {
     // die Cloud-Liste ergänzt Sicherungen von anderen Geräten.
     LaunchedEffect(config.provider, config.botToken, config.chatId, config.driveAccount, remoteRefresh) {
         remote = null
+        driveNeedsConnect = false
         val local = CloudBackupStore.ledger(context)
             .filter { it.provider == config.provider }
             .map {
@@ -164,7 +174,9 @@ fun CloudBackupScreen() {
                         RemoteItem.Drive(it.id, it.name, it.modified)
                     }
                 }
-            }.getOrNull().orEmpty()
+            }.onFailure { if (it is DriveConsentNeeded) driveNeedsConnect = true }
+                .onSuccess { driveNeedsConnect = false }
+                .getOrNull().orEmpty()
         } else emptyList()
         val keys = local.mapTo(mutableSetOf()) {
             when (it) {
@@ -416,30 +428,68 @@ fun CloudBackupScreen() {
             when (val r = remote) {
                 null -> Text(stringResource(R.string.cloud_restore_loading), style = MaterialTheme.typography.bodySmall)
                 else -> if (r.isEmpty()) {
-                    Text(stringResource(R.string.cloud_restore_empty), style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        if (config.provider == CloudProvider.DRIVE && config.driveAccount.isNotBlank() && driveNeedsConnect)
+                            stringResource(R.string.cloud_drive_not_connected)
+                        else stringResource(R.string.cloud_restore_empty),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 } else {
-                    r.forEach { item ->
-                        val date = DateTimeFormatter.ofPattern("d.M.yyyy HH:mm")
-                            .format(Instant.ofEpochMilli(item.date).atZone(ZoneId.systemDefault()))
-                        val partInfo = (item as? RemoteItem.Telegram)
-                            ?.takeIf { it.parts > 1 }
-                            ?.let { " • " + context.getString(R.string.cloud_restore_parts, it.parts) }
-                            .orEmpty()
-                        ListItem(
-                            headlineContent = { Text(item.label) },
-                            supportingContent = { Text("$date$partInfo") },
-                            leadingContent = { Icon(Icons.Rounded.Restore, null) },
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                            trailingContent = {
-                                TextButton(
-                                    onClick = {
-                                        restoreTarget = item
-                                        restorePassword = ""
-                                    },
-                                    enabled = busy == null,
-                                ) { Text(stringResource(R.string.cloud_restore_confirm)) }
-                            },
+                    // Nach Tag gruppiert, neueste zuerst; in einem Tag nach Uhrzeit.
+                    val byDay = r.groupBy {
+                        Instant.ofEpochMilli(it.date).atZone(ZoneId.systemDefault()).toLocalDate()
+                    }.toSortedMap(compareByDescending { it })
+                    byDay.forEach { (day, items) ->
+                        Text(
+                            DateTimeFormatter.ofPattern("d.M.yyyy").format(day),
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(top = 8.dp),
                         )
+                        items.forEach { item ->
+                            val time = DateTimeFormatter.ofPattern("HH:mm")
+                                .format(Instant.ofEpochMilli(item.date).atZone(ZoneId.systemDefault()))
+                            val partInfo = (item as? RemoteItem.Telegram)
+                                ?.takeIf { it.parts > 1 }
+                                ?.let { " • " + context.getString(R.string.cloud_restore_parts, it.parts) }
+                                .orEmpty()
+                            ListItem(
+                                headlineContent = { Text(time) },
+                                supportingContent = { Text("${item.label}$partInfo") },
+                                leadingContent = { Icon(Icons.Rounded.Restore, null) },
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                                trailingContent = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (item is RemoteItem.Drive) {
+                                            IconButton(
+                                                onClick = { renameTarget = item; renameText = item.label },
+                                                enabled = busy == null,
+                                            ) {
+                                                Icon(
+                                                    Icons.Rounded.Edit,
+                                                    contentDescription = stringResource(R.string.cloud_restore_rename),
+                                                )
+                                            }
+                                            IconButton(
+                                                onClick = { deleteTarget = item },
+                                                enabled = busy == null,
+                                            ) {
+                                                Icon(
+                                                    Icons.Rounded.Delete,
+                                                    contentDescription = stringResource(R.string.cloud_restore_delete),
+                                                )
+                                            }
+                                        }
+                                        TextButton(
+                                            onClick = {
+                                                restoreTarget = item
+                                                restorePassword = ""
+                                            },
+                                            enabled = busy == null,
+                                        ) { Text(stringResource(R.string.cloud_restore_confirm)) }
+                                    }
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -477,6 +527,7 @@ fun CloudBackupScreen() {
                                 )
                             }
                             remoteRefresh++
+                            onRestored?.invoke()
                             context.getString(R.string.cloud_restore_ok)
                         }
                     },
@@ -499,6 +550,68 @@ fun CloudBackupScreen() {
                     if (busy == "restore") CircularProgressIndicator()
                 }
             },
+        )
+    }
+
+    renameTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = { renameTarget = null },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val t = target
+                        val name = renameText.trim()
+                        renameTarget = null
+                        runBusy("rename") {
+                            withContext(Dispatchers.IO) {
+                                driveBackend?.rename(config.driveAccount, t.id, name)
+                                    ?: throw java.io.IOException("drive not available in this build")
+                            }
+                            CloudBackupStore.renameRecord(context, CloudProvider.DRIVE, t.id, name)
+                            remoteRefresh++
+                            context.getString(R.string.cloud_restore_renamed)
+                        }
+                    },
+                    enabled = renameText.isNotBlank() && busy == null,
+                ) { Text(stringResource(R.string.cloud_restore_rename)) }
+            },
+            dismissButton = { TextButton(onClick = { renameTarget = null }) { Text(stringResource(R.string.cancel)) } },
+            title = { Text(stringResource(R.string.cloud_restore_rename_title)) },
+            text = {
+                OutlinedTextField(
+                    value = renameText,
+                    onValueChange = { renameText = it },
+                    label = { Text(stringResource(R.string.cloud_restore_new_name)) },
+                    singleLine = true,
+                )
+            },
+        )
+    }
+
+    deleteTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val t = target
+                        deleteTarget = null
+                        runBusy("delete") {
+                            withContext(Dispatchers.IO) {
+                                driveBackend?.delete(config.driveAccount, t.id)
+                                    ?: throw java.io.IOException("drive not available in this build")
+                            }
+                            CloudBackupStore.removeRecord(context, CloudProvider.DRIVE, t.id)
+                            remoteRefresh++
+                            context.getString(R.string.cloud_restore_deleted)
+                        }
+                    },
+                    enabled = busy == null,
+                ) { Text(stringResource(R.string.cloud_restore_delete)) }
+            },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(stringResource(R.string.cancel)) } },
+            title = { Text(stringResource(R.string.cloud_restore_delete_title)) },
+            text = { Text(stringResource(R.string.cloud_restore_delete_warning)) },
         )
     }
 }

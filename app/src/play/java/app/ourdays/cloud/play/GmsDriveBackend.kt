@@ -132,15 +132,20 @@ class GmsDriveBackend(private val context: Context) : DriveBackend {
     }
 
     override suspend fun listBackups(account: String): List<DriveBackend.DriveFile> {
-        // Der appDataFolder gehört allein dieser App — alle Dateien darin sind unsere
-        // Sicherungen, auch umbenannte. Deshalb kein Namensfilter in der Abfrage.
+        // Der appDataFolder liegt in einem eigenen "space": Ohne spaces=appDataFolder
+        // sucht files.list nur im normalen Drive und findet nie etwas — der q-Filter
+        // allein reicht nicht. Darum sah eine neue Installation keine alten
+        // Sicherungen, obwohl sie im Drive lagen (die angezeigte Liste kam nur
+        // aus dem lokalen Verzeichnis). So steht es auch in Googles Doku:
+        // "To search for files in the application data folder, set the spaces
+        // field to appDataFolder and use the files.list method."
         val q = java.net.URLEncoder.encode(
             "'appDataFolder' in parents and trashed = false",
             "UTF-8",
         )
         val text = authGet(
             account,
-            "https://www.googleapis.com/drive/v3/files?q=$q&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=50",
+            "https://www.googleapis.com/drive/v3/files?q=$q&spaces=appDataFolder&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=50",
         )
         val files = JSONObject(text).optJSONArray("files") ?: return emptyList()
         return (0 until files.length()).map { i ->

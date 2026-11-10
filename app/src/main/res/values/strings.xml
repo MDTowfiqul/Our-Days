@@ -531,6 +531,7 @@
     <string name="cloud_restore">Restore</string>
     <string name="cloud_restore_loading">Loading available backups…</string>
     <string name="cloud_restore_empty">No cloud backups found yet.</string>
+    <string name="cloud_restore_count">%1$d backups available</string>
     <string name="cloud_restore_title">Restore backup</string>
     <string name="cloud_restore_warning">This replaces all current data with the backup. Continue?</string>
     <string name="cloud_restore_confirm">Restore</string>

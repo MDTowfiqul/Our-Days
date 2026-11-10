@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Delete
@@ -89,7 +90,11 @@ private fun formatBackupSize(bytes: Long): String = when {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
+fun CloudBackupScreen(
+    onRestored: (() -> Unit)? = null,
+    restoreOnly: Boolean = false,
+    onRestoreBack: (() -> Unit)? = null,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var config by remember { mutableStateOf(CloudBackupStore.load(context)) }
@@ -103,6 +108,10 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
     // True, wenn Drive die Liste wegen fehlender Berechtigung verweigert hat:
     // dann heißt leer noch nicht "keine Backups", sondern "erst verbinden".
     var driveNeedsConnect by remember { mutableStateOf(false) }
+    // Eigene Wiederherstellen-Ansicht statt der Liste mitten in den Einstellungen.
+    var showRestore by remember { mutableStateOf(false) }
+    // Fehler beim Laden der Liste — statt still "keine Backups" zu behaupten.
+    var listError by remember { mutableStateOf<String?>(null) }
     var renameTarget by remember { mutableStateOf<RemoteItem.Drive?>(null) }
     var renameText by remember { mutableStateOf("") }
     var deleteTarget by remember { mutableStateOf<RemoteItem.Drive?>(null) }
@@ -155,6 +164,7 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
     LaunchedEffect(config.provider, config.botToken, config.chatId, config.driveAccount, remoteRefresh) {
         remote = null
         driveNeedsConnect = false
+        listError = null
         val local = CloudBackupStore.ledger(context)
             .filter { it.provider == config.provider }
             .map {
@@ -175,7 +185,9 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
                         RemoteItem.Telegram(it.stamp, it.date, it.parts.size, it.size)
                     }
                 }
-            }.getOrNull().orEmpty()
+            }.onFailure { listError = it.message?.take(200) }
+                .onSuccess { listError = null }
+                .getOrNull().orEmpty()
         } else if (config.provider == CloudProvider.DRIVE && config.driveAccount.isNotBlank() && driveBackend != null) {
             runCatching {
                 withContext(Dispatchers.IO) {
@@ -183,8 +195,11 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
                         RemoteItem.Drive(it.id, it.name, it.modified, it.size)
                     }
                 }
-            }.onFailure { if (it is DriveConsentNeeded) driveNeedsConnect = true }
-                .onSuccess { driveNeedsConnect = false }
+            }.onFailure {
+                if (it is DriveConsentNeeded) driveNeedsConnect = true
+                else listError = it.message?.take(200)
+            }
+                .onSuccess { driveNeedsConnect = false; listError = null }
                 .getOrNull().orEmpty()
         } else emptyList()
         // Die Cloud-Version gewinnt: Sie hat die aktuelle Größe und den aktuellen
@@ -198,6 +213,11 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
         remote = merged.sortedByDescending { it.date }
     }
 
+    // Beim Öffnen der Wiederherstellen-Ansicht neu laden, damit die Liste frisch ist.
+    LaunchedEffect(showRestore) {
+        if (showRestore) remoteRefresh++
+    }
+
     val accountPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
     ) { result ->
@@ -208,9 +228,10 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
         }
     }
 
-    Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.cloud_intro), style = MaterialTheme.typography.bodyMedium)
-
+    // Anbieter-Bereich (Auswahl + Anmeldung): auf der Einstellungs- und der
+    // Wiederherstellen-Ansicht derselbe, damit man auch frisch installiert
+    // erst Anbieter wählen und verbinden kann, bevor die Liste lädt.
+    val providerSection: @Composable () -> Unit = {
         // Anbieter wählen
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
@@ -319,102 +340,161 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
             }
             CloudProvider.NONE -> Unit
         }
+    }
 
-        if (config.provider != CloudProvider.NONE) {
-            OutlinedTextField(
-                value = config.password,
-                onValueChange = { persist(config.copy(password = it)) },
-                label = { Text(stringResource(R.string.cloud_password)) },
-                supportingText = { Text(stringResource(R.string.cloud_password_hint)) },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            if (config.password.isNotBlank()) {
+    // Eigene Wiederherstellen-Ansicht statt der Liste mitten in den Einstellungen.
+    val inRestore = restoreOnly || showRestore
+    // In der Wiederherstellen-Ansicht: Anbieter-Bereich nur zeigen, solange man
+    // noch wählen oder verbinden muss — sonst steht nur die Liste im Weg.
+    val needsConnect = config.provider == CloudProvider.NONE ||
+        (config.provider == CloudProvider.DRIVE && (config.driveAccount.isBlank() || driveNeedsConnect)) ||
+        (config.provider == CloudProvider.TELEGRAM && (config.botToken.isBlank() || config.chatId.isBlank()))
+
+    Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (!inRestore) {
+            Text(stringResource(R.string.cloud_intro), style = MaterialTheme.typography.bodyMedium)
+
+            providerSection()
+
+            if (config.provider != CloudProvider.NONE) {
                 OutlinedTextField(
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
-                    label = { Text(stringResource(R.string.cloud_password_confirm)) },
+                    value = config.password,
+                    onValueChange = { persist(config.copy(password = it)) },
+                    label = { Text(stringResource(R.string.cloud_password)) },
+                    supportingText = { Text(stringResource(R.string.cloud_password_hint)) },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    isError = confirmPassword.isNotEmpty() && confirmPassword != config.password,
                 )
-            }
-
-            // Häufigkeit
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.cloud_frequency), modifier = Modifier.weight(1f))
-                FilterChip(
-                    selected = config.frequencyDays == 1,
-                    onClick = { persist(config.copy(frequencyDays = 1)) },
-                    label = { Text(stringResource(R.string.cloud_daily)) },
-                )
-                FilterChip(
-                    selected = config.frequencyDays == 7,
-                    onClick = { persist(config.copy(frequencyDays = 7)) },
-                    label = { Text(stringResource(R.string.cloud_weekly)) },
-                )
-            }
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.cloud_wifi_only)) },
-                supportingContent = { Text(stringResource(R.string.cloud_wifi_only_summary)) },
-                trailingContent = {
-                    Switch(
-                        checked = config.wifiOnly,
-                        onCheckedChange = { persist(config.copy(wifiOnly = it)) },
+                if (config.password.isNotBlank()) {
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = { Text(stringResource(R.string.cloud_password_confirm)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = confirmPassword.isNotEmpty() && confirmPassword != config.password,
                     )
-                },
-                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier.clickable { persist(config.copy(wifiOnly = !config.wifiOnly)) },
-            )
+                }
 
-            // Status
-            val lastText = if (config.lastBackup > 0) {
-                DateTimeFormatter.ofPattern("d.M.yyyy HH:mm")
-                    .format(Instant.ofEpochMilli(config.lastBackup).atZone(ZoneId.systemDefault()))
-            } else stringResource(R.string.cloud_never)
-            Text(
-                stringResource(R.string.cloud_last_backup, lastText),
-                style = MaterialTheme.typography.bodySmall,
-            )
-            config.lastError?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
-            notice?.let {
-                Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
-            }
+                // Häufigkeit
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.cloud_frequency), modifier = Modifier.weight(1f))
+                    FilterChip(
+                        selected = config.frequencyDays == 1,
+                        onClick = { persist(config.copy(frequencyDays = 1)) },
+                        label = { Text(stringResource(R.string.cloud_daily)) },
+                    )
+                    FilterChip(
+                        selected = config.frequencyDays == 7,
+                        onClick = { persist(config.copy(frequencyDays = 7)) },
+                        label = { Text(stringResource(R.string.cloud_weekly)) },
+                    )
+                }
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.cloud_wifi_only)) },
+                    supportingContent = { Text(stringResource(R.string.cloud_wifi_only_summary)) },
+                    trailingContent = {
+                        Switch(
+                            checked = config.wifiOnly,
+                            onCheckedChange = { persist(config.copy(wifiOnly = it)) },
+                        )
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    modifier = Modifier.clickable { persist(config.copy(wifiOnly = !config.wifiOnly)) },
+                )
 
-            Button(
-                onClick = {
-                    runBusy("now") {
-                        try {
-                            withContext(Dispatchers.IO) {
-                                runCloudBackup(context, CloudBackupStore.load(context))
+                // Status
+                val lastText = if (config.lastBackup > 0) {
+                    DateTimeFormatter.ofPattern("d.M.yyyy HH:mm")
+                        .format(Instant.ofEpochMilli(config.lastBackup).atZone(ZoneId.systemDefault()))
+                } else stringResource(R.string.cloud_never)
+                Text(
+                    stringResource(R.string.cloud_last_backup, lastText),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                config.lastError?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+                notice?.let {
+                    Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
+                }
+
+                Button(
+                    onClick = {
+                        runBusy("now") {
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    runCloudBackup(context, CloudBackupStore.load(context))
+                                }
+                                CloudBackupStore.recordResult(context, true)
+                            } catch (e: DriveConsentNeeded) {
+                                throw e
+                            } catch (e: Exception) {
+                                CloudBackupStore.recordResult(context, false, e.message?.take(200))
+                                throw e
                             }
-                            CloudBackupStore.recordResult(context, true)
-                        } catch (e: DriveConsentNeeded) {
-                            throw e
-                        } catch (e: Exception) {
-                            CloudBackupStore.recordResult(context, false, e.message?.take(200))
-                            throw e
+                            config = CloudBackupStore.load(context)
+                            remoteRefresh++
+                            context.getString(R.string.cloud_backup_ok)
                         }
-                        config = CloudBackupStore.load(context)
-                        remoteRefresh++
-                        context.getString(R.string.cloud_backup_ok)
+                    },
+                    enabled = busy == null && config.password.isNotBlank() &&
+                        (confirmPassword.isEmpty() || confirmPassword == config.password),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (busy == "now") CircularProgressIndicator(Modifier.padding(4.dp))
+                    else {
+                        Icon(Icons.Rounded.CloudUpload, null, Modifier.padding(end = 8.dp))
+                        Text(stringResource(R.string.cloud_backup_now))
                     }
-                },
-                enabled = busy == null && config.password.isNotBlank() &&
-                    (confirmPassword.isEmpty() || confirmPassword == config.password),
+                }
+
+            // Wiederherstellen: eigene Ansicht — die Liste steht nicht mehr
+            // mitten in den Einstellungen.
+            OutlinedButton(
+                onClick = { showRestore = true },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                if (busy == "now") CircularProgressIndicator(Modifier.padding(4.dp))
-                else {
-                    Icon(Icons.Rounded.CloudUpload, null, Modifier.padding(end = 8.dp))
-                    Text(stringResource(R.string.cloud_backup_now))
+                Icon(Icons.Rounded.Restore, null, Modifier.padding(end = 8.dp))
+                Text(stringResource(R.string.backup_restore_onboarding))
+            }
+            val available = remote
+            if (available != null && available.isNotEmpty()) {
+                Text(
+                    context.getString(R.string.cloud_restore_count, available.size),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            }
+        } else {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = { if (restoreOnly) onRestoreBack?.invoke() else showRestore = false }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                 }
+                Text(
+                    stringResource(R.string.cloud_restore_title),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            }
+            if (restoreOnly) {
+                Text(
+                    stringResource(R.string.cloud_restore_online_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
+                )
+            }
+
+            if (needsConnect) providerSection()
+            notice?.let {
+                Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
             }
 
             // Wiederherstellen: eigener Bereich mit allen Cloud-Sicherungen,
@@ -434,12 +514,13 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
             when (val r = remote) {
                 null -> Text(stringResource(R.string.cloud_restore_loading), style = MaterialTheme.typography.bodySmall)
                 else -> if (r.isEmpty()) {
-                    Text(
-                        if (config.provider == CloudProvider.DRIVE && config.driveAccount.isNotBlank() && driveNeedsConnect)
-                            stringResource(R.string.cloud_drive_not_connected)
-                        else stringResource(R.string.cloud_restore_empty),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                    when {
+                        config.provider == CloudProvider.DRIVE && config.driveAccount.isNotBlank() && driveNeedsConnect ->
+                            Text(stringResource(R.string.cloud_drive_not_connected), style = MaterialTheme.typography.bodySmall)
+                        listError != null ->
+                            Text(listError!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        else -> Text(stringResource(R.string.cloud_restore_empty), style = MaterialTheme.typography.bodySmall)
+                    }
                 } else {
                     // Nach Tag gruppiert, neueste zuerst; in einem Tag nach Uhrzeit.
                     val byDay = r.groupBy {

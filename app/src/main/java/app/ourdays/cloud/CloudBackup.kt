@@ -92,5 +92,26 @@ object CloudBackupStore {
         prefs(context).edit().putString("ledger", lines.joinToString("\n")).apply()
     }
 
+    /** Passt den Namen eines Eintrags an (z. B. nach Umbenennen in Drive). */
+    fun renameRecord(context: Context, provider: CloudProvider, id: String, newLabel: String) {
+        val lines = prefs(context).getString("ledger", "").orEmpty().lines().map { line ->
+            val p = line.split(";", limit = 4)
+            if (p.size == 4 && p[0] == provider.name && p[1] == id) {
+                "${p[0]};${p[1]};${p[2]};${newLabel.replace(";", " ")}"
+            } else line
+        }
+        prefs(context).edit().putString("ledger", lines.joinToString("\n")).apply()
+    }
+
+    /** Entfernt einen Eintrag (z. B. nach Löschen in Drive), damit er nicht weiter angezeigt wird. */
+    fun removeRecord(context: Context, provider: CloudProvider, id: String) {
+        val lines = prefs(context).getString("ledger", "").orEmpty().lines()
+            .filter { line ->
+                val p = line.split(";", limit = 4)
+                !(p.size >= 2 && p[0] == provider.name && p[1] == id)
+            }
+        prefs(context).edit().putString("ledger", lines.joinToString("\n")).apply()
+    }
+
     fun clear(context: Context) = prefs(context).edit().clear().apply()
 }

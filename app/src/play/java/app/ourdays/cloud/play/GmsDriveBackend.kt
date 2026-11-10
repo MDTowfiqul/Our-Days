@@ -98,11 +98,26 @@ class GmsDriveBackend(private val context: Context) : DriveBackend {
         }
     }
 
-    private suspend fun deleteByName(account: String, name: String) {
-        listBackups(account).filter { it.name == name }.forEach { delete(account, it.id) }
+    override suspend fun rename(account: String, id: String, newName: String) {
+        val t = token(account)
+        val body = JSONObject().put("name", newName).toString()
+            .toRequestBody("application/json; charset=utf-8".toMediaType())
+        cloudHttp.newCall(
+            Request.Builder()
+                .url("https://www.googleapis.com/drive/v3/files/$id")
+                .header("Authorization", "Bearer $t")
+                .patch(body).build(),
+        ).execute().use { resp ->
+            val text = resp.body!!.string()
+            if (resp.code == 401) {
+                GoogleAuthUtil.invalidateToken(context, t)
+                return rename(account, id, newName)
+            }
+            if (!resp.isSuccessful) throw java.io.IOException("drive http ${resp.code}: ${text.take(200)}")
+        }
     }
 
-    private suspend fun delete(account: String, id: String) {
+    override suspend fun delete(account: String, id: String) {
         val t = token(account)
         cloudHttp.newCall(
             Request.Builder()
@@ -112,9 +127,15 @@ class GmsDriveBackend(private val context: Context) : DriveBackend {
         ).execute().use { }
     }
 
+    private suspend fun deleteByName(account: String, name: String) {
+        listBackups(account).filter { it.name == name }.forEach { delete(account, it.id) }
+    }
+
     override suspend fun listBackups(account: String): List<DriveBackend.DriveFile> {
+        // Der appDataFolder gehört allein dieser App — alle Dateien darin sind unsere
+        // Sicherungen, auch umbenannte. Deshalb kein Namensfilter in der Abfrage.
         val q = java.net.URLEncoder.encode(
-            "'appDataFolder' in parents and name contains 'our-days-backup' and trashed = false",
+            "'appDataFolder' in parents and trashed = false",
             "UTF-8",
         )
         val text = authGet(

@@ -19,6 +19,12 @@ interface DriveBackend {
 
     suspend fun download(account: String, id: String, out: OutputStream)
 
+    /** Benennt eine Sicherung um (nur Drive — Telegram-Sicherungen haben keinen Namen). */
+    suspend fun rename(account: String, id: String, newName: String)
+
+    /** Löscht eine Sicherung endgültig. */
+    suspend fun delete(account: String, id: String)
+
     /** Vergisst ein ungültig gewordenes Token, damit das nächste Mal ein neues geholt wird. */
     fun invalidate(account: String)
 }

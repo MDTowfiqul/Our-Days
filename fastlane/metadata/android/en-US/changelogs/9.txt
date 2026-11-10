@@ -1,1 +1,1 @@
-New page Settings > Open source licenses listing all libraries used. Privacy policy updated.
+Restore is now organised: backups are grouped by day, and Google Drive backups can be renamed or deleted. The Welcome screen can now restore from Google Drive too, not just from a file.

@@ -364,7 +364,7 @@ fun OnboardingScreen(
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Icon(Icons.Rounded.Cloud, null, Modifier.size(20.dp))
-                            Text(stringResource(R.string.backup_restore_from_drive), Modifier.padding(start = 8.dp))
+                            Text(stringResource(R.string.backup_restore_from_online), Modifier.padding(start = 8.dp))
                         }
                     }
                 }
@@ -421,15 +421,15 @@ fun CloudRestoreScreen(onBack: () -> Unit, onRestored: () -> Unit) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
             }
             Text(
-                stringResource(R.string.cloud_restore_title),
+                stringResource(R.string.cloud_title),
                 style = MaterialTheme.typography.titleLarge,
             )
         }
         Text(
-            stringResource(R.string.cloud_restore_same_account),
+            stringResource(R.string.cloud_restore_online_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 24.dp, bottom = 8.dp),
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
         )
         Column(
             Modifier

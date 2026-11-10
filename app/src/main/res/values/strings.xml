@@ -235,7 +235,7 @@
     <string name="backup_import_confirm">Restore</string>
     <string name="backup_restore_onboarding">Restore a backup</string>
     <string name="backup_restore_from_device">From this device</string>
-    <string name="backup_restore_from_drive">From Google Drive</string>
+    <string name="backup_restore_from_online">From online</string>
     <string name="backup_saved">Backup saved</string>
     <string name="backup_save_failed">Backup could not be saved</string>
     <string name="backup_restored">Backup restored</string>
@@ -544,6 +544,7 @@
     <string name="cloud_restore_refresh">Refresh</string>
     <string name="cloud_drive_not_connected">Tap Connect to Google Drive above to load your backups.</string>
     <string name="cloud_restore_same_account">Use the same Google account your backup was made with.</string>
+    <string name="cloud_restore_online_hint">Choose Telegram or Google Drive below, connect, then restore one of your backups.</string>
     <string name="cloud_restore_rename">Rename</string>
     <string name="cloud_restore_delete">Delete</string>
     <string name="cloud_restore_rename_title">Rename backup</string>

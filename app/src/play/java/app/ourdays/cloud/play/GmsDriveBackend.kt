@@ -140,7 +140,7 @@ class GmsDriveBackend(private val context: Context) : DriveBackend {
         )
         val text = authGet(
             account,
-            "https://www.googleapis.com/drive/v3/files?q=$q&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc&pageSize=50",
+            "https://www.googleapis.com/drive/v3/files?q=$q&fields=files(id,name,modifiedTime,size)&orderBy=modifiedTime desc&pageSize=50",
         )
         val files = JSONObject(text).optJSONArray("files") ?: return emptyList()
         return (0 until files.length()).map { i ->
@@ -151,6 +151,7 @@ class GmsDriveBackend(private val context: Context) : DriveBackend {
                 modified = runCatching {
                     java.time.Instant.parse(o.getString("modifiedTime")).toEpochMilli()
                 }.getOrDefault(0L),
+                size = o.optLong("size", 0),
             )
         }
     }

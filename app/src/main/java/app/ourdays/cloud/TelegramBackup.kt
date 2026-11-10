@@ -112,7 +112,7 @@ object TelegramBackup {
             }
     }
 
-    data class RemoteBackup(val stamp: String, val parts: List<String>, val date: Long)
+    data class RemoteBackup(val stamp: String, val parts: List<String>, val date: Long, val size: Long = 0)
 
     /**
      * Listet eigene Backups aus den unbestätigten Updates. Die Updates werden bewusst
@@ -125,7 +125,7 @@ object TelegramBackup {
                 if (!resp.isSuccessful) throw java.io.IOException("telegram http ${resp.code}")
                 checkOk(resp.body!!.string())
             }.toString()
-        val byStamp = mutableMapOf<String, MutableList<Pair<Int, String>>>()
+        val byStamp = mutableMapOf<String, MutableList<Triple<Int, String, Long>>>()
         val result = JSONObject(text).getJSONArray("result")
         for (i in 0 until result.length()) {
             val update = result.getJSONObject(i)
@@ -140,7 +140,7 @@ object TelegramBackup {
             val stamp = tail[0]
             val index = tail[2].substringBefore("/").toIntOrNull() ?: continue
             val fileId = doc.getString("file_id")
-            byStamp.getOrPut(stamp) { mutableListOf() }.add(index to fileId)
+            byStamp.getOrPut(stamp) { mutableListOf() }.add(Triple(index, fileId, doc.optLong("file_size", 0)))
         }
         return byStamp.mapNotNull { (stamp, parts) ->
             val ordered = parts.sortedBy { it.first }.map { it.second }
@@ -148,7 +148,7 @@ object TelegramBackup {
             // Nur vollständige Sätze (1..n lückenlos) anbieten
             val indexes = parts.map { it.first }.sorted()
             if (indexes != (1..indexes.size).toList()) return@mapNotNull null
-            RemoteBackup(stamp, ordered, msgDateOf(stamp))
+            RemoteBackup(stamp, ordered, msgDateOf(stamp), parts.sumOf { it.third })
         }.sortedByDescending { it.date }
     }
 

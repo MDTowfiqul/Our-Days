@@ -71,21 +71,21 @@ object CloudBackupStore {
     }
 
     /** Lokales Verzeichnis hochgeladener Sicherungen (id = Telegram-Stempel oder Drive-Datei-ID). */
-    data class BackupRecord(val provider: CloudProvider, val id: String, val date: Long, val label: String)
+    data class BackupRecord(val provider: CloudProvider, val id: String, val date: Long, val label: String, val size: Long = 0)
 
     fun ledger(context: Context): List<BackupRecord> {
         return prefs(context).getString("ledger", "").orEmpty().lines()
             .mapNotNull { line ->
-                val p = line.split(";", limit = 4)
+                val p = line.split(";", limit = 5)
                 if (p.size < 4) return@mapNotNull null
                 val provider = runCatching { CloudProvider.valueOf(p[0]) }.getOrNull() ?: return@mapNotNull null
-                BackupRecord(provider, p[1], p[2].toLongOrNull() ?: 0L, p[3])
+                BackupRecord(provider, p[1], p[2].toLongOrNull() ?: 0L, p[3], p.getOrNull(4)?.toLongOrNull() ?: 0L)
             }
             .sortedByDescending { it.date }
     }
 
-    fun addRecord(context: Context, provider: CloudProvider, id: String, label: String) {
-        val line = "${provider.name};$id;${System.currentTimeMillis()};${label.replace(";", " ")}"
+    fun addRecord(context: Context, provider: CloudProvider, id: String, label: String, size: Long = 0) {
+        val line = "${provider.name};$id;${System.currentTimeMillis()};${label.replace(";", " ")};$size"
         val existing = prefs(context).getString("ledger", "").orEmpty()
         // Höchstens 50 Einträge behalten
         val lines = (listOf(line) + existing.lines()).filter { it.isNotBlank() }.take(50)
@@ -95,9 +95,9 @@ object CloudBackupStore {
     /** Passt den Namen eines Eintrags an (z. B. nach Umbenennen in Drive). */
     fun renameRecord(context: Context, provider: CloudProvider, id: String, newLabel: String) {
         val lines = prefs(context).getString("ledger", "").orEmpty().lines().map { line ->
-            val p = line.split(";", limit = 4)
-            if (p.size == 4 && p[0] == provider.name && p[1] == id) {
-                "${p[0]};${p[1]};${p[2]};${newLabel.replace(";", " ")}"
+            val p = line.split(";", limit = 5)
+            if (p.size >= 4 && p[0] == provider.name && p[1] == id) {
+                "${p[0]};${p[1]};${p[2]};${newLabel.replace(";", " ")};${p.getOrNull(4) ?: 0}"
             } else line
         }
         prefs(context).edit().putString("ledger", lines.joinToString("\n")).apply()

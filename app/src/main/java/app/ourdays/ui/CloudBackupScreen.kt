@@ -70,12 +70,21 @@ import java.time.format.DateTimeFormatter
 private sealed interface RemoteItem {
     val label: String
     val date: Long
-    data class Telegram(val stamp: String, override val date: Long, val parts: Int = 1) : RemoteItem {
+    val size: Long
+    data class Telegram(val stamp: String, override val date: Long, val parts: Int = 1, override val size: Long = 0) : RemoteItem {
         override val label: String = "Backup $stamp"
     }
-    data class Drive(val id: String, val name: String, override val date: Long) : RemoteItem {
+    data class Drive(val id: String, val name: String, override val date: Long, override val size: Long = 0) : RemoteItem {
         override val label: String = name
     }
+}
+
+/** Menschenlesbare Größe, z. B. "340 KB" oder "1,2 MB". */
+private fun formatBackupSize(bytes: Long): String = when {
+    bytes < 1024 -> "$bytes B"
+    bytes < 1024 * 1024 -> "%.0f KB".format(java.util.Locale.US, bytes / 1024.0)
+    bytes < 1024 * 1024 * 1024 -> "%.1f MB".format(java.util.Locale.US, bytes / (1024.0 * 1024.0))
+    else -> "%.2f GB".format(java.util.Locale.US, bytes / (1024.0 * 1024.0 * 1024.0))
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -153,9 +162,9 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
                     CloudProvider.TELEGRAM -> {
                         val parts = Regex("""\((\d+) parts?\)""").find(it.label)
                             ?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
-                        RemoteItem.Telegram(it.id, it.date, parts)
+                        RemoteItem.Telegram(it.id, it.date, parts, it.size)
                     }
-                    CloudProvider.DRIVE -> RemoteItem.Drive(it.id, it.label, it.date)
+                    CloudProvider.DRIVE -> RemoteItem.Drive(it.id, it.label, it.date, it.size)
                     CloudProvider.NONE -> null
                 }
             }.filterNotNull()
@@ -163,7 +172,7 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
             runCatching {
                 withContext(Dispatchers.IO) {
                     TelegramBackup.listBackups(config.botToken).map {
-                        RemoteItem.Telegram(it.stamp, it.date, it.parts.size)
+                        RemoteItem.Telegram(it.stamp, it.date, it.parts.size, it.size)
                     }
                 }
             }.getOrNull().orEmpty()
@@ -171,25 +180,21 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
             runCatching {
                 withContext(Dispatchers.IO) {
                     driveBackend.listBackups(config.driveAccount).map {
-                        RemoteItem.Drive(it.id, it.name, it.modified)
+                        RemoteItem.Drive(it.id, it.name, it.modified, it.size)
                     }
                 }
             }.onFailure { if (it is DriveConsentNeeded) driveNeedsConnect = true }
                 .onSuccess { driveNeedsConnect = false }
                 .getOrNull().orEmpty()
         } else emptyList()
-        val keys = local.mapTo(mutableSetOf()) {
-            when (it) {
-                is RemoteItem.Telegram -> "t:${it.stamp}"
-                is RemoteItem.Drive -> "d:${it.id}"
-            }
+        // Die Cloud-Version gewinnt: Sie hat die aktuelle Größe und den aktuellen
+        // Namen (auch nach Umbenennen). Das lokale Verzeichnis ergänzt nur Lücken.
+        fun keyOf(item: RemoteItem) = when (item) {
+            is RemoteItem.Telegram -> "t:${item.stamp}"
+            is RemoteItem.Drive -> "d:${item.id}"
         }
-        val merged = local + cloud.filter {
-            when (it) {
-                is RemoteItem.Telegram -> keys.add("t:${it.stamp}")
-                is RemoteItem.Drive -> keys.add("d:${it.id}")
-            }
-        }
+        val cloudKeys = cloud.mapTo(mutableSetOf()) { keyOf(it) }
+        val merged = cloud + local.filter { keyOf(it) !in cloudKeys }
         remote = merged.sortedByDescending { it.date }
     }
 
@@ -283,6 +288,7 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
                 } else {
                     ListItem(
                         headlineContent = { Text(config.driveAccount) },
+                        supportingContent = { Text(stringResource(R.string.cloud_restore_same_account)) },
                         leadingContent = { Icon(Icons.Rounded.Cloud, null) },
                         trailingContent = {
                             TextButton(onClick = { persist(config.copy(driveAccount = "")) }) {
@@ -452,9 +458,10 @@ fun CloudBackupScreen(onRestored: (() -> Unit)? = null) {
                                 ?.takeIf { it.parts > 1 }
                                 ?.let { " • " + context.getString(R.string.cloud_restore_parts, it.parts) }
                                 .orEmpty()
+                            val sizeInfo = if (item.size > 0) " • " + formatBackupSize(item.size) else ""
                             ListItem(
                                 headlineContent = { Text(time) },
-                                supportingContent = { Text("${item.label}$partInfo") },
+                                supportingContent = { Text("${item.label}$partInfo$sizeInfo") },
                                 leadingContent = { Icon(Icons.Rounded.Restore, null) },
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                                 trailingContent = {

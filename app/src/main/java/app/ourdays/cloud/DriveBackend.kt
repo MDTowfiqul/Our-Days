@@ -9,7 +9,7 @@ import java.io.OutputStream
  * Play-Variante (app/src/play); andere Varianten bekommen null und blenden Drive aus.
  */
 interface DriveBackend {
-    data class DriveFile(val id: String, val name: String, val modified: Long)
+    data class DriveFile(val id: String, val name: String, val modified: Long, val size: Long = 0)
 
     /** Lädt die verschlüsselte Sicherung hoch, gibt die Datei-ID zurück. */
     suspend fun upload(account: String, name: String, file: File): String

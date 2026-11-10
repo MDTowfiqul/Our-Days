@@ -42,7 +42,7 @@ suspend fun runCloudBackup(
             CloudProvider.TELEGRAM -> {
                 require(config.botToken.isNotBlank() && config.chatId.isNotBlank()) { "telegram not configured" }
                 val parts = TelegramBackup.uploadBackup(config.botToken, config.chatId, encrypted, stamp, onProgress)
-                CloudBackupStore.addRecord(context, CloudProvider.TELEGRAM, stamp, "Backup $stamp ($parts ${if (parts == 1) "part" else "parts"})")
+                CloudBackupStore.addRecord(context, CloudProvider.TELEGRAM, stamp, "Backup $stamp ($parts ${if (parts == 1) "part" else "parts"})", encrypted.length())
             }
             CloudProvider.DRIVE -> {
                 require(config.driveAccount.isNotBlank()) { "drive not configured" }
@@ -50,7 +50,7 @@ suspend fun runCloudBackup(
                     ?: throw java.io.IOException("drive not available in this build")
                 val name = "our-days-backup-$stamp.bin"
                 val id = backend.upload(config.driveAccount, name, encrypted)
-                CloudBackupStore.addRecord(context, CloudProvider.DRIVE, id, name)
+                CloudBackupStore.addRecord(context, CloudProvider.DRIVE, id, name, encrypted.length())
                 onProgress(1, 1)
             }
             CloudProvider.NONE -> Unit

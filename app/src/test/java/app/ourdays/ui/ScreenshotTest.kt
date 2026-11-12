@@ -120,6 +120,38 @@ class ScreenshotTest {
     @Test
     fun syncBengali() = shot("sync", lang = "bn") { SettingsScreen(settings, true, initialPage = SettingsPage.Sync) }
 
+    // Echte Bildschirmfotos für die Anleitung in der App („How to pair & sync“):
+    // die Anleitung zeigt diese PNGs, keine gezeichneten Handy-Attrappen.
+    private val guidePairing = mapOf(
+        app.ourdays.data.PeopleCodec.MAIN_ID to app.ourdays.data.Pairing.create("a"),
+    )
+
+    @Test
+    fun guideSyncUnpaired() = shot("guide_sync_unpaired") {
+        SyncPage(settings, emptyMap(), SyncActions())
+    }
+
+    @Test
+    fun guideSyncPaired() = shot("guide_sync_paired") {
+        SyncPage(settings, guidePairing, SyncActions())
+    }
+
+    @Test
+    fun guideQrDialog() = shot(
+        "guide_qr",
+        before = { compose.onNodeWithText("Pair another phone").performClick() },
+    ) {
+        SyncPage(settings, guidePairing, SyncActions())
+    }
+
+    @Test
+    fun guideSendScope() = shot(
+        "guide_send_scope",
+        before = { compose.onNodeWithText("Send sync").performClick() },
+    ) {
+        SyncPage(settings, guidePairing, SyncActions())
+    }
+
     @Test
     fun privacy() = shot("privacy") {
         SettingsScreen(settings.copy(discreet = true), true, appLock = true, initialPage = SettingsPage.Privacy)

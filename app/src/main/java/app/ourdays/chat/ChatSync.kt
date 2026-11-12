@@ -68,7 +68,13 @@ object ChatSync {
 
     /** Firebase refresh: text only, sealed payloads, old messages pruned. */
     private fun refreshFirebase(context: Context, config: ChatConfig, pairing: Pairing): Outcome {
-        val docs = FirebaseChat.fetchMessages(context, config.roomId)
+        // Only ask for what is newer than the newest message already stored:
+        // a full list on every poll would burn the shared free quota in reads.
+        // A minute of overlap covers phones whose clocks run a little slow;
+        // merging drops duplicates by id, so re-delivery is harmless.
+        val since = ChatStore.load(context).maxOfOrNull { it.at }
+            ?.let { (it - 60_000).coerceAtLeast(0) } ?: 0
+        val docs = FirebaseChat.fetchMessages(context, config.roomId, since)
         var undecryptable = 0
         val incoming = mutableListOf<ChatMessage>()
         for (doc in docs) {
@@ -78,7 +84,7 @@ object ChatSync {
         // Messages older than 90 days are deleted from the room so the shared
         // 1 GiB free storage never fills up; local history keeps them.
         runCatching {
-            FirebaseChat.deleteOldMessages(context, config.roomId, System.currentTimeMillis() - FirebaseChat.RETENTION_MS)
+            FirebaseChat.pruneIfDue(context, config.roomId, System.currentTimeMillis() - FirebaseChat.RETENTION_MS)
         }
         return Outcome(ChatStore.merge(context, incoming), undecryptable)
     }

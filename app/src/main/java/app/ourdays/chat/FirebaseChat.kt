@@ -56,6 +56,8 @@ object FirebaseChat {
     private const val CODE_TTL_MS = 24L * 3600 * 1000
     const val RETENTION_MS = 90L * 24 * 3600 * 1000
     private const val MAX_FETCH = 500
+    /** The old-message prune runs at most this often (see pruneIfDue). */
+    private const val PRUNE_INTERVAL_MS = 24L * 3600 * 1000
 
     @Volatile
     private var cachedConfig: FirebaseConfig? = null
@@ -254,9 +256,21 @@ object FirebaseChat {
         })
     }
 
-    /** Newest messages first, up to 500 — the same cap as local history. */
-    fun fetchMessages(context: Context, roomId: String): List<RemoteMessage> {
+    /**
+     * Newest messages first, up to 500 — the same cap as local history.
+     * With [sinceMillis] > 0 only messages newer than that time are asked for
+     * (a filtered query, so an idle poll costs about one read instead of one
+     * per stored message); 0 means the full list, for the first load.
+     */
+    fun fetchMessages(context: Context, roomId: String, sinceMillis: Long = 0): List<RemoteMessage> {
         val config = loadConfig(context) ?: throw IOException("firebase not configured")
+        if (sinceMillis > 0) {
+            val text = call(context, config, { token ->
+                authed(token, "${firestoreBase(config)}:runQuery", "POST",
+                    newerThanQueryBody(config.projectId, roomId, sinceMillis))
+            })
+            return parseRunQuery(text)
+        }
         val base = firestoreBase(config)
         val out = mutableListOf<RemoteMessage>()
         var pageToken: String? = null
@@ -275,6 +289,42 @@ object FirebaseChat {
             pageToken = root.optString("nextPageToken", "").ifBlank { null } ?: break
         }
         return out
+    }
+
+    /** Body of the "messages newer than X" query. Pure, so tests can check it. */
+    fun newerThanQueryBody(projectId: String, roomId: String, sinceMillis: Long): String = JSONObject()
+        .put("parent", "projects/$projectId/databases/(default)/documents/rooms/$roomId")
+        .put("structuredQuery", JSONObject()
+            .put("from", JSONArray().put(JSONObject().put("collectionId", "messages")))
+            .put("where", JSONObject().put("fieldFilter", JSONObject()
+                .put("field", JSONObject().put("fieldPath", "at"))
+                .put("op", "GREATER_THAN")
+                .put("value", JSONObject().put("integerValue", sinceMillis.toString()))))
+            .put("orderBy", JSONArray().put(JSONObject()
+                .put("field", JSONObject().put("fieldPath", "at"))
+                .put("direction", "DESCENDING")))
+            .put("limit", 100))
+        .toString()
+
+    /** Messages out of a runQuery answer: one entry per document; the trailing read-time-only entry has none. Pure, for tests. */
+    fun parseRunQuery(text: String): List<RemoteMessage> {
+        val out = mutableListOf<RemoteMessage>()
+        val arr = runCatching { JSONArray(text) }.getOrNull() ?: return out
+        for (i in 0 until arr.length()) {
+            val doc = arr.optJSONObject(i)?.optJSONObject("document") ?: continue
+            decodeMessage(doc)?.let { out += it }
+        }
+        return out
+    }
+
+    /** Deletes old messages, but at most once a day — the prune lists the oldest page on every call, so running it on every refresh would burn reads. */
+    fun pruneIfDue(context: Context, roomId: String, olderThanMillis: Long) {
+        if (loadConfig(context) == null) return
+        val p = prefs(context)
+        val last = p.getLong("last_prune", 0L)
+        if (System.currentTimeMillis() - last < PRUNE_INTERVAL_MS) return
+        deleteOldMessages(context, roomId, olderThanMillis)
+        p.edit().putLong("last_prune", System.currentTimeMillis()).apply()
     }
 
     /** Deletes messages older than [olderThanMillis], best effort — one page per refresh is enough. */

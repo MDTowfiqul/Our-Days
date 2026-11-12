@@ -109,12 +109,14 @@ fun ChatScreen(
         mutableStateOf(if (config.isConfigured) config.transport else null)
     }
 
-    // While the chat is open, poll about once a minute on top of the background worker
+    // While the chat is open, check for new messages every few seconds so they
+    // appear on their own — nobody should have to tap refresh. (The poll is
+    // cheap: Telegram uses an offset, Firebase only asks for newer messages.)
     LaunchedEffect(config.enabled, pairing) {
         if (!config.enabled || pairing == null) return@LaunchedEffect
         while (true) {
-            delay(60_000)
             vm.refresh()
+            delay(5_000)
         }
     }
 

@@ -41,6 +41,43 @@ class FirebaseChatTest {
     }
 
     @Test
+    fun newerThanQueryAsksOnlyForNewerMessages() {
+        val body = JSONObject(FirebaseChat.newerThanQueryBody("our-days-767b2", "room-1", 1700000000000L))
+        assertEquals(
+            "projects/our-days-767b2/databases/(default)/documents/rooms/room-1",
+            body.getString("parent"),
+        )
+        val q = body.getJSONObject("structuredQuery")
+        assertEquals("messages", q.getJSONArray("from").getJSONObject(0).getString("collectionId"))
+        val filter = q.getJSONObject("where").getJSONObject("fieldFilter")
+        assertEquals("at", filter.getJSONObject("field").getString("fieldPath"))
+        assertEquals("GREATER_THAN", filter.getString("op"))
+        assertEquals("1700000000000", filter.getJSONObject("value").getString("integerValue"))
+        val order = q.getJSONArray("orderBy").getJSONObject(0)
+        assertEquals("at", order.getJSONObject("field").getString("fieldPath"))
+        assertEquals("DESCENDING", order.getString("direction"))
+        assertEquals(100, q.getInt("limit"))
+    }
+
+    @Test
+    fun runQueryAnswersParse() {
+        val doc = JSONObject()
+            .put("name", "projects/p/databases/(default)/documents/rooms/r1/messages/msg-1")
+            .put("fields", FirebaseChat.encodeMessageFields("payload-1", 1700000001000L, "me-1").getJSONObject("fields"))
+        val text = org.json.JSONArray()
+            .put(JSONObject().put("document", doc).put("readTime", "2026-11-12T00:00:00Z"))
+            .put(JSONObject().put("readTime", "2026-11-12T00:00:00Z"))
+            .toString()
+        val back = FirebaseChat.parseRunQuery(text)
+        assertEquals(1, back.size)
+        assertEquals("msg-1", back[0].id)
+        assertEquals("payload-1", back[0].payload)
+        assertEquals(1700000001000L, back[0].at)
+        assertTrue(FirebaseChat.parseRunQuery("not json").isEmpty())
+        assertTrue(FirebaseChat.parseRunQuery("[]").isEmpty())
+    }
+
+    @Test
     fun codesAreSixDigits() {
         repeat(200) {
             val code = FirebaseChat.generateCode()

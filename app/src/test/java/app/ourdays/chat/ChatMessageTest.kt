@@ -32,6 +32,28 @@ class ChatMessageTest {
     }
 
     @Test
+    fun editEventRoundTripKeepsTarget() {
+        val event = ChatMessage("e1", "p1", 3000L, "fixed it", ChatMessage.KIND_EDIT, targetId = "m1")
+        val parsed = ChatMessage.fromJson(event.toJson())
+        assertEquals(event, parsed)
+        assertEquals(true, parsed?.isEvent)
+    }
+
+    @Test
+    fun deleteEventRoundTripKeepsTarget() {
+        val event = ChatMessage("e2", "p1", 3000L, "", ChatMessage.KIND_DELETE, targetId = "m1")
+        assertEquals(event, ChatMessage.fromJson(event.toJson()))
+    }
+
+    @Test
+    fun oldMessagesReadWithoutEditFields() {
+        val parsed = ChatMessage.fromJson("""{"v":2,"id":"m1","from":"p1","at":1000,"text":"hi","kind":"text"}""")
+        assertEquals(false, parsed?.edited)
+        assertEquals(null, parsed?.targetId)
+        assertEquals(false, parsed?.isEvent)
+    }
+
+    @Test
     fun mediaMetaEncryptDecryptRoundTrip() {
         val meta = ChatMediaMeta("m9", "p2", 2000L, ChatMessage.KIND_VIDEO, "our trip", "m9.mp4", "video/mp4")
         val sealed = ChatCrypto.encryptMeta(key, meta)

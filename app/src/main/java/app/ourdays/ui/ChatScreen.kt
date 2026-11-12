@@ -8,6 +8,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,12 +33,16 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -46,6 +51,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,9 +62,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -73,6 +81,7 @@ import app.ourdays.chat.ChatTransport
 import app.ourdays.chat.ChatViewModel
 import app.ourdays.data.LoveSettings
 import app.ourdays.data.Pairing
+import app.ourdays.data.Person
 import coil3.compose.AsyncImage
 import java.io.File
 import java.time.Instant
@@ -94,6 +103,7 @@ fun ChatScreen(
     pairing: Pairing?,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit,
+    onSetMe: (String) -> Unit = {},
     vm: ChatViewModel = viewModel(),
 ) {
     val messages by vm.messages.collectAsStateWithLifecycle()
@@ -204,9 +214,11 @@ fun ChatScreen(
                 vm = vm,
                 messages = messages,
                 myId = pairing.me,
+                people = settings.people,
                 nameFor = { id ->
                     settings.people.firstOrNull { it.id == id }?.name?.takeIf { it.isNotBlank() }
                 },
+                onSetMe = onSetMe,
                 sendEnabled = !isFdroid,
                 mediaEnabled = config.transport == ChatTransport.TELEGRAM,
             )
@@ -434,13 +446,25 @@ private fun ChatList(
     vm: ChatViewModel,
     messages: List<ChatMessage>,
     myId: String?,
+    people: List<Person>,
     nameFor: (String?) -> String?,
+    onSetMe: (String) -> Unit,
     sendEnabled: Boolean,
     mediaEnabled: Boolean,
 ) {
     val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
     var draft by remember { mutableStateOf("") }
+    var menuFor by remember { mutableStateOf<ChatMessage?>(null) }
+    var editing by remember { mutableStateOf<ChatMessage?>(null) }
+    var deleteFor by remember { mutableStateOf<ChatMessage?>(null) }
     val listState = rememberLazyListState()
+    // My name and the partner's name, from the people list: a message whose
+    // sender id is not in the list is still the partner's (two-person chat),
+    // so it gets the other person's name instead of the bare "Partner".
+    val myName = people.firstOrNull { it.id == myId }?.name?.takeIf { it.isNotBlank() }
+    val partnerName = if (myId == null) null else
+        people.firstOrNull { it.id != myId }?.name?.takeIf { it.isNotBlank() }
     val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
             vm.sendMedia(uri, draft)
@@ -451,6 +475,20 @@ private fun ChatList(
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
     }
     Column(modifier) {
+        // Without "who uses this phone" the app cannot tell my messages from
+        // my partner's, so every message would show as "Partner" on the left.
+        // Ask once, right here in the chat, before the first message is sent.
+        if (myId == null && people.isNotEmpty()) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Text(stringResource(R.string.chat_who_uses), style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (person in people) {
+                        OutlinedButton(onClick = { onSetMe(person.id) }) { Text(person.name) }
+                    }
+                }
+            }
+        }
         if (messages.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.chat_empty))
@@ -465,13 +503,17 @@ private fun ChatList(
                 items(messages, key = { it.id }) { msg ->
                     val mine = msg.from != null && msg.from == myId
                     val label = if (mine) {
-                        stringResource(R.string.chat_you)
+                        myName ?: stringResource(R.string.chat_you)
                     } else {
-                        nameFor(msg.from) ?: stringResource(R.string.chat_partner)
+                        nameFor(msg.from) ?: partnerName ?: stringResource(R.string.chat_partner)
                     }
                     Box(Modifier.fillMaxWidth(), contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart) {
                         Column(
-                            modifier = Modifier.widthIn(max = 300.dp),
+                            modifier = Modifier.widthIn(max = 300.dp)
+                                .combinedClickable(
+                                    onClick = {},
+                                    onLongClick = { menuFor = msg },
+                                ),
                             horizontalAlignment = if (mine) Alignment.End else Alignment.Start,
                         ) {
                             Text(label, style = MaterialTheme.typography.labelSmall)
@@ -499,12 +541,52 @@ private fun ChatList(
                             } else {
                                 Surface(
                                     color = if (mine) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(16.dp),
+                                    shape = RoundedCornerShape(
+                                        topStart = 16.dp, topEnd = 16.dp,
+                                        bottomEnd = if (mine) 4.dp else 16.dp,
+                                        bottomStart = if (mine) 16.dp else 4.dp,
+                                    ),
                                 ) {
                                     Text(msg.text, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
                                 }
                             }
-                            Text(formatTime(msg.at), style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                formatTime(msg.at) + if (msg.edited) " • " + stringResource(R.string.chat_edited) else "",
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                        if (menuFor == msg) {
+                            DropdownMenu(
+                                expanded = true,
+                                onDismissRequest = { menuFor = null },
+                            ) {
+                                if (msg.text.isNotBlank()) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.chat_copy)) },
+                                        onClick = {
+                                            clipboard.setText(AnnotatedString(msg.text))
+                                            menuFor = null
+                                        },
+                                    )
+                                }
+                                if (mine && msg.kind == ChatMessage.KIND_TEXT) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.chat_edit)) },
+                                        onClick = {
+                                            draft = msg.text
+                                            editing = msg
+                                            menuFor = null
+                                        },
+                                    )
+                                }
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.chat_delete)) },
+                                    onClick = {
+                                        deleteFor = msg
+                                        menuFor = null
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -516,6 +598,21 @@ private fun ChatList(
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
+        }
+        if (editing != null) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.chat_editing),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = { editing = null; draft = "" }) {
+                    Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.cancel))
+                }
+            }
         }
         Row(
             Modifier.fillMaxWidth().padding(16.dp),
@@ -542,12 +639,46 @@ private fun ChatList(
             )
             Spacer(Modifier.width(8.dp))
             IconButton(
-                onClick = { vm.send(draft); draft = "" },
+                onClick = {
+                    val target = editing
+                    if (target != null) {
+                        vm.editMessage(target.id, draft)
+                        editing = null
+                    } else {
+                        vm.send(draft)
+                    }
+                    draft = ""
+                },
                 enabled = sendEnabled && draft.isNotBlank(),
             ) {
                 Icon(Icons.Rounded.Send, contentDescription = stringResource(R.string.chat_send))
             }
         }
+    }
+    if (deleteFor != null) {
+        val target = deleteFor!!
+        AlertDialog(
+            onDismissRequest = { deleteFor = null },
+            title = { Text(stringResource(R.string.chat_delete_title)) },
+            text = null,
+            confirmButton = {
+                Column {
+                    TextButton(onClick = {
+                        vm.deleteMessage(target.id, false)
+                        deleteFor = null
+                    }) { Text(stringResource(R.string.chat_delete_for_me)) }
+                    if (myId != null && target.from == myId) {
+                        TextButton(onClick = {
+                            vm.deleteMessage(target.id, true)
+                            deleteFor = null
+                        }) { Text(stringResource(R.string.chat_delete_for_everyone)) }
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteFor = null }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
     }
 }
 

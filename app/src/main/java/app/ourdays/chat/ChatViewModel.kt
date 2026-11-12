@@ -115,6 +115,86 @@ class ChatViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Changes the text of one of my own text messages, on both phones. The new
+     * text travels as a sealed edit event (same sealed payload as a message, so
+     * both transports carry it); the partner's phone applies it on refresh.
+     * Media captions cannot be edited — only plain text.
+     */
+    fun editMessage(targetId: String, newText: String) {
+        val app = getApplication<Application>()
+        val trimmed = newText.trim()
+        if (trimmed.isEmpty()) return
+        val config = _config.value
+        val pairing = PairingStore.load(app) ?: return
+        if (!config.isConfigured) return
+        val target = _messages.value.firstOrNull { it.id == targetId }
+        if (target == null || pairing.me == null || target.from != pairing.me || target.kind != ChatMessage.KIND_TEXT) return
+        val cap = when (config.transport) {
+            ChatTransport.TELEGRAM -> TELEGRAM_MAX_TEXT
+            ChatTransport.FIREBASE -> FIREBASE_MAX_TEXT
+        }
+        val event = ChatMessage(
+            id = UUID.randomUUID().toString(),
+            from = pairing.me,
+            at = System.currentTimeMillis(),
+            text = trimmed.take(cap),
+            kind = ChatMessage.KIND_EDIT,
+            targetId = targetId,
+        )
+        _messages.value = ChatStore.applyEvents(app, listOf(event))
+        sendEvent(event)
+    }
+
+    /**
+     * Removes a message. "For me" only deletes it on this phone; "for everyone"
+     * also sends a sealed delete event so the partner's phone removes it too.
+     * Only my own messages can be deleted for everyone.
+     */
+    fun deleteMessage(targetId: String, forEveryone: Boolean) {
+        val app = getApplication<Application>()
+        val config = _config.value
+        val pairing = PairingStore.load(app) ?: return
+        if (!config.isConfigured) return
+        val target = _messages.value.firstOrNull { it.id == targetId } ?: return
+        if (forEveryone && (pairing.me == null || target.from != pairing.me)) return
+        val event = ChatMessage(
+            id = UUID.randomUUID().toString(),
+            from = pairing.me,
+            at = System.currentTimeMillis(),
+            text = "",
+            kind = ChatMessage.KIND_DELETE,
+            targetId = targetId,
+        )
+        _messages.value = ChatStore.applyEvents(app, listOf(event))
+        if (forEveryone) sendEvent(event)
+    }
+
+    /** Sends an edit/delete event through the current transport. Events are never stored as messages. */
+    private fun sendEvent(event: ChatMessage) {
+        val app = getApplication<Application>()
+        val config = _config.value
+        val pairing = PairingStore.load(app) ?: return
+        viewModelScope.launch {
+            _error.value = null
+            try {
+                withContext(Dispatchers.IO) {
+                    val sealed = ChatCrypto.encrypt(pairing.key, event)
+                    when (config.transport) {
+                        ChatTransport.TELEGRAM ->
+                            TelegramChat.sendMessage(config.botToken, config.chatId, sealed)
+                        ChatTransport.FIREBASE ->
+                            FirebaseChat.sendMessage(app, config.roomId, pairing.me, sealed, event.id, event.at)
+                    }
+                }
+            } catch (e: FirebaseChat.QuotaExceeded) {
+                _error.value = app.getString(R.string.chat_firebase_quota)
+            } catch (e: Exception) {
+                _error.value = e.message?.take(200) ?: e.toString().take(200)
+            }
+        }
+    }
+
     /** Sends a photo or video: encrypted with the pairing key, like text. Telegram only — Firebase chat is text only. */
     fun sendMedia(uri: Uri, caption: String) {
         val app = getApplication<Application>()

@@ -591,4 +591,13 @@
     <string name="chat_channel_found">Channel found.</string>
     <string name="chat_channel_not_found">No channel post found yet. Post any message in your channel, then try again.</string>
     <string name="chat_change_method">Change chat method</string>
+    <string name="chat_copy">Copy</string>
+    <string name="chat_edit">Edit</string>
+    <string name="chat_delete">Delete</string>
+    <string name="chat_edited">Edited</string>
+    <string name="chat_editing">Editing message</string>
+    <string name="chat_delete_title">Delete message?</string>
+    <string name="chat_delete_for_me">Delete for me</string>
+    <string name="chat_delete_for_everyone">Delete for everyone</string>
+    <string name="chat_who_uses">Who uses this phone?</string>
 </resources>

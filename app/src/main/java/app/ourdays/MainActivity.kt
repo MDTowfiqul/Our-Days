@@ -289,6 +289,7 @@ class MainActivity : ComponentActivity() {
                                         showChat = false
                                         showSettings = true
                                     },
+                                    onSetMe = vm::setMe,
                                 )
                                 "licenses" -> LicensesScreen(onBack = { showLicenses = false })
                                 "moment" -> MomentEditorScreen(

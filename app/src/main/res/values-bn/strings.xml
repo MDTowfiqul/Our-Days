@@ -586,4 +586,13 @@
     <string name="chat_channel_found">চ্যানেল পাওয়া গেছে।</string>
     <string name="chat_channel_not_found">এখনো চ্যানেলে কোনো বার্তা পাওয়া যায়নি। চ্যানেলে যেকোনো বার্তা লিখে আবার চেষ্টা করুন।</string>
     <string name="chat_change_method">চ্যাটের মাধ্যম বদলান</string>
+    <string name="chat_copy">কপি</string>
+    <string name="chat_edit">সম্পাদনা</string>
+    <string name="chat_delete">মুছুন</string>
+    <string name="chat_edited">সম্পাদিত</string>
+    <string name="chat_editing">বার্তা সম্পাদনা করছেন</string>
+    <string name="chat_delete_title">বার্তাটি মুছবেন?</string>
+    <string name="chat_delete_for_me">আমার জন্য মুছুন</string>
+    <string name="chat_delete_for_everyone">সবার জন্য মুছুন</string>
+    <string name="chat_who_uses">এই ফোনটি কে ব্যবহার করে?</string>
 </resources>

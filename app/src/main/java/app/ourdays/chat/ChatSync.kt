@@ -63,7 +63,7 @@ object ChatSync {
         if (maxId > config.lastUpdateId) {
             ChatConfigStore.save(context, config.copy(lastUpdateId = maxId))
         }
-        return Outcome(ChatStore.merge(context, incoming), undecryptable)
+        return Outcome(storeIncoming(context, incoming), undecryptable)
     }
 
     /** Firebase refresh: text only, sealed payloads, old messages pruned. */
@@ -86,7 +86,20 @@ object ChatSync {
         runCatching {
             FirebaseChat.pruneIfDue(context, config.roomId, System.currentTimeMillis() - FirebaseChat.RETENTION_MS)
         }
-        return Outcome(ChatStore.merge(context, incoming), undecryptable)
+        return Outcome(storeIncoming(context, incoming), undecryptable)
+    }
+
+    /**
+     * Stores what arrived: ordinary messages merge into history, edit/delete
+     * events are applied to it instead of being shown as messages. Events are
+     * applied after the merge, so an event for a message that arrived in the
+     * same refresh still finds its target.
+     */
+    private fun storeIncoming(context: Context, incoming: List<ChatMessage>): List<ChatMessage> {
+        val (events, normal) = incoming.partition { it.isEvent }
+        val merged = ChatStore.merge(context, normal)
+        if (events.isEmpty()) return merged
+        return ChatStore.applyEvents(context, events)
     }
 
     private fun extFor(mime: String, fileName: String): String {

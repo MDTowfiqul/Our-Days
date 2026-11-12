@@ -20,8 +20,15 @@ data class ChatMessage(
     /** Local file name under the chat_media directory, for media messages */
     val mediaLocal: String? = null,
     val mediaMime: String? = null,
+    /** True once the text was changed by an edit event (shown as "Edited") */
+    val edited: Boolean = false,
+    /** For edit/delete events: the id of the message they change */
+    val targetId: String? = null,
 ) {
-    val isMedia: Boolean get() = kind != KIND_TEXT
+    val isMedia: Boolean get() = kind == KIND_PHOTO || kind == KIND_VIDEO
+
+    /** Edit/delete events are never shown as messages; they change another one. */
+    val isEvent: Boolean get() = kind == KIND_EDIT || kind == KIND_DELETE
 
     fun toJson(): String {
         val o = JSONObject()
@@ -33,6 +40,8 @@ data class ChatMessage(
             .put("kind", kind)
         if (mediaLocal != null) o.put("media", mediaLocal)
         if (mediaMime != null) o.put("mime", mediaMime)
+        if (edited) o.put("edited", true)
+        if (targetId != null) o.put("target", targetId)
         return o.toString()
     }
 
@@ -40,6 +49,12 @@ data class ChatMessage(
         const val KIND_TEXT = "text"
         const val KIND_PHOTO = "photo"
         const val KIND_VIDEO = "video"
+
+        /** A sealed event that replaces the text of [ChatMessage.targetId]. */
+        const val KIND_EDIT = "edit"
+
+        /** A sealed event that removes [ChatMessage.targetId] on both phones. */
+        const val KIND_DELETE = "delete"
 
         fun fromJson(json: String): ChatMessage? = runCatching {
             val o = JSONObject(json)
@@ -53,6 +68,8 @@ data class ChatMessage(
                 kind = o.optString("kind", KIND_TEXT).ifBlank { KIND_TEXT },
                 mediaLocal = o.optString("media", "").ifBlank { null },
                 mediaMime = o.optString("mime", "").ifBlank { null },
+                edited = o.optBoolean("edited", false),
+                targetId = o.optString("target", "").ifBlank { null },
             )
         }.getOrNull()
     }

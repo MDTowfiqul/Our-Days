@@ -57,7 +57,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Cake
 import androidx.compose.material.icons.rounded.CardGiftcard
-import androidx.compose.material.icons.rounded.Chat
 import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -112,7 +111,6 @@ fun HomeScreen(
     today: LocalDate,
     onOpenSettings: () -> Unit,
     onPageChange: (Int) -> Unit,
-    onOpenChat: () -> Unit = {},
     onAddMoment: (String?) -> Unit = {},
     onOpenMoment: (app.ourdays.data.Moment) -> Unit = {},
     /** Reihenfolge der Momente umdrehen (neueste oben) */
@@ -220,29 +218,6 @@ fun HomeScreen(
                     modifier = Modifier.size(26.dp),
                 )
             }
-        }
-        // Freier Chat-Knopf, wie der Hinzufügen-Knopf der Momente: losgelöst von der
-        // Leiste, damit er nicht mit dem Einstellungs-Knopf zusammengedrängt ist. Auf
-        // der Momente-Seite sitzt er über dem Hinzufügen-Knopf, sonst unten rechts.
-        val isMomentsPage = pages[pager.currentPage] == HomePage.Moments
-        Box(
-            Modifier
-                .align(Alignment.BottomEnd)
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(bottom = if (isMomentsPage) 84.dp else 16.dp, end = 16.dp)
-                .shadow(8.dp, CircleShape)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-                .clickable(onClick = onOpenChat)
-                .size(56.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                Icons.Rounded.Chat,
-                contentDescription = stringResource(R.string.chat_title),
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(26.dp),
-            )
         }
     }
 }

@@ -273,8 +273,10 @@ data class MergeResult(
 object SyncMerge {
     /**
      * Führt die eigenen Daten mit denen des anderen Handys zusammen. Bei Momenten gewinnt die
-     * jüngere Änderung, gelöschte Momente bleiben gelöscht. Menschen und Beziehungen, die hier
-     * noch fehlen, kommen dazu; bestehende bleiben, wie sie hier eingestellt sind.
+     * jüngere Änderung, gelöschte Momente bleiben gelöscht. Bei Menschen und Beziehungen
+     * gewinnt die Datei: Ein Eintrag aus der Datei ersetzt den Eintrag mit derselben ID
+     * hier, damit nach einem Abgleich der neue Name oder das neue Datum auch auf diesem
+     * Handy ankommt; nur hier vorhandene Einträge bleiben erhalten.
      */
     fun merge(
         people: List<Person>,
@@ -310,13 +312,21 @@ object SyncMerge {
                 removed++
             }
         }
-        // Bekannte Menschen bleiben wie hier eingetragen, nur ein fehlender Geburtstag kommt vom anderen Handy
+        // Wer die Datei geschickt hat, gibt bei Menschen und Beziehungen den Ton an: Ein
+        // Eintrag aus der Datei ersetzt den Eintrag mit derselben ID hier, sonst käme nach
+        // einem Abgleich nie der neue Name oder das neue Datum auf diesem Handy an. Nur hier
+        // vorhandene Einträge bleiben erhalten; ein fehlender Geburtstag wird aus dem jeweils
+        // anderen Eintrag übernommen.
         val mergedPeople = (
-            people.map { p -> p.copy(birthday = p.birthday ?: remote.people.firstOrNull { it.id == p.id }?.birthday) } +
-                remote.people.filter { r -> people.none { it.id == r.id } }
+            remote.people.map { r ->
+                r.copy(birthday = r.birthday ?: people.firstOrNull { it.id == r.id }?.birthday)
+            } +
+                people.filter { p -> remote.people.none { it.id == p.id } }
             ).take(MAX_PEOPLE)
-        val mergedRelationships = (relationships + remote.relationships.filter { r -> relationships.none { it.id == r.id } })
-            .take(MAX_RELATIONSHIPS)
+        val mergedRelationships = (
+            remote.relationships +
+                relationships.filter { r -> remote.relationships.none { it.id == r.id } }
+            ).take(MAX_RELATIONSHIPS)
         return MergeResult(
             people = mergedPeople,
             relationships = mergedRelationships,

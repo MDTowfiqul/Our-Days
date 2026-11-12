@@ -148,6 +148,7 @@ class SyncMergeTest {
 
     @Test
     fun deletedMarkersAreUnioned() {
+        val now = System.currentTimeMillis()
         val result = SyncMerge.merge(
             people = emptyList(),
             relationships = emptyList(),
@@ -159,9 +160,9 @@ class SyncMergeTest {
                 moments = emptyList(),
                 deleted = emptyMap(),
                 from = null,
-                deletedPeople = mapOf("p8" to 200L),
+                deletedPeople = mapOf("p8" to now),
             ),
-            deletedPeople = mapOf("p9" to 100L),
+            deletedPeople = mapOf("p9" to now - 1000),
         )
         assertEquals(setOf("p8", "p9"), result.deletedPeople.keys)
     }

@@ -1,6 +1,7 @@
 package app.ourdays.chat
 
 import android.content.Context
+import app.ourdays.data.Pairing
 import app.ourdays.data.PairingStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -8,11 +9,15 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
 /**
- * One refresh of Our Chat from Telegram, shared by the chat screen and the
- * background worker so both see exactly the same messages. Text messages are
- * decrypted in place; media messages are downloaded, decrypted, and stored
- * under chat_media before they enter history, so history only ever holds
- * readable messages plus a count of the ones that could not be opened.
+ * One refresh of Our Chat, shared by the chat screen and the background
+ * worker so both see exactly the same messages. Text messages are decrypted
+ * in place; media messages are downloaded, decrypted, and stored under
+ * chat_media before they enter history, so history only ever holds readable
+ * messages plus a count of the ones that could not be opened.
+ *
+ * Two transports, same history: Telegram polls the channel, Firebase polls
+ * the shared Firestore room. Both carry the same sealed payloads, so a
+ * couple can switch transports without losing history.
  */
 object ChatSync {
     data class Outcome(val messages: List<ChatMessage>, val undecryptable: Int)
@@ -23,6 +28,13 @@ object ChatSync {
         if (!config.enabled || !config.isConfigured || pairing == null) {
             return@withContext Outcome(ChatStore.load(context), 0)
         }
+        when (config.transport) {
+            ChatTransport.TELEGRAM -> refreshTelegram(context, config, pairing)
+            ChatTransport.FIREBASE -> refreshFirebase(context, config, pairing)
+        }
+    }
+
+    private fun refreshTelegram(context: Context, config: ChatConfig, pairing: Pairing): Outcome {
         val offset = if (config.lastUpdateId > 0) config.lastUpdateId + 1 else null
         val root = TelegramChat.fetch(config.botToken, offset)
         var undecryptable = 0
@@ -51,7 +63,24 @@ object ChatSync {
         if (maxId > config.lastUpdateId) {
             ChatConfigStore.save(context, config.copy(lastUpdateId = maxId))
         }
-        Outcome(ChatStore.merge(context, incoming), undecryptable)
+        return Outcome(ChatStore.merge(context, incoming), undecryptable)
+    }
+
+    /** Firebase refresh: text only, sealed payloads, old messages pruned. */
+    private fun refreshFirebase(context: Context, config: ChatConfig, pairing: Pairing): Outcome {
+        val docs = FirebaseChat.fetchMessages(context, config.roomId)
+        var undecryptable = 0
+        val incoming = mutableListOf<ChatMessage>()
+        for (doc in docs) {
+            val msg = ChatCrypto.decrypt(pairing.key, doc.payload)
+            if (msg == null) undecryptable++ else incoming += msg
+        }
+        // Messages older than 90 days are deleted from the room so the shared
+        // 1 GiB free storage never fills up; local history keeps them.
+        runCatching {
+            FirebaseChat.deleteOldMessages(context, config.roomId, System.currentTimeMillis() - FirebaseChat.RETENTION_MS)
+        }
+        return Outcome(ChatStore.merge(context, incoming), undecryptable)
     }
 
     private fun extFor(mime: String, fileName: String): String {

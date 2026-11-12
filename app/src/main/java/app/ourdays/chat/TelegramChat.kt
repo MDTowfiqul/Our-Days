@@ -159,6 +159,27 @@ object TelegramChat {
         return max
     }
 
+    /**
+     * Finds the shared channel id without the user copying it: after the bot
+     * is made admin of the channel and any message is posted there, the bot's
+     * updates include that channel_post with the channel's chat id. Returns
+     * null when no channel post is visible yet.
+     */
+    fun findChannelId(token: String): String? = parseChannelId(fetch(token))
+
+    /** Pure parsing, so it can be unit-tested without network. */
+    fun parseChannelId(root: JSONObject): String? {
+        val result = root.optJSONArray("result") ?: return null
+        for (i in 0 until result.length()) {
+            val update = result.optJSONObject(i) ?: continue
+            val post = update.optJSONObject("channel_post") ?: continue
+            val id = post.optJSONObject("chat")?.optLong("id", 0L) ?: 0L
+            // Channel and group ids are negative; a positive id is a user, not the channel.
+            if (id < 0) return id.toString()
+        }
+        return null
+    }
+
     /** Resolves a file_id to its download path, then downloads the raw bytes. */
     fun downloadFile(token: String, fileId: String): ByteArray {
         val info = getJson(api(token, "getFile") + "?file_id=" + fileId)

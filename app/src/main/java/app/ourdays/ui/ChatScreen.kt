@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.ArrowBack
@@ -55,7 +56,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -65,6 +68,7 @@ import app.ourdays.BuildConfig
 import app.ourdays.R
 import app.ourdays.chat.ChatMessage
 import app.ourdays.chat.ChatStore
+import app.ourdays.chat.ChatTransport
 import app.ourdays.chat.ChatViewModel
 import app.ourdays.data.LoveSettings
 import app.ourdays.data.Pairing
@@ -77,11 +81,11 @@ import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
 
 /**
- * Our Chat: messages between the two paired phones, through one shared Telegram
- * channel. Each phone uses its own bot (both bots are channel admins) — see
- * TelegramChat for why one shared bot can never deliver messages. Everything on
- * the channel is encrypted with the pairing key, so only the two phones can read
- * it — Telegram itself only sees ciphertext.
+ * Our Chat: messages between the two paired phones. Two ways to connect, and
+ * the couple picks one — Telegram (own bot per phone + shared channel, text
+ * and media) or Firebase (shared room joined with a 6-digit code, text
+ * only). Everything is encrypted with the pairing key, so only the two
+ * phones can read it — neither Telegram nor Google ever sees plain text.
  */
 @Composable
 fun ChatScreen(
@@ -98,6 +102,11 @@ fun ChatScreen(
     val undecryptable by vm.undecryptable.collectAsStateWithLifecycle()
     val isFdroid = BuildConfig.FLAVOR == "fdroid"
     var showSetup by remember { mutableStateOf(false) }
+    // Which transport's setup form is showing; null means the choice screen.
+    // A fresh setup starts at the choice; reconfiguring starts at the current transport.
+    var setupTransport by remember(config.isConfigured, showSetup) {
+        mutableStateOf(if (config.isConfigured) config.transport else null)
+    }
 
     // While the chat is open, poll about once a minute on top of the background worker
     LaunchedEffect(config.enabled, pairing) {
@@ -166,13 +175,26 @@ fun ChatScreen(
                 Spacer(Modifier.height(16.dp))
                 Button(onClick = onOpenSettings) { Text(stringResource(R.string.chat_open_settings)) }
             }
-            !config.isConfigured || !config.enabled || showSetup -> SetupForm(
-                vm = vm,
-                initialToken = config.botToken,
-                initialChatId = config.chatId,
-                showDisable = config.enabled,
-                onDone = { showSetup = false },
-            )
+            !config.isConfigured || !config.enabled || showSetup -> when (setupTransport) {
+                null -> TransportChoice(
+                    vm = vm,
+                    onPick = { setupTransport = it },
+                )
+                ChatTransport.TELEGRAM -> SetupForm(
+                    vm = vm,
+                    initialToken = config.botToken,
+                    initialChatId = config.chatId,
+                    showDisable = config.enabled,
+                    onDone = { showSetup = false },
+                    onChangeMethod = { setupTransport = null },
+                )
+                ChatTransport.FIREBASE -> FirebaseSetup(
+                    vm = vm,
+                    showDisable = config.enabled,
+                    onDone = { showSetup = false },
+                    onChangeMethod = { setupTransport = null },
+                )
+            }
             else -> ChatList(
                 modifier = Modifier.weight(1f),
                 vm = vm,
@@ -182,7 +204,49 @@ fun ChatScreen(
                     settings.people.firstOrNull { it.id == id }?.name?.takeIf { it.isNotBlank() }
                 },
                 sendEnabled = !isFdroid,
+                mediaEnabled = config.transport == ChatTransport.TELEGRAM,
             )
+        }
+    }
+}
+
+@Composable
+private fun TransportChoice(
+    vm: ChatViewModel,
+    onPick: (ChatTransport) -> Unit,
+) {
+    Column(
+        Modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(stringResource(R.string.chat_choose_title), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.chat_choose_text))
+        TransportCard(
+            title = stringResource(R.string.chat_telegram_title),
+            limits = stringResource(R.string.chat_telegram_limits),
+            onClick = { onPick(ChatTransport.TELEGRAM) },
+        )
+        if (vm.firebaseAvailable) {
+            TransportCard(
+                title = stringResource(R.string.chat_firebase_title),
+                limits = stringResource(R.string.chat_firebase_limits),
+                onClick = { onPick(ChatTransport.FIREBASE) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun TransportCard(title: String, limits: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(limits, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -194,18 +258,50 @@ private fun SetupForm(
     initialChatId: String,
     showDisable: Boolean,
     onDone: () -> Unit,
+    onChangeMethod: () -> Unit,
 ) {
     var token by remember(initialToken, initialChatId) { mutableStateOf(initialToken) }
     var chatId by remember(initialToken, initialChatId) { mutableStateOf(initialChatId) }
     var testing by remember { mutableStateOf(false) }
     var testOk by remember { mutableStateOf<Boolean?>(null) }
+    var finding by remember { mutableStateOf(false) }
+    var found by remember { mutableStateOf<Boolean?>(null) }
     val cloudChannel = vm.cloudChannelId
+    val uriHandler = LocalUriHandler.current
     Column(
         Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(stringResource(R.string.chat_setup_title), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.chat_setup_intro))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { uriHandler.openUri("https://t.me/BotFather") }) {
+                Text(stringResource(R.string.chat_open_botfather))
+            }
+            OutlinedButton(
+                onClick = {
+                    finding = true
+                    found = null
+                    vm.findChannelId(token) { id ->
+                        finding = false
+                        if (id != null) {
+                            chatId = id
+                            found = true
+                        } else {
+                            found = false
+                        }
+                    }
+                },
+                enabled = token.isNotBlank() && !finding,
+            ) { Text(stringResource(R.string.chat_find_channel)) }
+            if (finding) CircularProgressIndicator(Modifier.size(24.dp).align(Alignment.CenterVertically))
+        }
+        found?.let {
+            Text(
+                stringResource(if (it) R.string.chat_channel_found else R.string.chat_channel_not_found),
+                color = if (it) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            )
+        }
         OutlinedTextField(
             value = token,
             onValueChange = { token = it; testOk = null },
@@ -253,6 +349,78 @@ private fun SetupForm(
         if (showDisable) {
             OutlinedButton(onClick = { vm.disable(); onDone() }) { Text(stringResource(R.string.chat_disable)) }
         }
+        OutlinedButton(onClick = onChangeMethod) { Text(stringResource(R.string.chat_change_method)) }
+    }
+}
+
+@Composable
+private fun FirebaseSetup(
+    vm: ChatViewModel,
+    showDisable: Boolean,
+    onDone: () -> Unit,
+    onChangeMethod: () -> Unit,
+) {
+    var code by remember { mutableStateOf("") }
+    var createdCode by remember { mutableStateOf<String?>(null) }
+    var creating by remember { mutableStateOf(false) }
+    var joining by remember { mutableStateOf(false) }
+    var joinFailed by remember { mutableStateOf(false) }
+    Column(
+        Modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(stringResource(R.string.chat_firebase_title), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.chat_firebase_limits))
+        if (createdCode == null) {
+            Button(
+                onClick = {
+                    creating = true
+                    vm.createFirebaseRoom { created ->
+                        creating = false
+                        createdCode = created
+                    }
+                },
+                enabled = !creating,
+            ) { Text(stringResource(R.string.chat_firebase_create)) }
+            if (creating) CircularProgressIndicator(Modifier.size(24.dp))
+        } else {
+            Text(stringResource(R.string.chat_firebase_code_label), style = MaterialTheme.typography.labelMedium)
+            Text(createdCode!!, style = MaterialTheme.typography.headlineMedium)
+            Text(stringResource(R.string.chat_firebase_code_share))
+            Button(onClick = onDone) { Text(stringResource(R.string.done)) }
+        }
+        Text(stringResource(R.string.chat_firebase_join_title), style = MaterialTheme.typography.titleMedium)
+        OutlinedTextField(
+            value = code,
+            onValueChange = { code = it.filter { ch -> ch.isDigit() }.take(6); joinFailed = false },
+            label = { Text(stringResource(R.string.chat_firebase_code_hint)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(
+                onClick = {
+                    joining = true
+                    vm.joinFirebaseRoom(code) { ok ->
+                        joining = false
+                        if (ok) onDone() else joinFailed = true
+                    }
+                },
+                enabled = code.length == 6 && !joining,
+            ) { Text(stringResource(R.string.chat_firebase_join)) }
+            if (joining) CircularProgressIndicator(Modifier.size(24.dp).align(Alignment.CenterVertically))
+        }
+        if (joinFailed) {
+            Text(
+                stringResource(R.string.chat_firebase_invalid),
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+        if (showDisable) {
+            OutlinedButton(onClick = { vm.disable(); onDone() }) { Text(stringResource(R.string.chat_disable)) }
+        }
+        OutlinedButton(onClick = onChangeMethod) { Text(stringResource(R.string.chat_change_method)) }
     }
 }
 
@@ -264,6 +432,7 @@ private fun ChatList(
     myId: String?,
     nameFor: (String?) -> String?,
     sendEnabled: Boolean,
+    mediaEnabled: Boolean,
 ) {
     val context = LocalContext.current
     var draft by remember { mutableStateOf("") }
@@ -337,19 +506,28 @@ private fun ChatList(
                 }
             }
         }
+        if (!mediaEnabled) {
+            Text(
+                stringResource(R.string.chat_firebase_text_only),
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
         Row(
             Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(
-                onClick = {
-                    pickMedia.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo),
-                    )
-                },
-                enabled = sendEnabled,
-            ) {
-                Icon(Icons.Rounded.AddPhotoAlternate, contentDescription = stringResource(R.string.chat_attach))
+            if (mediaEnabled) {
+                IconButton(
+                    onClick = {
+                        pickMedia.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo),
+                        )
+                    },
+                    enabled = sendEnabled,
+                ) {
+                    Icon(Icons.Rounded.AddPhotoAlternate, contentDescription = stringResource(R.string.chat_attach))
+                }
             }
             OutlinedTextField(
                 value = draft,

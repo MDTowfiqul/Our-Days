@@ -16,6 +16,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.core.view.drawToBitmap
 import app.ourdays.data.LoveSettings
+import ourdays.app.R
 import org.junit.Rule
 import org.junit.Test
 import androidx.compose.ui.test.onNodeWithText

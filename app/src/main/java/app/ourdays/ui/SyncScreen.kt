@@ -328,8 +328,6 @@ private fun SyncRow(icon: ImageVector, title: String, summary: String, onClick: 
     )
 }
 
-/** QR-Code als schwarze Quadrate auf Weiß */
-@Composable
 /** Inhalt des QR-Dialogs — auch direkt für die Anleitungs-Bilder nutzbar (ohne Dialogfenster) */
 @Composable
 internal fun QrDialogContent(pairing: Pairing, relationshipId: String) {
@@ -366,6 +364,8 @@ internal fun SendScopeContent(includeMoments: Boolean, onSelect: (Boolean) -> Un
     }
 }
 
+/** QR-Code als schwarze Quadrate auf Weiß */
+@Composable
 internal fun QrCode(text: String, modifier: Modifier = Modifier) {
     val matrix = remember(text) {
         QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, 0, 0, mapOf(EncodeHintType.MARGIN to 2))

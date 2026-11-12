@@ -252,9 +252,6 @@
     <string name="photo_own">তোমাদের নিজের ছবি</string>
     <string name="notify_off">বন্ধ</string>
     <string name="notify_daily_at">বিশেষ দিনে %1$s টায়</string>
-    <string name="all_couples">সব ভালোবাসার জন্য</string>
-    <string name="all_couples_text">Our Days তাদের জন্য যারা ভালোবাসে, তুমি যেই হও, যাকেই ভালোবাসো আর যতজনই হও না কেন।</string>
-    <string name="pride_title">শুভ প্রাইড মাস!</string>
     <string name="credit_heart">ভালোবাসা</string>
     <string name="reset_summary">সেটআপ আবার করো বা সব মুছে ফেলো</string>
     <string name="reset_intro">সাবধান: এখানে তোমাদের ডেটা বদলে যাবে বা মুছে যাবে। কিছু রাখতে চাইলে আগে ব্যাকআপ সেভ করে নাও।</string>
@@ -326,7 +323,13 @@
     <string name="pairing_file_invalid">এটি পেয়ারিং ফাইল নয়।</string>
     <string name="sync_not_paired_yet">এখনো জোড়া দেওয়া হয়নি</string>
     <string name="sync_how_title">সিঙ্ক কীভাবে কাজ করে</string>
-    <string name="sync_how_text">প্রতিটি সম্পর্কের নিজস্ব গোপন চাবি আছে।\n• একটি সম্পর্ক একবার জোড়া দিন — QR কোড স্ক্যান করুন বা পেয়ারিং ফাইল খুলুন।\n• একটি সিঙ্ক ফাইলে শুধু সেই একটি সম্পর্ক থাকে: তার মানুষ, তারিখ ও মুহূর্তগুলো।\n• পাঠানো ফোনের নাম ও তারিখই প্রযোজ্য হয়; শুধু নতুন মুহূর্ত যোগ হয়।\n• ডেটা পেতে অন্য ফোনে ফাইলটি খুলুন। শুধু জোড়া দিলে কিছুই যায় না।</string>
+    <string name="sync_how_text">প্রতিটি সম্পর্কের নিজস্ব গোপন চাবি আছে। উপরে সম্পর্কটি বেছে নিন, তারপর একবার জোড়া দিন — QR কোড স্ক্যান করুন, অন্য ফোনের কোড স্ক্যান করুন, বা পেয়ারিং ফাইল খুলুন।\n• একটি সিঙ্ক ফাইলে শুধু সেই একটি সম্পর্ক থাকে।\n• কী যাবে, আপনি বেছে নিন: ১) শুধু নাম ও তারিখ — অন্য ব্যক্তি শুধু তোমাদের নাম ও একসাথে হওয়ার তারিখ দেখবে। ২) নাম, তারিখ ও মুহূর্ত — ছবিসহ সব মুহূর্তও পাবে।\n• পাঠানো ফোনের নাম ও তারিখই প্রযোজ্য হয়; শুধু নতুন মুহূর্ত যোগ হয়।\n• ডেটা পেতে অন্য ফোনে ফাইলটি খুলুন। শুধু জোড়া দিলে কিছুই যায় না।</string>
+    <string name="sync_share_which">কোন সংযোগটি শেয়ার করতে চান?</string>
+    <string name="sync_send_scope_title">কী শেয়ার করতে চান?</string>
+    <string name="sync_send_names_only">শুধু নাম ও তারিখ</string>
+    <string name="sync_send_names_only_sub">অন্য ব্যক্তি শুধু তোমাদের নাম ও একসাথে হওয়ার তারিখ দেখবে — কোনো মুহূর্ত নয়।</string>
+    <string name="sync_send_all">নাম, তারিখ ও মুহূর্তগুলো</string>
+    <string name="sync_send_all_sub">অন্য ব্যক্তি ছবিসহ তোমাদের সব মুহূর্তও পাবে।</string>
     <string name="partner_sync_title">সঙ্গীর সাথে সিঙ্ক করুন</string>
     <string name="partner_sync_text">সঙ্গীর ফোনের সাথে জোড়া দিন, তারপর তার সিঙ্ক ফাইলটি খুলুন — আপনাদের নাম, তারিখ ও মুহূর্তগুলো এখানে চলে আসবে। সেটআপ পূরণ করার দরকার নেই।</string>
     <string name="partner_sync_continue">অ্যাপে যান</string>
@@ -369,8 +372,6 @@
     <string name="fact_seasons_sub">একসাথে দেখেছো</string>
     <string name="fact_heartbeats_sub">তোমাদের প্রতিটি হৃদয় স্পন্দিত হয়েছে তোমরা একসাথে হওয়ার পর</string>
     <string name="fact_valentines_sub">একসাথে কাটিয়েছো</string>
-    <string name="fact_pride_months_sub">একসাথে উদযাপন করেছো</string>
-    <string name="fact_halloweens_sub">একসাথে কাটিয়েছো</string>
     <string name="fact_friday_13th_sub">একসাথে পার করেছো</string>
     <string name="fact_earth_km_sub">পৃথিবী তোমাদের নিয়ে সূর্যের চারদিকে ঘুরেছে</string>
     <string name="fact_breaths_sub">তোমরা প্রত্যেকে শ্বাস নিয়েছো একসাথে হওয়ার পর</string>
@@ -385,14 +386,6 @@
     <plurals name="fact_valentines">
         <item quantity="one">%s ভ্যালেন্টাইনস ডে</item>
         <item quantity="other">%s ভ্যালেন্টাইনস ডে</item>
-    </plurals>
-    <plurals name="fact_pride_months">
-        <item quantity="one">%s প্রাইড মাস</item>
-        <item quantity="other">%s প্রাইড মাস</item>
-    </plurals>
-    <plurals name="fact_halloweens">
-        <item quantity="one">%s বার হ্যালোইন</item>
-        <item quantity="other">%s বার হ্যালোইন</item>
     </plurals>
     <plurals name="fact_friday_13th">
         <item quantity="one">%s বার শুক্রবার ১৩ তারিখ</item>

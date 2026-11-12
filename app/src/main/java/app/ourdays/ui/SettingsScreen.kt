@@ -585,7 +585,6 @@ fun SettingsScreen(
                 }
                 if (page == null) {
                     Spacer(Modifier.height(8.dp))
-                    RainbowCard(stringResource(R.string.all_couples), stringResource(R.string.all_couples_text))
                     Credit()
                 }
                 Spacer(Modifier.height(24.dp))
@@ -744,11 +743,10 @@ private fun Credit() {
         Icon(
             Icons.Rounded.Favorite,
             contentDescription = stringResource(R.string.credit_heart),
-            tint = if (LocalPrideMonth.current) Color.White else Color(0xFFFF5C77),
+            tint = Color(0xFFFF5C77),
             modifier = Modifier
                 .padding(horizontal = 4.dp)
-                .size(14.dp)
-                .then(if (LocalPrideMonth.current) Modifier.rainbow() else Modifier),
+                .size(14.dp),
         )
         Text(stringResource(R.string.credit_after), style = style, color = color)
     }

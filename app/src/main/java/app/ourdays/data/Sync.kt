@@ -290,6 +290,8 @@ data class SyncData(
     val deletedPeople: Map<String, Long> = emptyMap(),
     /** IDs gelöschter Beziehungen mit Zeitpunkt des Löschens */
     val deletedRelationships: Map<String, Long> = emptyMap(),
+    /** Ob die Datei Momente enthält (false = nur Namen und Datum) */
+    val includeMoments: Boolean = true,
 )
 
 object SyncCodec {
@@ -320,6 +322,7 @@ object SyncCodec {
         .put("deleted", JSONObject().apply { d.deleted.forEach { (id, time) -> put(id, time) } })
         .put("deletedPeople", JSONObject().apply { d.deletedPeople.forEach { (id, time) -> put(id, time) } })
         .put("deletedRelationships", JSONObject().apply { d.deletedRelationships.forEach { (id, time) -> put(id, time) } })
+        .put("includeMoments", d.includeMoments)
         .toString()
 
     fun decode(json: String): SyncData {
@@ -341,6 +344,7 @@ object SyncCodec {
             relationshipId = if (o.isNull("relationship")) null else o.optString("relationship").ifBlank { null },
             deletedPeople = markers("deletedPeople"),
             deletedRelationships = markers("deletedRelationships"),
+            includeMoments = o.optBoolean("includeMoments", true),
         )
     }
 }

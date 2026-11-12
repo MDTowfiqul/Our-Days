@@ -167,9 +167,6 @@ internal fun PolyOverview(settings: LoveSettings, today: LocalDate, onSelect: (S
             if (settings.relationships.size > 1) RelationshipSwitch(settings, onSelect)
             PolyculeCard(settings)
             if (todays.isNotEmpty()) TodayBanner(todays)
-            if (LocalPrideMonth.current) {
-                RainbowCard(stringResource(R.string.pride_title), stringResource(R.string.all_couples_text))
-            }
             settings.relationships.forEachIndexed { i, r ->
                 RelationshipCard(settings, r, colorOf(i), today) { onSelect(r.id) }
             }

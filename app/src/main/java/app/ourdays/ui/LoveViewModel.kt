@@ -189,7 +189,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Abgleich-Datei für eine Beziehung erstellen und über das Teilen-Menü verschicken (z. B. per Messenger) */
-    fun shareSync(relationshipId: String) = viewModelScope.launch {
+    fun shareSync(relationshipId: String, includeMoments: Boolean = true) = viewModelScope.launch {
         val app = getApplication<Application>()
         val p = _pairings.value[relationshipId] ?: return@launch
         val title = settings.value?.let { s ->
@@ -199,7 +199,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
             val dir = java.io.File(app.cacheDir, "share").apply { mkdirs() }
             dir.listFiles { f -> f.name.endsWith(".${SyncCodec.EXTENSION}") || f.name.endsWith(".${SyncCodec.OLD_EXTENSION}") }?.forEach { it.delete() }
             val file = java.io.File(dir, SyncCodec.fileName(today.value, title))
-            repo.exportSync(file.outputStream(), p, relationshipId)
+            repo.exportSync(file.outputStream(), p, relationshipId, includeMoments)
             val uri = androidx.core.content.FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", file)
             val send = android.content.Intent(android.content.Intent.ACTION_SEND)
                 .setType(SyncCodec.MIME)
@@ -216,10 +216,13 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Kopplung einer Beziehung als Datei teilen, für Handys, die keinen QR-Code scannen können: die Datei enthält denselben Text wie der QR-Code. */
+    /** Kopplung einer Beziehung als Datei teilen, für Handys, die keinen QR-Code scannen können: die Datei enthält denselben Text wie der QR-Code. Legt die Kopplung an, wenn es noch keine gibt — wie „QR-Code zeigen“. */
     fun sharePairingFile(relationshipId: String) = viewModelScope.launch {
         val app = getApplication<Application>()
-        val p = _pairings.value[relationshipId] ?: return@launch
+        val p = _pairings.value[relationshipId] ?: run {
+            createPairing(PairingStore.me(app), relationshipId)
+            _pairings.value[relationshipId] ?: return@launch
+        }
         val title = settings.value?.let { s ->
             s.relationships.firstOrNull { it.id == relationshipId }?.let { s.titleOf(it) }
         }.orEmpty()

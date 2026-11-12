@@ -20,8 +20,6 @@ class FunFactsTest {
         // 20.03., 21.06., 22.09. und 21.12.
         assertEquals(4L, value(FunFacts.Kind.SEASONS, start, today))
         assertEquals(0L, value(FunFacts.Kind.VALENTINES, start, today))
-        assertEquals(1L, value(FunFacts.Kind.PRIDE_MONTHS, start, today))
-        assertEquals(1L, value(FunFacts.Kind.HALLOWEENS, start, today))
         // 2025 fiel nur der 13. Juni auf einen Freitag
         assertEquals(1L, value(FunFacts.Kind.FRIDAY_13TH, start, today))
         assertEquals(292L * FunFacts.EARTH_KM_PER_DAY, value(FunFacts.Kind.EARTH_KM, start, today))

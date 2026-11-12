@@ -69,7 +69,7 @@ class SyncActions(
     val onScan: (String?, String) -> Unit = { _, _ -> },
     val onMe: (String?) -> Unit = {},
     val onUnpair: (String) -> Unit = {},
-    val onSend: (String) -> Unit = {},
+    val onSend: (String, Boolean) -> Unit = { _, _ -> },
     val onOpen: () -> Unit = {},
     /** Kopplung als Datei teilen (für Handys, die keinen QR-Code scannen können) */
     val onSharePairing: (String) -> Unit = {},
@@ -88,6 +88,15 @@ internal fun SyncPage(
     var me by remember(pairings) { mutableStateOf(pairings.values.firstNotNullOfOrNull { it.me }) }
     var showQrFor by remember { mutableStateOf<String?>(null) }
     var confirmUnpairFor by remember { mutableStateOf<String?>(null) }
+    var sendScopeFor by remember { mutableStateOf<String?>(null) }
+    var sendIncludeMoments by remember { mutableStateOf(true) }
+    // Welche Verbindung soll geteilt werden — bei einer einzigen gibt es nichts zu wählen
+    var selectedRel by remember(settings.relationships) {
+        mutableStateOf(
+            settings.relationships.firstOrNull { it.id == settings.selected }?.id
+                ?: settings.relationships.firstOrNull()?.id,
+        )
+    }
 
     Text(
         stringResource(if (pairings.isEmpty()) R.string.sync_intro else R.string.sync_intro_paired),
@@ -118,8 +127,27 @@ internal fun SyncPage(
         }
     }
 
-    // Eine Karte pro Beziehung: jede hat ihre eigene Kopplung und ihre eigene Abgleich-Datei
-    settings.relationships.forEach { r ->
+    // Welche Verbindung soll geteilt werden — bei einer einzigen gibt es nichts zu wählen
+    if (settings.relationships.size > 1) {
+        SyncCard {
+            Column(Modifier.padding(16.dp)) {
+                Text(stringResource(R.string.sync_share_which), style = MaterialTheme.typography.titleSmall)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                    settings.relationships.forEach { rel ->
+                        FilterChip(
+                            selected = selectedRel == rel.id,
+                            onClick = { selectedRel = rel.id },
+                            label = { Text(settings.titleOf(rel)) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // Die Karte der gewählten Verbindung: sie hat ihre eigene Kopplung und ihre eigene Abgleich-Datei
+    val r = settings.relationships.firstOrNull { it.id == selectedRel } ?: settings.relationships.firstOrNull()
+    if (r != null) {
         val pairing = pairings[r.id]
         SyncCard {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)) {
@@ -150,10 +178,15 @@ internal fun SyncPage(
                 SyncRow(Icons.Rounded.QrCodeScanner, stringResource(R.string.sync_scan), stringResource(R.string.sync_scan_summary)) {
                     actions.onScan(me, r.id)
                 }
+                Line()
+                SyncRow(Icons.Rounded.Share, stringResource(R.string.pairing_share_file), stringResource(R.string.pairing_share_file_summary)) {
+                    actions.onSharePairing(r.id)
+                }
             } else {
                 if (!partnerMode) {
                     SyncRow(Icons.Rounded.Send, stringResource(R.string.sync_send), stringResource(R.string.sync_send_summary)) {
-                        actions.onSend(r.id)
+                        sendIncludeMoments = true
+                        sendScopeFor = r.id
                     }
                     Line()
                 }
@@ -207,6 +240,41 @@ internal fun SyncPage(
                 }
             },
             confirmButton = { TextButton(onClick = { showQrFor = null }) { Text(stringResource(R.string.done)) } },
+        )
+    }
+    // Was soll die Abgleich-Datei enthalten: nur Namen und Datum — oder auch alle Momente?
+    if (sendScopeFor != null) {
+        AlertDialog(
+            onDismissRequest = { sendScopeFor = null },
+            title = { Text(stringResource(R.string.sync_send_scope_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf(true to R.string.sync_send_all, false to R.string.sync_send_names_only).forEach { (all, title) ->
+                        val sub = if (all) R.string.sync_send_all_sub else R.string.sync_send_names_only_sub
+                        ListItem(
+                            headlineContent = { Text(stringResource(title)) },
+                            supportingContent = { Text(stringResource(sub)) },
+                            leadingContent = {
+                                androidx.compose.material3.RadioButton(
+                                    selected = sendIncludeMoments == all,
+                                    onClick = { sendIncludeMoments = all },
+                                )
+                            },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable { sendIncludeMoments = all },
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        actions.onSend(sendScopeFor!!, sendIncludeMoments)
+                        sendScopeFor = null
+                    },
+                ) { Text(stringResource(R.string.sync_send)) }
+            },
+            dismissButton = { TextButton(onClick = { sendScopeFor = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
     if (confirmUnpairFor != null) {

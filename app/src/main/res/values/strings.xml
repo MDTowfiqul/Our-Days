@@ -253,9 +253,6 @@
     <string name="photo_own">Your own photo</string>
     <string name="notify_off">Off</string>
     <string name="notify_daily_at">On special days at %1$s</string>
-    <string name="all_couples">For every kind of love</string>
-    <string name="all_couples_text">Our Days is for everyone in love, no matter who you are, whom you love or how many of you there are.</string>
-    <string name="pride_title">Happy Pride Month!</string>
     <string name="credit_before" translatable="false">Built with</string>
     <string name="credit_heart">love</string>
     <string name="credit_after" translatable="false">by Towfiqul</string>
@@ -329,7 +326,13 @@
     <string name="pairing_file_invalid">That is not a pairing file.</string>
     <string name="sync_not_paired_yet">Not paired yet</string>
     <string name="sync_how_title">How sync works</string>
-    <string name="sync_how_text">Each connection has its own secret key.\n• Pair a connection once — scan its QR code or open its pairing file.\n• A sync file carries only that one connection: its people, its dates and its moments.\n• The sender\'s names and dates win; only new moments are added.\n• Open the file on the other phone to receive the data. Pairing alone sends nothing.</string>
+    <string name="sync_how_text">Each connection has its own secret key. Pick the connection above, then pair it once — scan its QR code, scan the other phone’s code, or open its pairing file.\n• A sync file carries only that one connection.\n• You choose what it carries: 1) Names &amp; date only — the other person sees only your names and the date you got together. 2) Names, date &amp; moments — they also receive all your moments, with photos.\n• The sender’s names and dates win; only new moments are added.\n• Open the file on the other phone to receive the data. Pairing alone sends nothing.</string>
+    <string name="sync_share_which">Which connection do you want to share?</string>
+    <string name="sync_send_scope_title">What do you want to share?</string>
+    <string name="sync_send_names_only">Names &amp; date only</string>
+    <string name="sync_send_names_only_sub">The other person sees only your names and the date you got together — no moments.</string>
+    <string name="sync_send_all">Names, date &amp; moments</string>
+    <string name="sync_send_all_sub">The other person also receives all your moments, with photos.</string>
     <string name="partner_sync_title">Sync with My Partner</string>
     <string name="partner_sync_text">Pair with your partner\'s phone, then open their sync file — your shared names, dates and moments will appear here. No need to fill in the setup.</string>
     <string name="partner_sync_continue">Continue to the app</string>
@@ -373,8 +376,6 @@
     <string name="fact_seasons_sub">you have been through together</string>
     <string name="fact_heartbeats_sub">from each of your hearts since you got together</string>
     <string name="fact_valentines_sub">you have spent together</string>
-    <string name="fact_pride_months_sub">you have celebrated together</string>
-    <string name="fact_halloweens_sub">you have spent together</string>
     <string name="fact_friday_13th_sub">you have survived together</string>
     <string name="fact_earth_km_sub">the Earth has carried you around the sun</string>
     <string name="fact_breaths_sub">each of you has taken since you got together</string>
@@ -389,14 +390,6 @@
     <plurals name="fact_valentines">
         <item quantity="one">%s Valentine\'s Day</item>
         <item quantity="other">%s Valentine\'s Days</item>
-    </plurals>
-    <plurals name="fact_pride_months">
-        <item quantity="one">%s Pride Month</item>
-        <item quantity="other">%s Pride Months</item>
-    </plurals>
-    <plurals name="fact_halloweens">
-        <item quantity="one">%s Halloween</item>
-        <item quantity="other">%s Halloweens</item>
     </plurals>
     <plurals name="fact_friday_13th">
         <item quantity="one">%s Friday the 13th</item>

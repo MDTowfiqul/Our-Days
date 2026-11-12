@@ -417,7 +417,7 @@ class LoveRepository(private val context: Context) {
      * ihren Menschen, ihren Momenten mit Fotos und den gelöschten Einträgen. Momente ohne
      * Beziehung reisen nur mit der Hauptbeziehung mit. Der Stream wird danach geschlossen.
      */
-    suspend fun exportSync(out: OutputStream, pairing: Pairing, relationshipId: String = PeopleCodec.MAIN_ID) {
+    suspend fun exportSync(out: OutputStream, pairing: Pairing, relationshipId: String = PeopleCodec.MAIN_ID, includeMoments: Boolean = true) {
         val s = current()
         val deleted = decodeDeleted(context.dataStore.data.first()[Keys.deleted])
         val deletedPeople = decodeDeleted(context.dataStore.data.first()[Keys.deletedPeople])
@@ -425,10 +425,16 @@ class LoveRepository(private val context: Context) {
         val relationship = s.relationships.firstOrNull { it.id == relationshipId } ?: s.relationships.first()
         val memberIds = relationship.members.toSet()
         val people = s.people.filter { it.id in memberIds }
-        val moments = s.moments.filter {
-            it.relationshipId == relationship.id ||
-                (relationship.id == PeopleCodec.MAIN_ID && it.relationshipId == null)
+        // Nur Namen und Datum: keine Momente und keine gelöschten Momente in der Datei
+        val moments = if (includeMoments) {
+            s.moments.filter {
+                it.relationshipId == relationship.id ||
+                    (relationship.id == PeopleCodec.MAIN_ID && it.relationshipId == null)
+            }
+        } else {
+            emptyList()
         }
+        val deletedMoments = if (includeMoments) deleted else emptyMap()
         withContext(Dispatchers.IO) {
             val zipFile = File(context.cacheDir, "sync-out.zip")
             try {
@@ -436,7 +442,7 @@ class LoveRepository(private val context: Context) {
                     zip.putNextEntry(ZipEntry(SyncCodec.JSON))
                     zip.write(
                         SyncCodec.encode(
-                            SyncData(people, listOf(relationship), moments, deleted, pairing.me, relationship.id, deletedPeople, deletedRelationships),
+                            SyncData(people, listOf(relationship), moments, deletedMoments, pairing.me, relationship.id, deletedPeople, deletedRelationships, includeMoments),
                         ).toByteArray(Charsets.UTF_8),
                     )
                     zip.closeEntry()

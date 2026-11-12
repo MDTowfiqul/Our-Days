@@ -79,7 +79,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -124,6 +123,7 @@ fun HomeScreen(
     // Momente lassen sich in den Einstellungen ausblenden, Spaß ist immer da
     val pages = listOfNotNull(
         HomePage.Overview,
+        HomePage.Live.takeIf { settings.showLive },
         HomePage.Fun,
         HomePage.Moments.takeIf { settings.showMoments },
     )
@@ -135,8 +135,7 @@ fun HomeScreen(
     }
     LaunchedEffect(jumpTo) {
         if (jumpTo == null) return@LaunchedEffect
-        // Die App-Abkürzung „Live“ springt jetzt zur Übersicht, wo der Live-Zähler steht
-        val index = if (jumpTo == "live") pages.indexOf(HomePage.Overview) else -1
+        val index = if (jumpTo == "live") pages.indexOf(HomePage.Live) else -1
         if (index >= 0) pager.scrollToPage(index)
         onJumped()
     }
@@ -150,8 +149,9 @@ fun HomeScreen(
                 HomePage.Overview -> if (settings.showAll) {
                     PolyOverview(settings, today, onSelect)
                 } else {
-                    Overview(settings, today, onSelect, active = pager.currentPage == page)
+                    Overview(settings, today, onSelect)
                 }
+                HomePage.Live -> LiveScreen(settings, active = pager.currentPage == page)
                 HomePage.Fun -> FunScreen(settings)
                 HomePage.Moments -> MomentsScreen(
                     settings,
@@ -232,11 +232,12 @@ private fun celebrateOn(settings: LoveSettings, today: LocalDate): Boolean {
 
 private enum class HomePage(@androidx.annotation.StringRes val label: Int) {
     Overview(R.string.tab_overview),
+    Live(R.string.tab_live),
     Fun(R.string.tab_fun),
     Moments(R.string.tab_moments),
 }
 
-private val BarItemHeight = 40.dp
+private val BarItemHeight = 36.dp
 private val BarPadding = 4.dp
 
 @Composable
@@ -251,12 +252,12 @@ private fun ModeSwitch(selected: Int, pages: List<HomePage>, onSelect: (Int) -> 
                     .clip(CircleShape)
                     .background(if (active) Color.White else Color.Transparent)
                     .selectable(selected = active, role = Role.Tab) { onSelect(i) }
-                    .padding(horizontal = 18.dp),
+                    .padding(horizontal = 10.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     label,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = if (active) Wine else Color.White,
                 )
             }
@@ -265,7 +266,7 @@ private fun ModeSwitch(selected: Int, pages: List<HomePage>, onSelect: (Int) -> 
 }
 
 @Composable
-private fun Overview(settings: LoveSettings, today: LocalDate, onSelect: (String) -> Unit, active: Boolean = true) {
+private fun Overview(settings: LoveSettings, today: LocalDate, onSelect: (String) -> Unit) {
     val start = settings.startDate
     val together = LoveMath.together(start, today)
     val future = start.isAfter(today)
@@ -326,8 +327,6 @@ private fun Overview(settings: LoveSettings, today: LocalDate, onSelect: (String
 
             review?.let { YearReviewCard(it) { ShareCard.shareYear(context, settings, it) } }
 
-            if (LocalPrideMonth.current) RainbowCard(stringResource(R.string.pride_title), stringResource(R.string.all_couples_text))
-
             if (!future) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     StatTile(Modifier.weight(1f), formatNumber(together.totalMonths), stringResource(R.string.stat_months))
@@ -338,9 +337,6 @@ private fun Overview(settings: LoveSettings, today: LocalDate, onSelect: (String
             }
 
             if (upcoming.isNotEmpty()) UpcomingCard(upcoming, today)
-
-            // Der Live-Zähler steht jetzt direkt unter der Übersicht
-            if (settings.showLive) LiveSection(settings, active = active)
 
             Text(
                 stringResource(R.string.together_since_long, Texts.longDate(start)),
@@ -405,46 +401,14 @@ fun BeatingHeart(modifier: Modifier = Modifier, size: Dp = 30.dp) {
         animationSpec = infiniteRepeatable(tween(650), RepeatMode.Reverse),
         label = "beat",
     )
-    val pride = LocalPrideMonth.current
     Icon(
         Icons.Rounded.Favorite,
         contentDescription = null,
-        tint = if (pride) Color.White else Color(0xFFFF5C77),
+        tint = Color(0xFFFF5C77),
         modifier = modifier
             .size(size)
-            .scale(beat)
-            .then(if (pride) Modifier.rainbow() else Modifier),
+            .scale(beat),
     )
-}
-
-/** Karte mit Regenbogenstreifen: Pride-Gruß auf der Startseite, "Für jede Liebe" in den Einstellungen */
-@Composable
-internal fun RainbowCard(title: String, text: String) {
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .background(Brush.horizontalGradient(PrideColors)),
-        )
-        Column(Modifier.padding(20.dp)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-    }
 }
 
 @Composable

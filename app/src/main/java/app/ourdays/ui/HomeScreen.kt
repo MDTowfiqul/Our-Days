@@ -111,8 +111,8 @@ fun HomeScreen(
     settings: LoveSettings,
     today: LocalDate,
     onOpenSettings: () -> Unit,
-    onOpenChat: () -> Unit = {},
     onPageChange: (Int) -> Unit,
+    onOpenChat: () -> Unit = {},
     onAddMoment: (String?) -> Unit = {},
     onOpenMoment: (app.ourdays.data.Moment) -> Unit = {},
     /** Reihenfolge der Momente umdrehen (neueste oben) */

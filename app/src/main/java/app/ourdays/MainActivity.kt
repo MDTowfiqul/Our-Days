@@ -252,7 +252,7 @@ class MainActivity : ComponentActivity() {
                     s == null -> "loading"
                     editingPhoto && s.photoPath != null -> "editor"
                     editingMoment != null && s.onboardingDone -> "moment"
-                    !s.onboardingDone && !introDone -> "intro"
+                    !introDone -> "intro"
                     showCloudRestore -> "cloud-restore"
                     showPartnerSync -> "partner-sync"
                     !s.onboardingDone -> "onboarding"
@@ -420,7 +420,6 @@ class MainActivity : ComponentActivity() {
                                         onUnpair = vm::unpair,
                                         onSend = vm::shareSync,
                                         onOpen = { syncOpener.launch(arrayOf("*/*")) },
-                                        onSharePairing = vm::sharePairingFile,
                                     ),
                                 )
                                 else -> HomeScreen(

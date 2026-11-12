@@ -320,13 +320,9 @@
     <string name="sync_open_summary">If tapping the file did not open Our Days</string>
     <string name="sync_show_qr_again">Pair another phone</string>
     <string name="sync_show_qr_again_summary">Shows the QR code again, for example for a new phone</string>
-    <string name="pairing_share_file">Share pairing file</string>
-    <string name="pairing_share_file_summary">Send it to the other phone, like a sync file</string>
-    <string name="pairing_done">Paired with the other phone.</string>
-    <string name="pairing_file_invalid">That is not a pairing file.</string>
     <string name="sync_not_paired_yet">Not paired yet</string>
     <string name="sync_how_title">How sync works</string>
-    <string name="sync_how_text">Each connection has its own secret key. Pick the connection above, then pair it once — scan its QR code, scan the other phone’s code, or open its pairing file.\n• A sync file carries only that one connection.\n• You choose what it carries: 1) Names &amp; date only — the other person sees only your names and the date you got together. 2) Names, date &amp; moments — they also receive all your moments, with photos.\n• The sender’s names and dates win; only new moments are added.\n• Open the file on the other phone to receive the data. Pairing alone sends nothing.</string>
+    <string name="sync_how_text">Each connection has its own secret key. Pick the connection above, then pair it once — one phone shows its QR code, the other scans it.\n• A sync file carries only that one connection.\n• You choose what it carries: 1) Names &amp; date only — the other person sees only your names and the date you got together. 2) Names, date &amp; moments — they also receive all your moments, with photos.\n• The sender’s names and dates win; only new moments are added.\n• Open the file on the other phone to receive the data. Pairing alone sends nothing.</string>
     <string name="sync_share_which">Which connection do you want to share?</string>
     <string name="sync_send_scope_title">What do you want to share?</string>
     <string name="sync_send_names_only">Names &amp; date only</string>

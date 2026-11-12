@@ -22,7 +22,6 @@ import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Send
-import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -71,8 +70,6 @@ class SyncActions(
     val onUnpair: (String) -> Unit = {},
     val onSend: (String, Boolean) -> Unit = { _, _ -> },
     val onOpen: () -> Unit = {},
-    /** Kopplung als Datei teilen (für Handys, die keinen QR-Code scannen können) */
-    val onSharePairing: (String) -> Unit = {},
 )
 
 /** Abgleich mit dem Handy des anderen Menschen: pro Beziehung koppeln per QR-Code, dann Dateien austauschen */
@@ -178,10 +175,6 @@ internal fun SyncPage(
                 SyncRow(Icons.Rounded.QrCodeScanner, stringResource(R.string.sync_scan), stringResource(R.string.sync_scan_summary)) {
                     actions.onScan(me, r.id)
                 }
-                Line()
-                SyncRow(Icons.Rounded.Share, stringResource(R.string.pairing_share_file), stringResource(R.string.pairing_share_file_summary)) {
-                    actions.onSharePairing(r.id)
-                }
             } else {
                 if (!partnerMode) {
                     SyncRow(Icons.Rounded.Send, stringResource(R.string.sync_send), stringResource(R.string.sync_send_summary)) {
@@ -194,10 +187,6 @@ internal fun SyncPage(
                 Line()
                 SyncRow(Icons.Rounded.QrCode2, stringResource(R.string.sync_show_qr_again), stringResource(R.string.sync_show_qr_again_summary)) {
                     showQrFor = r.id
-                }
-                Line()
-                SyncRow(Icons.Rounded.Share, stringResource(R.string.pairing_share_file), stringResource(R.string.pairing_share_file_summary)) {
-                    actions.onSharePairing(r.id)
                 }
                 Line()
                 ListItem(

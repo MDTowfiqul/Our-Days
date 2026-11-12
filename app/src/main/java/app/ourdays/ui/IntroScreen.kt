@@ -52,6 +52,9 @@ fun IntroScreen(onContinue: () -> Unit) {
         started = true
         delay(750)
         met = true
+        // Kurz stehen lassen, dann von selbst weiter — der Knopf ist nur zum Überspringen
+        delay(1200)
+        onContinue()
     }
     // Die beiden Herzen laufen von links und rechts aufeinander zu und bilden das Logo
     val whiteX by animateDpAsState(

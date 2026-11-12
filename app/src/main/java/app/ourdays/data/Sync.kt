@@ -58,26 +58,10 @@ data class Pairing(
             return if (relationshipId == PeopleCodec.MAIN_ID) base else "$base:$relationshipId"
         }
 
-        /** Kopplung als Datei, für Handys, die keinen QR-Code scannen können: die Datei enthält denselben Text wie der QR-Code. */
-        const val PAIRING_MIME = "application/vnd.ourdays.pairing"
-        const val PAIRING_EXTENSION = "ourpair"
-        fun pairingFileName(title: String = ""): String {
-            val slug = slug(title)
-            return if (slug.isEmpty()) "our-days-pairing.$PAIRING_EXTENSION" else "our-days-pairing-$slug.$PAIRING_EXTENSION"
-        }
-
-        fun pairingFileText(p: Pairing, relationshipId: String = PeopleCodec.MAIN_ID): String = qrText(p, relationshipId)
-
         /** Dateitauglicher Kurzname, z. B. „A & B“ → „a-b“ */
         fun slug(text: String): String =
             text.lowercase().map { if (it.isLetterOrDigit()) it else '-' }.joinToString("")
                 .split('-').filter { it.isNotEmpty() }.joinToString("-")
-
-        /** True, wenn [bytes] mit einem Kopplungs-Präfix beginnen — die Datei enthält eine Kopplung, keinen Abgleich. */
-        fun isPairingFile(bytes: ByteArray): Boolean {
-            val prefixes = listOf(PREFIX, OLD_PREFIX).map { it.toByteArray(Charsets.US_ASCII) }
-            return prefixes.any { p -> bytes.size >= p.size && bytes.copyOfRange(0, p.size).contentEquals(p) }
-        }
 
         /** Schlüssel und Beziehungs-ID aus einem gescannten QR-Code, null = kein Kopplungscode von Our Days */
         fun fromQr(text: String?): Pair<ByteArray, String>? {

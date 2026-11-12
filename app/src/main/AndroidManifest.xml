@@ -2,15 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Internet: Cloud-Backups (Google Drive, Telegram) brauchen es in allen Varianten -->
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Keine Internet-Berechtigung (Ausnahme: GitHub-Variante, siehe src/github) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Für die App-Sperre (Fingerabdruck, Gesicht oder PIN), ohne sie stürzt die Abfrage ab -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application
-        android:name="app.ourdays.LoveApp"
+        android:name=".LoveApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -21,7 +20,7 @@
         android:theme="@style/Theme.Love">
 
         <activity
-            android:name="app.ourdays.MainActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -34,6 +33,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" />
                 <data android:scheme="file" />
+                <data android:mimeType="application/vnd.ourdays.sync" />
                 <data android:mimeType="application/vnd.sinceus.sync" />
             </intent-filter>
             <!-- Viele Dateimanager kennen den Typ nicht, erkennen die Datei aber an der Endung -->
@@ -44,6 +44,9 @@
                 <data android:scheme="file" />
                 <data android:host="*" />
                 <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.ourdays" />
+                <data android:pathPattern=".*\\..*\\.ourdays" />
+                <data android:pathPattern=".*\\..*\\..*\\.ourdays" />
                 <data android:pathPattern=".*\\.sinceus" />
                 <data android:pathPattern=".*\\..*\\.sinceus" />
                 <data android:pathPattern=".*\\..*\\..*\\.sinceus" />
@@ -60,6 +63,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/vnd.ourdays.sync" />
                 <data android:mimeType="application/vnd.sinceus.sync" />
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>
@@ -82,7 +86,7 @@
         </provider>
 
         <receiver
-            android:name="app.ourdays.notify.DailyReceiver"
+            android:name=".notify.DailyReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -93,7 +97,7 @@
         </receiver>
 
         <receiver
-            android:name="app.ourdays.widget.LoveWidgetReceiver"
+            android:name=".widget.LoveWidgetReceiver"
             android:exported="true"
             android:label="@string/widget_days_name">
             <intent-filter>
@@ -105,7 +109,7 @@
         </receiver>
 
         <receiver
-            android:name="app.ourdays.widget.PhotoWidgetReceiver"
+            android:name=".widget.PhotoWidgetReceiver"
             android:exported="true"
             android:label="@string/widget_photo_name">
             <intent-filter>
@@ -117,7 +121,7 @@
         </receiver>
 
         <receiver
-            android:name="app.ourdays.widget.CountdownWidgetReceiver"
+            android:name=".widget.CountdownWidgetReceiver"
             android:exported="true"
             android:label="@string/widget_countdown_name">
             <intent-filter>

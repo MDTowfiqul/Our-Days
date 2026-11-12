@@ -81,6 +81,42 @@ class SyncTest {
     }
 
     @Test
+    fun qrCodeUsesNewPrefixButReadsOldOnes() {
+        val p = Pairing.create("a")
+        // Neue QR-Codes heißen our-days, …
+        assertTrue(Pairing.qrText(p).startsWith("ourdays:pair:1:"))
+        // … alte Since-Us-QR-Codes lassen sich trotzdem noch lesen
+        val oldQr = "sinceus:pair:1:" + android.util.Base64.encodeToString(
+            p.key, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING,
+        )
+        assertArrayEquals(p.key, Pairing.keyFromQr(oldQr))
+    }
+
+    @Test
+    fun syncFileNameIsOurDays() {
+        assertEquals("our-days-2026-11-12.ourdays", SyncCodec.fileName(LocalDate.of(2026, 11, 12)))
+        assertEquals("application/vnd.ourdays.sync", SyncCodec.MIME)
+        assertEquals("ourdays", SyncCodec.EXTENSION)
+        assertEquals("our-days-backup-2026-11-12.zip", Backup.fileName(LocalDate.of(2026, 11, 12)))
+    }
+
+    @Test
+    fun oldAutoBackupsAcrossRename() {
+        // Alte "since-us-…"- und neue "our-days-…"-Sicherungen in einer gemeinsamen Reihenfolge
+        val names = listOf(
+            "since-us-auto-2026-09-01.zip",
+            "since-us-auto-2026-09-22.zip",
+            "our-days-auto-2026-10-05.zip",
+            "our-days-auto-2026-10-12.zip",
+            "our-days-auto-2026-11-12.zip",
+        )
+        assertEquals(
+            listOf("since-us-auto-2026-09-22.zip", "since-us-auto-2026-09-01.zip"),
+            AutoBackup.oldOnes(names),
+        )
+    }
+
+    @Test
     fun codecRoundtrip() {
         val data = SyncData(
             people = listOf(Person("a", "Alex"), Person("b", "Sam", "they/them")),

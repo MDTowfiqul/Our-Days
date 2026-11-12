@@ -14,7 +14,7 @@ import android.graphics.Shader
 import android.graphics.Typeface
 import androidx.core.content.FileProvider
 import androidx.core.graphics.PathParser
-import ourdays.app.R
+import app.ourdays.R
 import app.ourdays.data.LoveMath
 import app.ourdays.data.DEFAULT_FOCUS_Y
 import app.ourdays.data.LoveSettings
@@ -162,7 +162,7 @@ object ShareCard {
 
     private fun send(context: Context, bitmap: Bitmap, text: String) {
         val dir = File(context.cacheDir, "share").apply { mkdirs() }
-        val file = File(dir, "since-us.png")
+        val file = File(dir, "our-days.png")
         file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val send = Intent(Intent.ACTION_SEND)

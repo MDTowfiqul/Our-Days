@@ -5,7 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import android.widget.Toast
-import ourdays.app.R
+import app.ourdays.R
 import app.ourdays.data.AutoBackup
 import app.ourdays.data.LoveRepository
 import app.ourdays.update.UpdateChecker
@@ -191,7 +191,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
         val p = _pairing.value ?: return@launch
         try {
             val dir = java.io.File(app.cacheDir, "share").apply { mkdirs() }
-            dir.listFiles { f -> f.name.endsWith(".${SyncCodec.EXTENSION}") }?.forEach { it.delete() }
+            dir.listFiles { f -> f.name.endsWith(".${SyncCodec.EXTENSION}") || f.name.endsWith(".${SyncCodec.OLD_EXTENSION}") }?.forEach { it.delete() }
             val file = java.io.File(dir, SyncCodec.fileName(today.value))
             repo.exportSync(file.outputStream(), p)
             val uri = androidx.core.content.FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", file)

@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.content.FileProvider
-import ourdays.app.BuildConfig
+import app.ourdays.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,7 +48,7 @@ object UpdateInstaller {
             deleteRecursively()
             mkdirs()
         }
-        val file = File(dir, "SinceUs.apk")
+        val file = File(dir, "OurDays.apk")
         // GitHub leitet auf seinen Download-Server weiter, beides über https
         val connection = (URL(apkUrl).openConnection() as HttpURLConnection).apply {
             connectTimeout = TIMEOUT_MS

@@ -249,10 +249,10 @@ class MainActivity : ComponentActivity() {
 
                 val s = settings
                 val screen = when {
+                    !introDone -> "intro"
                     s == null -> "loading"
                     editingPhoto && s.photoPath != null -> "editor"
                     editingMoment != null && s.onboardingDone -> "moment"
-                    !introDone -> "intro"
                     showCloudRestore -> "cloud-restore"
                     showPartnerSync -> "partner-sync"
                     !s.onboardingDone -> "onboarding"

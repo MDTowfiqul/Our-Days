@@ -152,6 +152,30 @@ class ScreenshotTest {
         SyncPage(settings, guidePairing, SyncActions())
     }
 
+    // Einzelbilder der Intro-Animation, um zu prüfen, dass die Herzen wirklich
+    // von außen hereinlaufen und erst beim Treffen das Logo bilden.
+    private fun introShot(name: String, advanceMs: Long) {
+        compose.mainClock.autoAdvance = false
+        compose.setContent { LoveTheme { IntroScreen(onContinue = {}) } }
+        compose.mainClock.advanceTimeBy(advanceMs)
+        compose.waitForIdle()
+        val bitmap = compose.activity.window.decorView.drawToBitmap()
+        val dir = File("build/screenshots/en").apply { mkdirs() }
+        File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    @Test
+    fun introFrameStart() = introShot("intro_frame_start", 0)
+
+    @Test
+    fun introFrameMid() = introShot("intro_frame_mid", 400)
+
+    @Test
+    fun introFrameMet() = introShot("intro_frame_met", 1100)
+
+    @Test
+    fun introFrameText() = introShot("intro_frame_text", 1800)
+
     @Test
     fun privacy() = shot("privacy") {
         SettingsScreen(settings.copy(discreet = true), true, appLock = true, initialPage = SettingsPage.Privacy)

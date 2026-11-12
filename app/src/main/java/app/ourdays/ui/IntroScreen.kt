@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -50,21 +51,22 @@ fun IntroScreen(onContinue: () -> Unit) {
     var met by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         started = true
-        delay(750)
+        delay(1000)
         met = true
         // Kurz stehen lassen, dann von selbst weiter — der Knopf ist nur zum Überspringen
         delay(1200)
         onContinue()
     }
-    // Die beiden Herzen laufen von links und rechts aufeinander zu und bilden das Logo
+    // Die beiden Herzen laufen von links und rechts aufeinander zu und bilden das Logo:
+    // Wenn sie sich treffen, erscheint der abgerundete Kasten dahinter — wie das App-Symbol.
     val whiteX by animateDpAsState(
-        if (started) (-16).dp else (-360).dp,
-        tween(750, easing = FastOutSlowInEasing),
+        if (started) (-16).dp else (-440).dp,
+        tween(1000, easing = FastOutSlowInEasing),
         label = "whiteHeart",
     )
     val redX by animateDpAsState(
-        if (started) 16.dp else 360.dp,
-        tween(750, easing = FastOutSlowInEasing),
+        if (started) 16.dp else 440.dp,
+        tween(1000, easing = FastOutSlowInEasing),
         label = "redHeart",
     )
     // Kleiner Aufprall, wenn die Herzen sich treffen
@@ -72,6 +74,12 @@ fun IntroScreen(onContinue: () -> Unit) {
         if (met) 1f else 0.9f,
         spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
         label = "logoPop",
+    )
+    // Der Logokasten blendet sich erst ein, wenn die Herzen sich getroffen haben
+    val logoAlpha by animateFloatAsState(
+        if (met) 1f else 0f,
+        tween(400),
+        label = "logoAlpha",
     )
     Box(
         modifier = Modifier
@@ -99,6 +107,18 @@ fun IntroScreen(onContinue: () -> Unit) {
                     .scale(pop),
                 contentAlignment = Alignment.Center,
             ) {
+                // Der Logokasten: erscheint erst, wenn die Herzen sich getroffen haben
+                Box(
+                    modifier = Modifier
+                        .size(140.dp)
+                        .graphicsLayer { alpha = logoAlpha }
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color(0xFFA92A40), Color(0xFF6E1626))
+                            ),
+                            RoundedCornerShape(32.dp),
+                        ),
+                )
                 Icon(
                     Icons.Rounded.Favorite,
                     contentDescription = null,

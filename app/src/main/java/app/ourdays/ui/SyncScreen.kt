@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FileOpen
+import androidx.compose.material.icons.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.QrCodeScanner
@@ -70,6 +71,8 @@ class SyncActions(
     val onUnpair: (String) -> Unit = {},
     val onSend: (String, Boolean) -> Unit = { _, _ -> },
     val onOpen: () -> Unit = {},
+    /** Anleitung mit echten Bildschirmfotos öffnen */
+    val onGuide: () -> Unit = {},
 )
 
 /** Abgleich mit dem Handy des anderen Menschen: pro Beziehung koppeln per QR-Code, dann Dateien austauschen */
@@ -101,6 +104,11 @@ internal fun SyncPage(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
     )
+
+    // Anleitung mit echten Bildschirmfotos
+    SyncCard {
+        SyncRow(Icons.Rounded.HelpOutline, stringResource(R.string.guide_title), stringResource(R.string.guide_open_summary), onClick = actions.onGuide)
+    }
 
     // Wer nutzt dieses Handy — auf einem frischen Handy erst nach dem ersten Abgleich sichtbar,
     // wenn die Namen vom anderen Handy da sind

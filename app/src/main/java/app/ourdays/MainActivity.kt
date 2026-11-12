@@ -50,6 +50,7 @@ import app.ourdays.data.MAX_SLIDES
 import app.ourdays.notify.Notifier
 import app.ourdays.share.ShareCard
 import app.ourdays.ui.CloudRestoreScreen
+import app.ourdays.ui.GuideScreen
 import app.ourdays.ui.HomeScreen
 import app.ourdays.ui.LicensesScreen
 import app.ourdays.ui.LockScreen
@@ -103,6 +104,7 @@ class MainActivity : ComponentActivity() {
                 var showSettings by rememberSaveable { mutableStateOf(false) }
                 var showCloudRestore by rememberSaveable { mutableStateOf(false) }
                 var showPartnerSync by rememberSaveable { mutableStateOf(false) }
+                var showGuide by rememberSaveable { mutableStateOf(false) }
                 var editingPhoto by rememberSaveable { mutableStateOf(false) }
                 var showLicenses by rememberSaveable { mutableStateOf(false) }
                 // Moment-Editor: null = zu, "" = neuer Moment, sonst ID; dazu optional ein vorgeschlagener Titel
@@ -236,11 +238,12 @@ class MainActivity : ComponentActivity() {
                 // ob es wirklich eine Sicherung ist, prüft die App beim Laden selbst
                 fun loadBackup() = backupLoader.launch(arrayOf("*/*"))
 
-                BackHandler(enabled = showSettings || showCloudRestore || showPartnerSync || editingPhoto || editingMoment != null || showLicenses) {
+                BackHandler(enabled = showSettings || showCloudRestore || showPartnerSync || showGuide || editingPhoto || editingMoment != null || showLicenses) {
                     when {
                         showLicenses -> showLicenses = false
                         showCloudRestore -> showCloudRestore = false
                         showPartnerSync -> showPartnerSync = false
+                        showGuide -> showGuide = false
                         editingMoment != null -> editingMoment = null
                         editingPhoto -> editingPhoto = false
                         else -> showSettings = false
@@ -255,6 +258,7 @@ class MainActivity : ComponentActivity() {
                     editingMoment != null && s.onboardingDone -> "moment"
                     showCloudRestore -> "cloud-restore"
                     showPartnerSync -> "partner-sync"
+                    showGuide -> "guide"
                     !s.onboardingDone -> "onboarding"
                     showSettings && showLicenses -> "licenses"
                     showSettings -> "settings"
@@ -316,6 +320,7 @@ class MainActivity : ComponentActivity() {
                                     onBack = { showCloudRestore = false },
                                     onRestored = { showCloudRestore = false },
                                 )
+                                "guide" -> GuideScreen(onBack = { showGuide = false })
                                 "partner-sync" -> PartnerSyncPage(
                                     settings = s,
                                     pairings = pairings,
@@ -420,6 +425,7 @@ class MainActivity : ComponentActivity() {
                                         onUnpair = vm::unpair,
                                         onSend = vm::shareSync,
                                         onOpen = { syncOpener.launch(arrayOf("*/*")) },
+                                        onGuide = { showGuide = true },
                                     ),
                                 )
                                 else -> HomeScreen(

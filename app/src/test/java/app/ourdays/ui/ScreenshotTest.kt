@@ -44,6 +44,9 @@ class ScreenshotTest {
     private val today = LocalDate.of(2025, 8, 15)
 
     @Test
+    fun guideScreen() = shot("guide_screen") { GuideScreen(onBack = {}) }
+
+    @Test
     fun homeLongNames() = shot("home_long_names") {
         val long = settings.copy(
             people = settings.people.mapIndexed { i, p ->

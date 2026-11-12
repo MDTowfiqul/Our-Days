@@ -5,7 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import android.widget.Toast
-import app.ourdays.R
+import ourdays.app.R
 import app.ourdays.data.AutoBackup
 import app.ourdays.data.LoveRepository
 import app.ourdays.update.UpdateChecker

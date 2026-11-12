@@ -2,14 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Keine Internet-Berechtigung (Ausnahme: GitHub-Variante, siehe src/github) -->
+    <!-- Internet: Cloud-Backups (Google Drive, Telegram) brauchen es in allen Varianten -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Für die App-Sperre (Fingerabdruck, Gesicht oder PIN), ohne sie stürzt die Abfrage ab -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application
-        android:name=".LoveApp"
+        android:name="app.ourdays.LoveApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -20,7 +21,7 @@
         android:theme="@style/Theme.Love">
 
         <activity
-            android:name=".MainActivity"
+            android:name="app.ourdays.MainActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -86,7 +87,7 @@
         </provider>
 
         <receiver
-            android:name=".notify.DailyReceiver"
+            android:name="app.ourdays.notify.DailyReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -97,7 +98,7 @@
         </receiver>
 
         <receiver
-            android:name=".widget.LoveWidgetReceiver"
+            android:name="app.ourdays.widget.LoveWidgetReceiver"
             android:exported="true"
             android:label="@string/widget_days_name">
             <intent-filter>
@@ -109,7 +110,7 @@
         </receiver>
 
         <receiver
-            android:name=".widget.PhotoWidgetReceiver"
+            android:name="app.ourdays.widget.PhotoWidgetReceiver"
             android:exported="true"
             android:label="@string/widget_photo_name">
             <intent-filter>
@@ -121,7 +122,7 @@
         </receiver>
 
         <receiver
-            android:name=".widget.CountdownWidgetReceiver"
+            android:name="app.ourdays.widget.CountdownWidgetReceiver"
             android:exported="true"
             android:label="@string/widget_countdown_name">
             <intent-filter>

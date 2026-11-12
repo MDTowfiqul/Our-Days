@@ -19,8 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.OpenWith
+import androidx.compose.ui.draw.alpha
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +49,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
@@ -144,12 +145,13 @@ fun HeroPhoto(settings: LoveSettings, modifier: Modifier = Modifier) {
 fun PresetBackground(preset: Preset, modifier: Modifier = Modifier) {
     Box(modifier.background(preset.brush)) {
         Icon(
-            Icons.Rounded.Favorite,
+            painterResource(R.drawable.ic_heart),
             contentDescription = null,
-            tint = Color.White.copy(alpha = 0.10f),
+            tint = Color.Unspecified,
             modifier = Modifier
                 .align(Alignment.Center)
-                .size(220.dp),
+                .size(220.dp)
+                .alpha(0.14f),
         )
     }
 }

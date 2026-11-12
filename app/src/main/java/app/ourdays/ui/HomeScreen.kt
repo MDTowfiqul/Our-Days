@@ -121,10 +121,10 @@ fun HomeScreen(
     jumpTo: String? = null,
     onJumped: () -> Unit = {},
 ) {
-    // Live und Momente lassen sich in den Einstellungen ausblenden
+    // Momente lassen sich in den Einstellungen ausblenden, Spaß ist immer da
     val pages = listOfNotNull(
         HomePage.Overview,
-        HomePage.Live.takeIf { settings.showLive },
+        HomePage.Fun,
         HomePage.Moments.takeIf { settings.showMoments },
     )
     val pageCount = pages.size
@@ -135,7 +135,8 @@ fun HomeScreen(
     }
     LaunchedEffect(jumpTo) {
         if (jumpTo == null) return@LaunchedEffect
-        val index = if (jumpTo == "live") pages.indexOf(HomePage.Live) else -1
+        // Die App-Abkürzung „Live“ springt jetzt zur Übersicht, wo der Live-Zähler steht
+        val index = if (jumpTo == "live") pages.indexOf(HomePage.Overview) else -1
         if (index >= 0) pager.scrollToPage(index)
         onJumped()
     }
@@ -149,9 +150,9 @@ fun HomeScreen(
                 HomePage.Overview -> if (settings.showAll) {
                     PolyOverview(settings, today, onSelect)
                 } else {
-                    Overview(settings, today, onSelect)
+                    Overview(settings, today, onSelect, active = pager.currentPage == page)
                 }
-                HomePage.Live -> LiveScreen(settings, active = pager.currentPage == page)
+                HomePage.Fun -> FunScreen(settings)
                 HomePage.Moments -> MomentsScreen(
                     settings,
                     today,
@@ -231,7 +232,7 @@ private fun celebrateOn(settings: LoveSettings, today: LocalDate): Boolean {
 
 private enum class HomePage(@androidx.annotation.StringRes val label: Int) {
     Overview(R.string.tab_overview),
-    Live(R.string.tab_live),
+    Fun(R.string.tab_fun),
     Moments(R.string.tab_moments),
 }
 
@@ -264,7 +265,7 @@ private fun ModeSwitch(selected: Int, pages: List<HomePage>, onSelect: (Int) -> 
 }
 
 @Composable
-private fun Overview(settings: LoveSettings, today: LocalDate, onSelect: (String) -> Unit) {
+private fun Overview(settings: LoveSettings, today: LocalDate, onSelect: (String) -> Unit, active: Boolean = true) {
     val start = settings.startDate
     val together = LoveMath.together(start, today)
     val future = start.isAfter(today)
@@ -299,6 +300,8 @@ private fun Overview(settings: LoveSettings, today: LocalDate, onSelect: (String
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Verbindung wechseln: direkt unter dem Titelbild, damit man ihn nicht übersieht
+            if (settings.relationships.size > 1) RelationshipSwitch(settings, onSelect)
             if (together.totalDays == 0L) {
                 CounterCard(
                     stringResource(R.string.together_for),
@@ -336,6 +339,9 @@ private fun Overview(settings: LoveSettings, today: LocalDate, onSelect: (String
 
             if (upcoming.isNotEmpty()) UpcomingCard(upcoming, today)
 
+            // Der Live-Zähler steht jetzt direkt unter der Übersicht
+            if (settings.showLive) LiveSection(settings, active = active)
+
             Text(
                 stringResource(R.string.together_since_long, Texts.longDate(start)),
                 style = MaterialTheme.typography.bodyMedium,
@@ -365,7 +371,6 @@ internal fun Hero(settings: LoveSettings, onSelect: (String) -> Unit) {
                 .background(PhotoScrim),
         )
         NamesOverlay(settings, Modifier.align(Alignment.BottomStart))
-        if (settings.relationships.size > 1) RelationshipSwitch(settings, onSelect)
     }
 }
 

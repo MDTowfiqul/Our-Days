@@ -60,12 +60,14 @@ data class LoveSettings(
     val remindBefore: Int = 0,
     /** Gewählte Schrift (ID aus AppFonts), "" = Standardschrift der App */
     val font: String = "",
+    /** Gewähltes Farbschema (ID aus AppThemes), "light" = helles Weiß als Standard */
+    val theme: String = "light",
     /** Bildausschnitt: Fokuspunkt (-1..1) und Zoom (1..4) */
     val focusX: Float = 0f,
     val focusY: Float = DEFAULT_FOCUS_Y,
     val zoom: Float = 1f,
     val onboardingDone: Boolean = false,
-    /** 0 = Übersicht, 1 = Live-Zähler */
+    /** 0 = Übersicht, 1 = Spaß, 2 = Momente */
     val homePage: Int = 0,
     /** Nur GitHub-Variante: automatisch nach neuen Versionen suchen */
     val updateCheck: Boolean = true,
@@ -190,6 +192,9 @@ private object Keys {
     val widgetRelationship = stringPreferencesKey("widget_relationship")
     val discreet = booleanPreferencesKey("discreet")
     val deleted = stringPreferencesKey("deleted_moments")
+    val deletedPeople = stringPreferencesKey("deleted_people")
+    val deletedRelationships = stringPreferencesKey("deleted_relationships")
+    val theme = stringPreferencesKey("theme")
 }
 
 /**
@@ -251,6 +256,7 @@ class LoveRepository(private val context: Context) {
             notifyMinute = this[Keys.notifyMinute] ?: d.notifyMinute,
             remindBefore = this[Keys.remindBefore] ?: d.remindBefore,
             font = this[Keys.font] ?: d.font,
+            theme = this[Keys.theme] ?: d.theme,
             focusX = this[Keys.focusX] ?: d.focusX,
             focusY = this[Keys.focusY] ?: d.focusY,
             zoom = this[Keys.zoom] ?: d.zoom,
@@ -322,6 +328,9 @@ class LoveRepository(private val context: Context) {
         val (people, relationships) = prefs.model()
         if (people.size <= 2) return@edit
         prefs.writeModel(people.filterNot { it.id == id }, relationships)
+        prefs[Keys.deletedPeople] = encodeDeleted(
+            decodeDeleted(prefs[Keys.deletedPeople]) + (id to System.currentTimeMillis()),
+        )
     }
 
     /** Neue oder geänderte Beziehung */
@@ -341,6 +350,9 @@ class LoveRepository(private val context: Context) {
         val (people, relationships) = prefs.model()
         if (relationships.size <= 1) return@edit
         prefs.writeModel(people, relationships.filterNot { it.id == id })
+        prefs[Keys.deletedRelationships] = encodeDeleted(
+            decodeDeleted(prefs[Keys.deletedRelationships]) + (id to System.currentTimeMillis()),
+        )
         prefs[Keys.moments] = MomentCodec.encode(
             MomentCodec.decode(prefs[Keys.moments]).map { if (it.relationshipId == id) it.copy(relationshipId = null) else it },
         )
@@ -372,7 +384,7 @@ class LoveRepository(private val context: Context) {
         val saved = moment.copy(
             photoPaths = photos,
             updatedAt = System.currentTimeMillis(),
-            addedBy = old?.addedBy ?: moment.addedBy ?: PairingStore.load(context)?.me,
+            addedBy = old?.addedBy ?: moment.addedBy ?: PairingStore.me(context),
         )
         context.dataStore.edit { prefs ->
             val list = MomentCodec.decode(prefs[Keys.moments]).filterNot { it.id == moment.id } + saved
@@ -401,24 +413,35 @@ class LoveRepository(private val context: Context) {
     }
 
     /**
-     * Schreibt eine verschlüsselte Abgleich-Datei für das gekoppelte Handy: Menschen, Beziehungen,
-     * Momente mit Fotos und gelöschte Momente. Der Stream wird danach geschlossen.
+     * Schreibt eine verschlüsselte Abgleich-Datei für das gekoppelte Handy: eine Beziehung mit
+     * ihren Menschen, ihren Momenten mit Fotos und den gelöschten Einträgen. Momente ohne
+     * Beziehung reisen nur mit der Hauptbeziehung mit. Der Stream wird danach geschlossen.
      */
-    suspend fun exportSync(out: OutputStream, pairing: Pairing) {
+    suspend fun exportSync(out: OutputStream, pairing: Pairing, relationshipId: String = PeopleCodec.MAIN_ID) {
         val s = current()
         val deleted = decodeDeleted(context.dataStore.data.first()[Keys.deleted])
+        val deletedPeople = decodeDeleted(context.dataStore.data.first()[Keys.deletedPeople])
+        val deletedRelationships = decodeDeleted(context.dataStore.data.first()[Keys.deletedRelationships])
+        val relationship = s.relationships.firstOrNull { it.id == relationshipId } ?: s.relationships.first()
+        val memberIds = relationship.members.toSet()
+        val people = s.people.filter { it.id in memberIds }
+        val moments = s.moments.filter {
+            it.relationshipId == relationship.id ||
+                (relationship.id == PeopleCodec.MAIN_ID && it.relationshipId == null)
+        }
         withContext(Dispatchers.IO) {
             val zipFile = File(context.cacheDir, "sync-out.zip")
             try {
                 ZipOutputStream(zipFile.outputStream().buffered()).use { zip ->
                     zip.putNextEntry(ZipEntry(SyncCodec.JSON))
                     zip.write(
-                        SyncCodec.encode(SyncData(s.people, s.relationships, s.moments, deleted, pairing.me))
-                            .toByteArray(Charsets.UTF_8),
+                        SyncCodec.encode(
+                            SyncData(people, listOf(relationship), moments, deleted, pairing.me, relationship.id, deletedPeople, deletedRelationships),
+                        ).toByteArray(Charsets.UTF_8),
                     )
                     zip.closeEntry()
                     val written = mutableSetOf<String>()
-                    s.moments.forEach { m ->
+                    moments.forEach { m ->
                         m.photoPaths.forEach { path ->
                             val file = File(path).takeIf { it.isFile } ?: return@forEach
                             if (!written.add(file.name)) return@forEach
@@ -440,7 +463,7 @@ class LoveRepository(private val context: Context) {
      * zusammen. Gehört die Datei zu keiner Kopplung mit diesem Handy oder ist sie beschädigt,
      * wird eine Exception geworfen und nichts verändert.
      */
-    suspend fun importSync(input: InputStream, pairing: Pairing): MergeResult {
+    suspend fun importSync(input: InputStream, pairing: Pairing, relationshipId: String = PeopleCodec.MAIN_ID): MergeResult {
         val dir = File(context.cacheDir, "sync-in")
         val remote = withContext(Dispatchers.IO) {
             dir.deleteRecursively()
@@ -465,12 +488,15 @@ class LoveRepository(private val context: Context) {
         }
 
         val local = current()
+        val prefs0 = context.dataStore.data.first()
         val result = SyncMerge.merge(
             local.people,
             local.relationships,
             local.moments,
-            decodeDeleted(context.dataStore.data.first()[Keys.deleted]),
+            decodeDeleted(prefs0[Keys.deleted]),
             remote,
+            decodeDeleted(prefs0[Keys.deletedPeople]),
+            decodeDeleted(prefs0[Keys.deletedRelationships]),
         )
         // Fotos der übernommenen Momente in den App-Speicher holen, alte Fotos aufräumen
         val takenIds = result.taken.map { it.id }.toSet()
@@ -494,8 +520,10 @@ class LoveRepository(private val context: Context) {
             prefs.writeModel(result.people, result.relationships)
             prefs[Keys.moments] = MomentCodec.encode(moments)
             prefs[Keys.deleted] = encodeDeleted(result.deleted)
+            prefs[Keys.deletedPeople] = encodeDeleted(result.deletedPeople)
+            prefs[Keys.deletedRelationships] = encodeDeleted(result.deletedRelationships)
         }
-        PairingStore.save(context, pairing.copy(lastSync = System.currentTimeMillis()))
+        PairingStore.save(context, relationshipId, pairing.copy(lastSync = System.currentTimeMillis()))
         return result
     }
 
@@ -746,6 +774,8 @@ class LoveRepository(private val context: Context) {
     suspend fun setRemindBefore(days: Int) = context.dataStore.edit { it[Keys.remindBefore] = days }
 
     suspend fun setFont(id: String) = context.dataStore.edit { it[Keys.font] = id }
+
+    suspend fun setTheme(id: String) = context.dataStore.edit { it[Keys.theme] = id }
 
     suspend fun setHomePage(page: Int) = context.dataStore.edit { it[Keys.homePage] = page }
 

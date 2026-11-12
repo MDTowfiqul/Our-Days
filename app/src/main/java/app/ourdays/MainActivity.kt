@@ -58,6 +58,7 @@ import app.ourdays.ui.LicensesScreen
 import app.ourdays.ui.LockScreen
 import app.ourdays.ui.MomentEditorScreen
 import app.ourdays.ui.OnboardingScreen
+import app.ourdays.ui.PartnerSyncPage
 import app.ourdays.ui.PhotoEditorScreen
 import app.ourdays.ui.LoveTheme
 import app.ourdays.ui.LoveViewModel
@@ -96,14 +97,15 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) handleIntent(intent)
         setContent {
             val settings by vm.settings.collectAsStateWithLifecycle()
-            LoveTheme(font = settings?.font.orEmpty()) {
+            LoveTheme(theme = settings?.theme.orEmpty(), font = settings?.font.orEmpty()) {
                 val today by vm.today.collectAsStateWithLifecycle()
                 val updateProgress by vm.updateProgress.collectAsStateWithLifecycle()
-                val pairing by vm.pairing.collectAsStateWithLifecycle()
+                val pairings by vm.pairings.collectAsStateWithLifecycle()
                 val autoBackup by vm.autoBackup.collectAsStateWithLifecycle()
                 val scope = rememberCoroutineScope()
                 var showSettings by rememberSaveable { mutableStateOf(false) }
                 var showCloudRestore by rememberSaveable { mutableStateOf(false) }
+                var showPartnerSync by rememberSaveable { mutableStateOf(false) }
                 var editingPhoto by rememberSaveable { mutableStateOf(false) }
                 var showLicenses by rememberSaveable { mutableStateOf(false) }
                 // Moment-Editor: null = zu, "" = neuer Moment, sonst ID; dazu optional ein vorgeschlagener Titel
@@ -237,10 +239,11 @@ class MainActivity : ComponentActivity() {
                 // ob es wirklich eine Sicherung ist, prüft die App beim Laden selbst
                 fun loadBackup() = backupLoader.launch(arrayOf("*/*"))
 
-                BackHandler(enabled = showSettings || showCloudRestore || editingPhoto || editingMoment != null || showLicenses) {
+                BackHandler(enabled = showSettings || showCloudRestore || showPartnerSync || editingPhoto || editingMoment != null || showLicenses) {
                     when {
                         showLicenses -> showLicenses = false
                         showCloudRestore -> showCloudRestore = false
+                        showPartnerSync -> showPartnerSync = false
                         editingMoment != null -> editingMoment = null
                         editingPhoto -> editingPhoto = false
                         else -> showSettings = false
@@ -254,6 +257,7 @@ class MainActivity : ComponentActivity() {
                     editingMoment != null && s.onboardingDone -> "moment"
                     !s.onboardingDone && !introDone -> "intro"
                     showCloudRestore -> "cloud-restore"
+                    showPartnerSync -> "partner-sync"
                     !s.onboardingDone -> "onboarding"
                     showSettings && showLicenses -> "licenses"
                     showSettings -> "settings"
@@ -317,6 +321,21 @@ class MainActivity : ComponentActivity() {
                                     onBack = { showCloudRestore = false },
                                     onRestored = { showCloudRestore = false },
                                 )
+                                "partner-sync" -> PartnerSyncPage(
+                                    settings = s,
+                                    pairings = pairings,
+                                    actions = SyncActions(
+                                        onCreate = vm::createPairing,
+                                        onScan = { me, _ -> scanPairing(me) },
+                                        onMe = vm::setMe,
+                                        onUnpair = vm::unpair,
+                                        onOpen = { syncOpener.launch(arrayOf("*/*")) },
+                                    ),
+                                    onContinue = {
+                                        vm.setOnboardingDone(true)
+                                        showPartnerSync = false
+                                    },
+                                )
                                 "onboarding" -> OnboardingScreen(
                                     settings = s,
                                     notificationsAllowed = allowed,
@@ -336,6 +355,7 @@ class MainActivity : ComponentActivity() {
                                     onStep = { onboardingStep = it },
                                     onRestoreBackup = ::loadBackup,
                                     onRestoreFromDrive = { showCloudRestore = true },
+                                    onSyncWithPartner = { showPartnerSync = true },
                                 )
                                 "settings" -> SettingsScreen(
                                     settings = s,
@@ -348,6 +368,7 @@ class MainActivity : ComponentActivity() {
                                     onNotifyTime = vm::setNotifyTime,
                                     onRemindBefore = vm::setRemindBefore,
                                 onFont = vm::setFont,
+                                    onTheme = vm::setTheme,
                                     onTestNotification = {
                                         if (allowed) vm.sendTestNotification() else askPermission()
                                     },
@@ -396,15 +417,15 @@ class MainActivity : ComponentActivity() {
                                     onDiscreet = vm::setDiscreet,
                                     appLock = lockOn,
                                     onAppLock = ::setAppLock,
-                                    pairing = pairing,
+                                    pairings = pairings,
                                     sync = SyncActions(
                                         onCreate = vm::createPairing,
-                                        onScan = ::scanPairing,
+                                        onScan = { me, _ -> scanPairing(me) },
                                         onMe = vm::setMe,
                                         onUnpair = vm::unpair,
-                                        onSend = { vm.shareSync() },
+                                        onSend = vm::shareSync,
                                         onOpen = { syncOpener.launch(arrayOf("*/*")) },
-                                        onSharePairing = { vm.sharePairingFile() },
+                                        onSharePairing = vm::sharePairingFile,
                                     ),
                                 )
                                 else -> HomeScreen(

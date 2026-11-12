@@ -48,15 +48,30 @@ data class Pairing(
         fun create(me: String?): Pairing =
             Pairing(ByteArray(32).also { SecureRandom().nextBytes(it) }, me, System.currentTimeMillis())
 
-        /** Inhalt des QR-Codes */
-        fun qrText(p: Pairing): String =
-            PREFIX + Base64.encodeToString(p.key, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+        /**
+         * Inhalt des QR-Codes. Für die Hauptbeziehung steht nur der Schlüssel drin (wie bisher,
+         * damit alte Handys ihn weiter lesen können); für jede weitere Beziehung hängt die
+         * Beziehungs-ID an, damit das andere Handy weiß, welche Verbindung es koppelt.
+         */
+        fun qrText(p: Pairing, relationshipId: String = PeopleCodec.MAIN_ID): String {
+            val base = PREFIX + Base64.encodeToString(p.key, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+            return if (relationshipId == PeopleCodec.MAIN_ID) base else "$base:$relationshipId"
+        }
 
         /** Kopplung als Datei, für Handys, die keinen QR-Code scannen können: die Datei enthält denselben Text wie der QR-Code. */
         const val PAIRING_MIME = "application/vnd.ourdays.pairing"
         const val PAIRING_EXTENSION = "ourpair"
-        fun pairingFileName() = "our-days-pairing.$PAIRING_EXTENSION"
-        fun pairingFileText(p: Pairing): String = qrText(p)
+        fun pairingFileName(title: String = ""): String {
+            val slug = slug(title)
+            return if (slug.isEmpty()) "our-days-pairing.$PAIRING_EXTENSION" else "our-days-pairing-$slug.$PAIRING_EXTENSION"
+        }
+
+        fun pairingFileText(p: Pairing, relationshipId: String = PeopleCodec.MAIN_ID): String = qrText(p, relationshipId)
+
+        /** Dateitauglicher Kurzname, z. B. „A & B“ → „a-b“ */
+        fun slug(text: String): String =
+            text.lowercase().map { if (it.isLetterOrDigit()) it else '-' }.joinToString("")
+                .split('-').filter { it.isNotEmpty() }.joinToString("-")
 
         /** True, wenn [bytes] mit einem Kopplungs-Präfix beginnen — die Datei enthält eine Kopplung, keinen Abgleich. */
         fun isPairingFile(bytes: ByteArray): Boolean {
@@ -64,41 +79,95 @@ data class Pairing(
             return prefixes.any { p -> bytes.size >= p.size && bytes.copyOfRange(0, p.size).contentEquals(p) }
         }
 
-        /** Schlüssel aus einem gescannten QR-Code, null = kein Kopplungscode von Our Days */
-        fun keyFromQr(text: String?): ByteArray? {
+        /** Schlüssel und Beziehungs-ID aus einem gescannten QR-Code, null = kein Kopplungscode von Our Days */
+        fun fromQr(text: String?): Pair<ByteArray, String>? {
             if (text == null) return null
             val encoded = when {
                 text.startsWith(PREFIX) -> text.removePrefix(PREFIX)
                 text.startsWith(OLD_PREFIX) -> text.removePrefix(OLD_PREFIX)
                 else -> return null
             }
-            val key = runCatching { Base64.decode(encoded, Base64.URL_SAFE) }.getOrNull()
-            return key?.takeIf { it.size == 32 }
+            // Schlüssel ist base64url ohne Füllzeichen; die Beziehungs-ID hängt nach einem Doppelpunkt an
+            val parts = encoded.split(':')
+            val key = runCatching { Base64.decode(parts[0], Base64.URL_SAFE) }.getOrNull()
+                ?.takeIf { it.size == 32 } ?: return null
+            val relationshipId = parts.getOrNull(1)?.takeIf { it.isNotBlank() } ?: PeopleCodec.MAIN_ID
+            return key to relationshipId
         }
+
+        /** Schlüssel aus einem gescannten QR-Code, null = kein Kopplungscode von Our Days */
+        fun keyFromQr(text: String?): ByteArray? = fromQr(text)?.first
     }
 }
 
-/** Speichert die Kopplung in eigenen Einstellungen, die bewusst nicht gesichert werden */
+/**
+ * Speichert die Kopplungen in eigenen Einstellungen, die bewusst nicht gesichert werden.
+ * Jede Beziehung hat ihren eigenen Schlüssel: [loadAll] gibt Beziehungs-ID → Kopplung zurück.
+ * Eine einzelne Kopplung aus der Zeit vor dem Pro-Beziehung-Abgleich wandert einmalig auf die
+ * Hauptbeziehung („main“) über.
+ */
 object PairingStore {
     private const val PREFS = "pairing"
+    private const val ALL_KEY = "pairings"
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun load(context: Context): Pairing? {
+    fun loadAll(context: Context): Map<String, Pairing> {
         val p = prefs(context)
+        p.getString(ALL_KEY, null)?.let { json ->
+            return runCatching {
+                val o = JSONObject(json)
+                o.keys().asSequence().mapNotNull { id ->
+                    val e = o.optJSONObject(id) ?: return@mapNotNull null
+                    val key = runCatching { Base64.decode(e.optString("key"), Base64.NO_WRAP) }.getOrNull()
+                        ?.takeIf { it.size == 32 } ?: return@mapNotNull null
+                    id to Pairing(key, e.optString("me").takeIf { it.isNotEmpty() }, e.optLong("since"), e.optLong("last_sync"))
+                }.toMap()
+            }.getOrNull() ?: emptyMap()
+        }
+        // Einmalige Übernahme: eine einzelne alte Kopplung wird die der Hauptbeziehung
+        val old = loadLegacy(p) ?: return emptyMap()
+        saveAll(context, mapOf(PeopleCodec.MAIN_ID to old))
+        p.edit().remove("key").remove("me").remove("since").remove("last_sync").apply()
+        return mapOf(PeopleCodec.MAIN_ID to old)
+    }
+
+    private fun loadLegacy(p: android.content.SharedPreferences): Pairing? {
         val key = p.getString("key", null)
             ?.let { runCatching { Base64.decode(it, Base64.NO_WRAP) }.getOrNull() }
             ?.takeIf { it.size == 32 } ?: return null
         return Pairing(key, p.getString("me", null), p.getLong("since", 0), p.getLong("last_sync", 0))
     }
 
-    fun save(context: Context, pairing: Pairing) {
-        prefs(context).edit()
-            .putString("key", Base64.encodeToString(pairing.key, Base64.NO_WRAP))
-            .putString("me", pairing.me)
-            .putLong("since", pairing.since)
-            .putLong("last_sync", pairing.lastSync)
-            .apply()
+    /** Kopplung der Hauptbeziehung, null = nicht gekoppelt (wird z. B. für „Wer hat den Moment angelegt“ gebraucht) */
+    fun load(context: Context): Pairing? = loadAll(context)[PeopleCodec.MAIN_ID]
+
+    /** Wer auf diesem Handy die App nutzt — steht auf jeder Kopplung, hier reicht irgendeine */
+    fun me(context: Context): String? = loadAll(context).values.firstNotNullOfOrNull { it.me }
+
+    fun saveAll(context: Context, pairings: Map<String, Pairing>) {
+        val o = JSONObject()
+        pairings.forEach { (id, p) ->
+            o.put(id, JSONObject().apply {
+                put("key", Base64.encodeToString(p.key, Base64.NO_WRAP))
+                if (p.me != null) put("me", p.me)
+                put("since", p.since)
+                put("last_sync", p.lastSync)
+            })
+        }
+        prefs(context).edit().putString(ALL_KEY, o.toString()).apply()
+    }
+
+    fun save(context: Context, relationshipId: String, pairing: Pairing) {
+        val all = loadAll(context).toMutableMap()
+        all[relationshipId] = pairing
+        saveAll(context, all)
+    }
+
+    fun remove(context: Context, relationshipId: String) {
+        val all = loadAll(context).toMutableMap()
+        all.remove(relationshipId)
+        saveAll(context, all)
     }
 
     fun clear(context: Context) {
@@ -206,7 +275,7 @@ object SyncCrypto {
     }
 }
 
-/** Was ein Handy dem anderen schickt: Menschen, Beziehungen und Momente samt gelöschter Momente */
+/** Was ein Handy dem anderen schickt: eine Beziehung mit ihren Menschen und Momenten samt gelöschter Einträge */
 data class SyncData(
     val people: List<Person>,
     val relationships: List<Relationship>,
@@ -215,6 +284,12 @@ data class SyncData(
     val deleted: Map<String, Long>,
     /** Wer die Datei geschickt hat (ID einer [Person]) */
     val from: String?,
+    /** Welche Beziehung die Datei trägt, null = alle (alte Dateien) */
+    val relationshipId: String? = null,
+    /** IDs gelöschter Menschen mit Zeitpunkt des Löschens */
+    val deletedPeople: Map<String, Long> = emptyMap(),
+    /** IDs gelöschter Beziehungen mit Zeitpunkt des Löschens */
+    val deletedRelationships: Map<String, Long> = emptyMap(),
 )
 
 object SyncCodec {
@@ -226,12 +301,16 @@ object SyncCodec {
     /** Alte Dateiendung: alte Abgleich-Dateien bleiben lesbar und werden beim Öffnen erkannt */
     const val OLD_EXTENSION = "sinceus"
 
-    fun fileName(today: java.time.LocalDate) = "our-days-$today.$EXTENSION"
+    fun fileName(today: java.time.LocalDate, title: String = ""): String {
+        val slug = Pairing.slug(title)
+        return if (slug.isEmpty()) "our-days-$today.$EXTENSION" else "our-days-$slug-$today.$EXTENSION"
+    }
 
     fun encode(d: SyncData): String = JSONObject()
         .put("app", APP)
         .put("format", FORMAT)
         .put("from", d.from ?: JSONObject.NULL)
+        .put("relationship", d.relationshipId ?: JSONObject.NULL)
         .put("people", JSONArray(PeopleCodec.encodePeople(d.people)))
         .put("relationships", JSONArray(PeopleCodec.encodeRelationships(d.relationships)))
         .put(
@@ -239,12 +318,18 @@ object SyncCodec {
             JSONArray(MomentCodec.encode(d.moments.map { m -> m.copy(photoPaths = m.photoPaths.map { java.io.File(it).name }) })),
         )
         .put("deleted", JSONObject().apply { d.deleted.forEach { (id, time) -> put(id, time) } })
+        .put("deletedPeople", JSONObject().apply { d.deletedPeople.forEach { (id, time) -> put(id, time) } })
+        .put("deletedRelationships", JSONObject().apply { d.deletedRelationships.forEach { (id, time) -> put(id, time) } })
         .toString()
 
     fun decode(json: String): SyncData {
         val o = JSONObject(json)
         require(o.optString("app") == APP || o.optString("app") == "app.sinceus") { "not an Our Days sync file" }
         require(o.optInt("format", 0) in 1..FORMAT) { "unsupported sync format" }
+        fun markers(key: String): Map<String, Long> {
+            val m = o.optJSONObject(key) ?: return emptyMap()
+            return m.keys().asSequence().associateWith { m.optLong(it) }
+        }
         val deleted = o.optJSONObject("deleted")
         return SyncData(
             people = PeopleCodec.decodePeople(o.optJSONArray("people")?.toString()).orEmpty(),
@@ -253,6 +338,9 @@ object SyncCodec {
                 .map { m -> m.copy(photoPaths = m.photoPaths.mapNotNull { it.takeIf { name -> Backup.isSafeName(name) } }) },
             deleted = deleted?.keys()?.asSequence()?.associateWith { deleted.optLong(it) }.orEmpty(),
             from = if (o.isNull("from")) null else o.optString("from").ifBlank { null },
+            relationshipId = if (o.isNull("relationship")) null else o.optString("relationship").ifBlank { null },
+            deletedPeople = markers("deletedPeople"),
+            deletedRelationships = markers("deletedRelationships"),
         )
     }
 }
@@ -268,6 +356,10 @@ data class MergeResult(
     val added: Int,
     val changed: Int,
     val removed: Int,
+    /** Gelöschte Menschen (vereinigt, damit das Löschen auch auf dem anderen Handy ankommt) */
+    val deletedPeople: Map<String, Long> = emptyMap(),
+    /** Gelöschte Beziehungen (vereinigt) */
+    val deletedRelationships: Map<String, Long> = emptyMap(),
 )
 
 object SyncMerge {
@@ -276,7 +368,10 @@ object SyncMerge {
      * jüngere Änderung, gelöschte Momente bleiben gelöscht. Bei Menschen und Beziehungen
      * gewinnt die Datei: Ein Eintrag aus der Datei ersetzt den Eintrag mit derselben ID
      * hier, damit nach einem Abgleich der neue Name oder das neue Datum auch auf diesem
-     * Handy ankommt; nur hier vorhandene Einträge bleiben erhalten.
+     * Handy ankommt; nur hier vorhandene Einträge bleiben erhalten. Wer auf einem Handy
+     * gelöscht wurde, verschwindet nach dem Abgleich auch auf dem anderen (Löschmerker
+     * gewinnen immer; ein neu angelegter Mensch bekommt eine neue ID und ist davon nicht
+     * betroffen). Mindestens eine Beziehung bleibt immer bestehen.
      */
     fun merge(
         people: List<Person>,
@@ -284,6 +379,8 @@ object SyncMerge {
         moments: List<Moment>,
         deleted: Map<String, Long>,
         remote: SyncData,
+        deletedPeople: Map<String, Long> = emptyMap(),
+        deletedRelationships: Map<String, Long> = emptyMap(),
     ): MergeResult {
         val allDeleted = (deleted.keys + remote.deleted.keys).associateWith { maxOf(deleted[it] ?: 0, remote.deleted[it] ?: 0) }
         val byId = moments.associateBy { it.id }.toMutableMap()
@@ -312,6 +409,10 @@ object SyncMerge {
                 removed++
             }
         }
+        val allDeletedPeople = (deletedPeople.keys + remote.deletedPeople.keys)
+            .associateWith { maxOf(deletedPeople[it] ?: 0, remote.deletedPeople[it] ?: 0) }
+        val allDeletedRelationships = (deletedRelationships.keys + remote.deletedRelationships.keys)
+            .associateWith { maxOf(deletedRelationships[it] ?: 0, remote.deletedRelationships[it] ?: 0) }
         // Wer die Datei geschickt hat, gibt bei Menschen und Beziehungen den Ton an: Ein
         // Eintrag aus der Datei ersetzt den Eintrag mit derselben ID hier, sonst käme nach
         // einem Abgleich nie der neue Name oder das neue Datum auf diesem Handy an. Nur hier
@@ -322,11 +423,14 @@ object SyncMerge {
                 r.copy(birthday = r.birthday ?: people.firstOrNull { it.id == r.id }?.birthday)
             } +
                 people.filter { p -> remote.people.none { it.id == p.id } }
-            ).take(MAX_PEOPLE)
+            ).filterNot { it.id in allDeletedPeople }.take(MAX_PEOPLE)
         val mergedRelationships = (
             remote.relationships +
                 relationships.filter { r -> remote.relationships.none { it.id == r.id } }
-            ).take(MAX_RELATIONSHIPS)
+            ).filterNot { it.id in allDeletedRelationships }.take(MAX_RELATIONSHIPS)
+                // Mindestens eine Beziehung bleibt: sonst würde der Abgleich das Handy
+                // ohne jede Verbindung zurücklassen
+                .ifEmpty { relationships.take(1) }
         return MergeResult(
             people = mergedPeople,
             relationships = mergedRelationships,
@@ -337,6 +441,8 @@ object SyncMerge {
             added = added,
             changed = changed,
             removed = removed,
+            deletedPeople = allDeletedPeople.filterValues { it > System.currentTimeMillis() - YEAR_MS },
+            deletedRelationships = allDeletedRelationships.filterValues { it > System.currentTimeMillis() - YEAR_MS },
         )
     }
 

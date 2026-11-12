@@ -73,13 +73,14 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
     fun setStartTime(time: java.time.LocalTime?) = viewModelScope.launch { repo.setStartTime(time) }
     fun resetAll() = viewModelScope.launch {
         repo.resetAll()
-        _pairing.value = null
+        _pairings.value = emptyMap()
         _autoBackup.value = null
     }
     fun setNotifications(enabled: Boolean) = viewModelScope.launch { repo.setNotifications(enabled) }
     fun setNotifyTime(h: Int, m: Int) = viewModelScope.launch { repo.setNotifyTime(h, m) }
     fun setRemindBefore(days: Int) = viewModelScope.launch { repo.setRemindBefore(days) }
     fun setFont(id: String) = viewModelScope.launch { repo.setFont(id) }
+    fun setTheme(id: String) = viewModelScope.launch { repo.setTheme(id) }
     fun setChangelogSeen(code: Int) = viewModelScope.launch { repo.setChangelogSeen(code) }
     fun setShowChangelog(on: Boolean) = viewModelScope.launch { repo.setShowChangelog(on) }
 
@@ -153,47 +154,51 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
         Toast.makeText(app, app.getString(if (ok) R.string.backup_restored else R.string.backup_restore_failed), Toast.LENGTH_LONG).show()
     }
 
-    /** Kopplung mit dem Handy des anderen Menschen für den Abgleich, null = nicht gekoppelt */
-    private val _pairing = MutableStateFlow(PairingStore.load(app))
-    val pairing: StateFlow<Pairing?> = _pairing.asStateFlow()
+    /** Kopplungen mit dem Handy des anderen Menschen für den Abgleich: Beziehungs-ID → Kopplung, leer = nicht gekoppelt */
+    private val _pairings = MutableStateFlow(PairingStore.loadAll(app))
+    val pairings: StateFlow<Map<String, Pairing>> = _pairings.asStateFlow()
 
-    /** Neue Kopplung anlegen, deren QR-Code dann gezeigt wird */
-    fun createPairing(me: String?) {
+    /** Neue Kopplung für eine Beziehung anlegen, deren QR-Code dann gezeigt wird */
+    fun createPairing(me: String?, relationshipId: String) {
         val p = Pairing.create(me)
-        PairingStore.save(getApplication(), p)
-        _pairing.value = p
+        PairingStore.save(getApplication(), relationshipId, p)
+        _pairings.value = PairingStore.loadAll(getApplication())
     }
 
-    /** Gescannten QR-Code übernehmen; false, wenn es kein Kopplungscode von Since Us war */
+    /** Gescannten QR-Code übernehmen; false, wenn es kein Kopplungscode von Our Days war */
     fun acceptPairing(qr: String?, me: String?): Boolean {
-        val key = Pairing.keyFromQr(qr) ?: return false
+        val (key, relationshipId) = Pairing.fromQr(qr) ?: return false
         val p = Pairing(key, me, System.currentTimeMillis())
-        PairingStore.save(getApplication(), p)
-        _pairing.value = p
+        PairingStore.save(getApplication(), relationshipId, p)
+        _pairings.value = PairingStore.loadAll(getApplication())
         return true
     }
 
-    /** Wer auf diesem Handy die App nutzt */
+    /** Wer auf diesem Handy die App nutzt — gilt für alle Kopplungen */
     fun setMe(me: String?) {
-        val p = _pairing.value?.copy(me = me) ?: return
-        PairingStore.save(getApplication(), p)
-        _pairing.value = p
+        val all = _pairings.value.mapValues { it.value.copy(me = me) }
+        if (all.isEmpty()) return
+        PairingStore.saveAll(getApplication(), all)
+        _pairings.value = all
     }
 
-    fun unpair() {
-        PairingStore.clear(getApplication())
-        _pairing.value = null
+    fun unpair(relationshipId: String) {
+        PairingStore.remove(getApplication(), relationshipId)
+        _pairings.value = PairingStore.loadAll(getApplication())
     }
 
-    /** Abgleich-Datei erstellen und über das Teilen-Menü verschicken (z. B. per Messenger) */
-    fun shareSync() = viewModelScope.launch {
+    /** Abgleich-Datei für eine Beziehung erstellen und über das Teilen-Menü verschicken (z. B. per Messenger) */
+    fun shareSync(relationshipId: String) = viewModelScope.launch {
         val app = getApplication<Application>()
-        val p = _pairing.value ?: return@launch
+        val p = _pairings.value[relationshipId] ?: return@launch
+        val title = settings.value?.let { s ->
+            s.relationships.firstOrNull { it.id == relationshipId }?.let { s.titleOf(it) }
+        }.orEmpty()
         try {
             val dir = java.io.File(app.cacheDir, "share").apply { mkdirs() }
             dir.listFiles { f -> f.name.endsWith(".${SyncCodec.EXTENSION}") || f.name.endsWith(".${SyncCodec.OLD_EXTENSION}") }?.forEach { it.delete() }
-            val file = java.io.File(dir, SyncCodec.fileName(today.value))
-            repo.exportSync(file.outputStream(), p)
+            val file = java.io.File(dir, SyncCodec.fileName(today.value, title))
+            repo.exportSync(file.outputStream(), p, relationshipId)
             val uri = androidx.core.content.FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", file)
             val send = android.content.Intent(android.content.Intent.ACTION_SEND)
                 .setType(SyncCodec.MIME)
@@ -210,14 +215,17 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Kopplung als Datei teilen, für Handys, die keinen QR-Code scannen können: die Datei enthält denselben Text wie der QR-Code. */
-    fun sharePairingFile() = viewModelScope.launch {
+    /** Kopplung einer Beziehung als Datei teilen, für Handys, die keinen QR-Code scannen können: die Datei enthält denselben Text wie der QR-Code. */
+    fun sharePairingFile(relationshipId: String) = viewModelScope.launch {
         val app = getApplication<Application>()
-        val p = _pairing.value ?: return@launch
+        val p = _pairings.value[relationshipId] ?: return@launch
+        val title = settings.value?.let { s ->
+            s.relationships.firstOrNull { it.id == relationshipId }?.let { s.titleOf(it) }
+        }.orEmpty()
         try {
             val dir = java.io.File(app.cacheDir, "share").apply { mkdirs() }
-            val file = java.io.File(dir, Pairing.pairingFileName())
-            file.writeText(Pairing.pairingFileText(p))
+            val file = java.io.File(dir, Pairing.pairingFileName(title))
+            file.writeText(Pairing.pairingFileText(p, relationshipId))
             val uri = androidx.core.content.FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", file)
             val send = android.content.Intent(android.content.Intent.ACTION_SEND)
                 .setType(Pairing.PAIRING_MIME)
@@ -249,7 +257,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Kopplung aus einer Pairing-Datei übernehmen (ersetzt eine bestehende Kopplung). */
+    /** Kopplung aus einer Pairing-Datei übernehmen (ersetzt eine bestehende Kopplung dieser Beziehung). */
     private fun importPairing(uri: Uri) = viewModelScope.launch {
         val app = getApplication<Application>()
         val message = try {
@@ -258,10 +266,10 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
                     readUpTo(it, 1024).toString(Charsets.UTF_8)
                 }
             } ?: throw java.io.IOException("no input stream")
-            val key = Pairing.keyFromQr(text.trim()) ?: throw java.io.IOException("not a pairing file")
-            val p = Pairing(key, _pairing.value?.me, System.currentTimeMillis())
-            PairingStore.save(app, p)
-            _pairing.value = p
+            val (key, relationshipId) = Pairing.fromQr(text.trim()) ?: throw java.io.IOException("not a pairing file")
+            val p = Pairing(key, PairingStore.me(app), System.currentTimeMillis())
+            PairingStore.save(app, relationshipId, p)
+            _pairings.value = PairingStore.loadAll(app)
             app.getString(R.string.pairing_done)
         } catch (e: Exception) {
             android.util.Log.w("SinceUs", "Pairing-Datei fehlgeschlagen", e)
@@ -282,19 +290,26 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
         return buf.copyOf(n)
     }
 
-    /** Abgleich-Datei vom anderen Handy übernehmen */
+    /** Abgleich-Datei vom anderen Handy übernehmen. Der Dateikopf verrät, zu welcher Kopplung
+     * die Datei gehört — erst dann wird sie mit genau diesem Schlüssel entschlüsselt. */
     fun importSync(uri: Uri) = viewModelScope.launch {
         val app = getApplication<Application>()
-        val p = _pairing.value
-        if (p == null) {
+        val pairings = _pairings.value
+        if (pairings.isEmpty()) {
             Toast.makeText(app, app.getString(R.string.sync_not_paired), Toast.LENGTH_LONG).show()
             return@launch
         }
         val message = try {
+            val match = withContext(Dispatchers.IO) {
+                val header = app.contentResolver.openInputStream(uri)?.use { readUpTo(it, 64) }
+                    ?: throw java.io.IOException("no input stream")
+                pairings.entries.firstOrNull { (_, p) -> app.ourdays.data.SyncCrypto.belongsTo(header, p.key) }
+                    ?: throw java.io.IOException("no matching pairing")
+            }
             val input = withContext(Dispatchers.IO) { app.contentResolver.openInputStream(uri) }
                 ?: throw java.io.IOException("no input stream")
-            val result = input.use { repo.importSync(it, p) }
-            _pairing.value = PairingStore.load(app)
+            val result = input.use { repo.importSync(it, match.value, match.key) }
+            _pairings.value = PairingStore.loadAll(app)
             app.getString(R.string.sync_done, result.added, result.changed, result.removed)
         } catch (e: Exception) {
             android.util.Log.w("SinceUs", "Abgleich fehlgeschlagen", e)

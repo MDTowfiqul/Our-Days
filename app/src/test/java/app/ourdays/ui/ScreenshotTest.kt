@@ -45,7 +45,7 @@ class ScreenshotTest {
 
     @Test
     fun liveBengali() = shot("live", lang = "bn") {
-        LiveScreen(settings, active = false, now = java.time.LocalDateTime.of(2025, 8, 15, 12, 46, 33))
+        LiveSection(settings, active = false, now = java.time.LocalDateTime.of(2025, 8, 15, 12, 46, 33))
     }
 
     @Test
@@ -138,31 +138,6 @@ class ScreenshotTest {
     }
 
     @Test
-    fun liveFocusedBengali() = shot(
-        "live_focused",
-        lang = "bn",
-        before = { compose.onNodeWithText("৩৩ সেকেন্ড").performClick() },
-    ) {
-        LiveScreen(settings, active = false, now = java.time.LocalDateTime.of(2025, 8, 15, 12, 46, 33))
-    }
-
-    @Test
-    fun liveFocusEndsAfterAFewSeconds() {
-        java.util.Locale.setDefault(java.util.Locale.forLanguageTag("bn-BD"))
-        org.robolectric.RuntimeEnvironment.setQualifiers("+bn")
-        compose.mainClock.autoAdvance = false
-        compose.setContent {
-            LoveTheme { LiveScreen(settings, active = false, now = java.time.LocalDateTime.of(2025, 8, 15, 12, 46, 33)) }
-        }
-        compose.mainClock.advanceTimeBy(500)
-        compose.onNodeWithText("৩৩ সেকেন্ড").performClick()
-        compose.mainClock.advanceTimeBy(1000)
-        compose.onNodeWithText("৩৩ সেকেন্ড").assertDoesNotExist()
-        compose.mainClock.advanceTimeBy(4000)
-        compose.onNodeWithText("৩৩ সেকেন্ড").assertExists()
-    }
-
-    @Test
     fun homeWithoutLiveAndMoments() = shot("home_only_overview", lang = "bn") {
         HomeScreen(settings.copy(showLive = false, showMoments = false), today, {}, {})
     }
@@ -177,7 +152,7 @@ class ScreenshotTest {
 
     @Test
     fun live() = shot("live") {
-        LiveScreen(settings, active = false, now = java.time.LocalDateTime.of(2025, 8, 15, 12, 46, 33))
+        LiveSection(settings, active = false, now = java.time.LocalDateTime.of(2025, 8, 15, 12, 46, 33))
     }
 
     @Test

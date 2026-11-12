@@ -24,6 +24,27 @@ class PairingTest {
     }
 
     @Test
+    fun qrTextForOtherRelationshipCarriesItsId() {
+        val original = Pairing.create("p1")
+        val (key, relationshipId) = Pairing.fromQr(Pairing.qrText(original, "r2"))!!
+        assertEquals(original.key.toList(), key.toList())
+        assertEquals("r2", relationshipId)
+    }
+
+    @Test
+    fun mainQrHasNoSuffixAndReadsAsMain() {
+        val original = Pairing.create("p1")
+        val (key, relationshipId) = Pairing.fromQr(Pairing.qrText(original))!!
+        assertEquals(original.key.toList(), key.toList())
+        assertEquals(PeopleCodec.MAIN_ID, relationshipId)
+    }
+
+    @Test
+    fun pairingFileNameIncludesSlug() {
+        assertEquals("our-days-pairing-a-b.ourpair", Pairing.pairingFileName("A & B"))
+    }
+
+    @Test
     fun isPairingFileDetectsBothPrefixes() {
         assertTrue(Pairing.isPairingFile("ourdays:pair:1:AAAA".toByteArray(Charsets.US_ASCII)))
         assertTrue(Pairing.isPairingFile("sinceus:pair:1:AAAA".toByteArray(Charsets.US_ASCII)))

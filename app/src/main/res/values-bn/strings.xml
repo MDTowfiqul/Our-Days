@@ -42,6 +42,9 @@
     <string name="next">পরেরটা</string>
     <string name="skip">এড়িয়ে যাও</string>
     <string name="lets_go">চলো শুরু করি</string>
+    <string name="welcome_sync_partner">সঙ্গীর সাথে সিঙ্ক করুন</string>
+    <string name="fun_title">মজা</string>
+    <string name="fun_premium_soon">প্রিমিয়াম ফিচার শীঘ্রই আসছে — আপনাদের দুজনের জন্য মজার গেম ও কার্যকলাপ আসছে।</string>
     <string name="together_since_title">একসাথে আছো যেদিন থেকে</string>
     <string name="notify_time_title">নোটিফিকেশনের সময়</string>
     <string name="backgrounds">সাজানো ছবি</string>
@@ -70,6 +73,7 @@
     <string name="welcome_sub">তোমাদের একসাথে কাটানো সময় গুনো আর সব বিশেষ দিন মনে রাখো।</string>
     <string name="tab_overview">মূল পাতা</string>
     <string name="tab_live">লাইভ</string>
+    <string name="tab_fun">মজা</string>
     <string name="together_for">তোমরা একসাথে আছো</string>
     <string name="starts_in">শুরু হতে বাকি</string>
     <string name="today_word">আজ</string>
@@ -271,7 +275,7 @@
     <string name="remove_person_confirm">সরাতে আবার ট্যাপ করো</string>
     <string name="pronouns">সর্বনাম (ঐচ্ছিক)</string>
     <string name="pronouns_hint">যেমন: সে/তাকে</string>
-    <string name="ob_names_poly_hint">তোমরা দুজনের বেশি? আরও মানুষ যোগ করো। নিজ নিজ তারিখের একাধিক সম্পর্ক পরে সেটিংসে বানাতে পারবে।</string>
+    <string name="ob_names_poly_hint">শুধু সঙ্গী নয়? বাবা-মা, ভাই-বোন, সন্তান বা বন্ধুদের যোগ করুন — প্রতিটি সম্পর্কের নিজস্ব তারিখ ও কাউন্টার থাকবে।</string>
     <string name="poly_all">সবাই</string>
     <string name="poly_title">তোমাদের সম্পর্কগুলো</string>
     <string name="poly_hint">তোমরা দুজনের বেশি অথবা একাধিক সম্পর্কে আছো? এখানে আরও মানুষ যোগ করো আর প্রতিটি সম্পর্কের নিজের তারিখ দাও।</string>
@@ -320,6 +324,12 @@
     <string name="pairing_share_file_summary">সিঙ্ক ফাইলের মতো অন্য ফোনে পাঠান</string>
     <string name="pairing_done">অন্য ফোনের সাথে পেয়ার হয়েছে।</string>
     <string name="pairing_file_invalid">এটি পেয়ারিং ফাইল নয়।</string>
+    <string name="sync_not_paired_yet">এখনো জোড়া দেওয়া হয়নি</string>
+    <string name="sync_how_title">সিঙ্ক কীভাবে কাজ করে</string>
+    <string name="sync_how_text">প্রতিটি সম্পর্কের নিজস্ব গোপন চাবি আছে।\n• একটি সম্পর্ক একবার জোড়া দিন — QR কোড স্ক্যান করুন বা পেয়ারিং ফাইল খুলুন।\n• একটি সিঙ্ক ফাইলে শুধু সেই একটি সম্পর্ক থাকে: তার মানুষ, তারিখ ও মুহূর্তগুলো।\n• পাঠানো ফোনের নাম ও তারিখই প্রযোজ্য হয়; শুধু নতুন মুহূর্ত যোগ হয়।\n• ডেটা পেতে অন্য ফোনে ফাইলটি খুলুন। শুধু জোড়া দিলে কিছুই যায় না।</string>
+    <string name="partner_sync_title">সঙ্গীর সাথে সিঙ্ক করুন</string>
+    <string name="partner_sync_text">সঙ্গীর ফোনের সাথে জোড়া দিন, তারপর তার সিঙ্ক ফাইলটি খুলুন — আপনাদের নাম, তারিখ ও মুহূর্তগুলো এখানে চলে আসবে। সেটআপ পূরণ করার দরকার নেই।</string>
+    <string name="partner_sync_continue">অ্যাপে যান</string>
     <string name="sync_unpair">পেয়ারিং ভাঙো</string>
     <string name="sync_unpair_question">পেয়ারিং ভাঙবে?</string>
     <string name="sync_unpair_text">এই ফোন আর সিঙ্ক ফাইল খুলতে পারবে না। তোমাদের ডেটা থেকে যাবে। যেকোনো সময় আবার পেয়ার করতে পারবে।</string>
@@ -482,6 +492,13 @@
     <string name="lock_unlock">আনলক করো</string>
     <string name="lock_no_screen_lock">আগে ফোনে স্ক্রিন লক চালু করো।</string>
     <string name="font_title">ফন্ট</string>
+    <string name="theme_title">থিম</string>
+    <string name="theme_system">সিস্টেম</string>
+    <string name="theme_light">হালকা</string>
+    <string name="theme_dark">গাঢ়</string>
+    <string name="theme_rose">গোলাপি</string>
+    <string name="theme_ocean">সাগর</string>
+    <string name="theme_forest">বন</string>
     <string name="font_sample">৫৮৩ দিন একসাথে</string>
     <string name="font_group_standard">ক্লাসিক</string>
     <string name="font_group_round">গোলগাল ও নরম</string>

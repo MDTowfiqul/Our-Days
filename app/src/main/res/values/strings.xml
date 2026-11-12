@@ -43,6 +43,9 @@
     <string name="next">Next</string>
     <string name="skip">Skip</string>
     <string name="lets_go">Let\'s go</string>
+    <string name="welcome_sync_partner">Sync with My Partner</string>
+    <string name="fun_title">Fun</string>
+    <string name="fun_premium_soon">Premium features are coming soon — fun games and activities for the two of you are on the way.</string>
     <string name="together_since_title">Together since</string>
     <string name="notify_time_title">Notification time</string>
     <string name="backgrounds">Backgrounds</string>
@@ -71,6 +74,7 @@
     <string name="welcome_sub">Counts your time together and reminds you of every special day.</string>
     <string name="tab_overview">Overview</string>
     <string name="tab_live">Live</string>
+    <string name="tab_fun">Fun</string>
     <string name="together_for">Together for</string>
     <string name="starts_in">Starting in</string>
     <string name="today_word">today</string>
@@ -274,7 +278,7 @@
     <string name="remove_person_confirm">Tap again to remove</string>
     <string name="pronouns">Pronouns (optional)</string>
     <string name="pronouns_hint">e.g. she/her, they/them</string>
-    <string name="ob_names_poly_hint">More than two of you? Add more people. You can set up several relationships with their own dates later in the settings.</string>
+    <string name="ob_names_poly_hint">More than a partner? Add your parents, siblings, children or friends — every connection gets its own date and counter.</string>
     <string name="poly_all">All</string>
     <string name="poly_title">Your relationships</string>
     <string name="poly_hint">More than two of you, or several relationships? Add more people here and give every relationship its own date.</string>
@@ -323,6 +327,12 @@
     <string name="pairing_share_file_summary">Send it to the other phone, like a sync file</string>
     <string name="pairing_done">Paired with the other phone.</string>
     <string name="pairing_file_invalid">That is not a pairing file.</string>
+    <string name="sync_not_paired_yet">Not paired yet</string>
+    <string name="sync_how_title">How sync works</string>
+    <string name="sync_how_text">Each connection has its own secret key.\n• Pair a connection once — scan its QR code or open its pairing file.\n• A sync file carries only that one connection: its people, its dates and its moments.\n• The sender\'s names and dates win; only new moments are added.\n• Open the file on the other phone to receive the data. Pairing alone sends nothing.</string>
+    <string name="partner_sync_title">Sync with My Partner</string>
+    <string name="partner_sync_text">Pair with your partner\'s phone, then open their sync file — your shared names, dates and moments will appear here. No need to fill in the setup.</string>
+    <string name="partner_sync_continue">Continue to the app</string>
     <string name="sync_unpair">Unpair</string>
     <string name="sync_unpair_question">Unpair?</string>
     <string name="sync_unpair_text">This phone can no longer open sync files from the other phones. Your data stays. You can pair again any time.</string>
@@ -487,6 +497,13 @@
     <string name="lock_unlock">Unlock</string>
     <string name="lock_no_screen_lock">Set up a screen lock on your phone first.</string>
     <string name="font_title">Font</string>
+    <string name="theme_title">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_rose">Rose</string>
+    <string name="theme_ocean">Ocean</string>
+    <string name="theme_forest">Forest</string>
     <string name="font_sample">583 days together</string>
     <string name="font_group_standard">Classic</string>
     <string name="font_group_round">Round and soft</string>

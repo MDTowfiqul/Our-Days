@@ -216,11 +216,12 @@ fun SettingsScreen(
     onWidgetRelationship: (String) -> Unit = {},
     onDiscreet: (Boolean) -> Unit = {},
     onFont: (String) -> Unit = {},
+    onTheme: (String) -> Unit = {},
     /** App-Sperre mit Fingerabdruck, Gesicht oder PIN */
     appLock: Boolean = false,
     onAppLock: (Boolean) -> Unit = {},
-    /** Kopplung für den Abgleich, null = nicht gekoppelt */
-    pairing: Pairing? = null,
+    /** Kopplungen für den Abgleich, Beziehungs-ID → Kopplung, leer = nicht gekoppelt */
+    pairings: Map<String, Pairing> = emptyMap(),
     sync: SyncActions = SyncActions(),
     /** Geöffnete Unterseite beim Start (für Tests), null = Übersicht */
     initialPage: SettingsPage? = null,
@@ -260,7 +261,7 @@ fun SettingsScreen(
                     null -> Overview(
                         settings,
                         notificationsAllowed,
-                        pairing,
+                        pairings,
                         appLock = appLock,
                         languageLabel = languageLabel(language),
                         onLanguage = { dialog = "language" },
@@ -340,6 +341,8 @@ fun SettingsScreen(
                         Row(Icons.Rounded.RestartAlt, stringResource(R.string.reset_photo), null, onClick = onResetPhoto)
                         Divider()
                         Row(Icons.Rounded.TextFields, stringResource(R.string.font_title), AppFonts.find(settings.font).label()) { dialog = "font" }
+                        Divider()
+                        Row(Icons.Rounded.Palette, stringResource(R.string.theme_title), stringResource(AppThemes.find(settings.theme).label)) { dialog = "theme" }
                     }
                     SettingsPage.Privacy -> Section(null) {
                         ListItem(
@@ -435,7 +438,7 @@ fun SettingsScreen(
                         Divider()
                         Row(Icons.Rounded.Widgets, stringResource(R.string.add_widget), null, onClick = onAddWidget)
                     }
-                    SettingsPage.Sync -> SyncPage(settings, pairing, sync)
+                    SettingsPage.Sync -> SyncPage(settings, pairings, sync)
                     SettingsPage.Cloud -> CloudBackupScreen()
                     SettingsPage.Backup -> Section(null) {
                         ListItem(
@@ -686,6 +689,7 @@ fun SettingsScreen(
             onLanguage(it)
         }
         "font" -> FontDialog(settings.font, onSelect = onFont, onDismiss = { dialog = null })
+        "theme" -> ThemeDialog(settings.theme, onSelect = onTheme, onDismiss = { dialog = null })
         "presets" -> PresetDialog(settings.presetIndex, onDismiss = { dialog = null }) {
             onPreset(it)
             dialog = null
@@ -774,7 +778,7 @@ enum class SettingsPage(
 private fun Overview(
     settings: LoveSettings,
     notificationsAllowed: Boolean,
-    pairing: Pairing?,
+    pairings: Map<String, Pairing> = emptyMap(),
     appLock: Boolean,
     languageLabel: String,
     onLanguage: () -> Unit,
@@ -802,7 +806,7 @@ private fun Overview(
         } else {
             "${settings.names}, ${Texts.mediumDate(settings.startDate)}"
         },
-        SettingsPage.Photo to photo + ", " + AppFonts.find(settings.font).label(),
+        SettingsPage.Photo to photo + ", " + AppFonts.find(settings.font).label() + ", " + stringResource(AppThemes.find(settings.theme).label),
         SettingsPage.Privacy to listOfNotNull(
             stringResource(if (appLock) R.string.app_lock_on else R.string.app_lock_off),
             if (settings.discreet) stringResource(R.string.discreet) else null,
@@ -818,7 +822,7 @@ private fun Overview(
         SettingsPage.Home to stringResource(R.string.settings_home_summary),
         SettingsPage.Backup to stringResource(R.string.settings_backup_summary),
         SettingsPage.Cloud to cloudBackupSummary(),
-        SettingsPage.Sync to stringResource(if (pairing != null) R.string.sync_paired else R.string.sync_summary),
+        SettingsPage.Sync to stringResource(if (pairings.isNotEmpty()) R.string.sync_paired else R.string.sync_summary),
         SettingsPage.Reset to stringResource(R.string.reset_summary),
         SettingsPage.About to if (updateReady) {
             stringResource(R.string.update_available, settings.updateVersion.orEmpty())

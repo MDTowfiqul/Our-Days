@@ -36,6 +36,7 @@
                 <data android:scheme="file" />
                 <data android:mimeType="application/vnd.ourdays.sync" />
                 <data android:mimeType="application/vnd.sinceus.sync" />
+                <data android:mimeType="application/vnd.ourdays.pairing" />
             </intent-filter>
             <!-- Viele Dateimanager kennen den Typ nicht, erkennen die Datei aber an der Endung -->
             <intent-filter>
@@ -66,6 +67,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/vnd.ourdays.sync" />
                 <data android:mimeType="application/vnd.sinceus.sync" />
+                <data android:mimeType="application/vnd.ourdays.pairing" />
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>
         </activity>

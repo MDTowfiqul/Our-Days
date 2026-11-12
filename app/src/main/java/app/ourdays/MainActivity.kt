@@ -48,6 +48,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ourdays.data.Backup
 import app.ourdays.ui.ChangelogDialog
+import app.ourdays.ui.ChatScreen
 import app.ourdays.data.Changelog
 import app.ourdays.data.MAX_SLIDES
 import app.ourdays.notify.Notifier
@@ -104,6 +105,7 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
                 var showSettings by rememberSaveable { mutableStateOf(false) }
                 var showCloudRestore by rememberSaveable { mutableStateOf(false) }
+                var showChat by rememberSaveable { mutableStateOf(false) }
                 var editingPhoto by rememberSaveable { mutableStateOf(false) }
                 var showLicenses by rememberSaveable { mutableStateOf(false) }
                 // Moment-Editor: null = zu, "" = neuer Moment, sonst ID; dazu optional ein vorgeschlagener Titel
@@ -150,6 +152,7 @@ class MainActivity : ComponentActivity() {
                     if (settings?.onboardingDone != true) return@LaunchedEffect
                     vm.jump.value = null
                     showSettings = false
+                    showChat = false
                     showLicenses = false
                     editingPhoto = false
                     if (target == "moment") {
@@ -230,15 +233,16 @@ class MainActivity : ComponentActivity() {
                 ) { uri -> if (uri != null) vm.enableAutoBackup(uri) }
                 val syncOpener = rememberLauncherForActivityResult(
                     ActivityResultContracts.OpenDocument(),
-                ) { uri -> if (uri != null) vm.importSync(uri) }
+                ) { uri -> if (uri != null) vm.importFile(uri) }
 
                 fun saveBackup() = backupSaver.launch(Backup.fileName(today))
                 // Alle Dateien zeigen: manche Dateimanager melden ZIP-Dateien mit seltsamem Typ,
                 // ob es wirklich eine Sicherung ist, prüft die App beim Laden selbst
                 fun loadBackup() = backupLoader.launch(arrayOf("*/*"))
 
-                BackHandler(enabled = showSettings || showCloudRestore || editingPhoto || editingMoment != null || showLicenses) {
+                BackHandler(enabled = showSettings || showCloudRestore || showChat || editingPhoto || editingMoment != null || showLicenses) {
                     when {
+                        showChat -> showChat = false
                         showLicenses -> showLicenses = false
                         showCloudRestore -> showCloudRestore = false
                         editingMoment != null -> editingMoment = null
@@ -255,6 +259,7 @@ class MainActivity : ComponentActivity() {
                     !s.onboardingDone && !introDone -> "intro"
                     showCloudRestore -> "cloud-restore"
                     !s.onboardingDone -> "onboarding"
+                    showChat -> "chat"
                     showSettings && showLicenses -> "licenses"
                     showSettings -> "settings"
                     else -> "home"
@@ -285,6 +290,16 @@ class MainActivity : ComponentActivity() {
                         ) { target ->
                             if (s == null) return@AnimatedContent
                             when (target) {
+                                "chat" -> ChatScreen(
+                                    settings = s,
+                                    pairing = pairing,
+                                    onBack = { showChat = false },
+                                    onOpenSettings = {
+                                        showChat = false
+                                        showSettings = true
+                                    },
+                                    onSetMe = vm::setMe,
+                                )
                                 "licenses" -> LicensesScreen(onBack = { showLicenses = false })
                                 "moment" -> MomentEditorScreen(
                                     existing = s.moments.firstOrNull { it.id == editingMoment },
@@ -404,12 +419,14 @@ class MainActivity : ComponentActivity() {
                                         onUnpair = vm::unpair,
                                         onSend = { vm.shareSync() },
                                         onOpen = { syncOpener.launch(arrayOf("*/*")) },
+                                        onSharePairing = { vm.sharePairingFile() },
                                     ),
                                 )
                                 else -> HomeScreen(
                                     s,
                                     today,
                                     onOpenSettings = { showSettings = true },
+                                    onOpenChat = { showChat = true },
                                     onPageChange = vm::setHomePage,
                                     onAddMoment = { title ->
                                         momentSuggestion = title
@@ -519,9 +536,9 @@ class MainActivity : ComponentActivity() {
             Notifier.ACTION_INSTALL_UPDATE -> vm.installUpdate()
             Shortcuts.ACTION_ADD_MOMENT -> vm.jump.value = "moment"
             Shortcuts.ACTION_LIVE -> vm.jump.value = "live"
-            Intent.ACTION_VIEW -> intent.data?.let(vm::importSync)
+            Intent.ACTION_VIEW -> intent.data?.let(vm::importFile)
             Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
-                ?.let(vm::importSync)
+                ?.let(vm::importFile)
         }
     }
 

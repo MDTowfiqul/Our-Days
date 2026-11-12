@@ -52,6 +52,18 @@ data class Pairing(
         fun qrText(p: Pairing): String =
             PREFIX + Base64.encodeToString(p.key, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
 
+        /** Kopplung als Datei, für Handys, die keinen QR-Code scannen können: die Datei enthält denselben Text wie der QR-Code. */
+        const val PAIRING_MIME = "application/vnd.ourdays.pairing"
+        const val PAIRING_EXTENSION = "ourpair"
+        fun pairingFileName() = "our-days-pairing.$PAIRING_EXTENSION"
+        fun pairingFileText(p: Pairing): String = qrText(p)
+
+        /** True, wenn [bytes] mit einem Kopplungs-Präfix beginnen — die Datei enthält eine Kopplung, keinen Abgleich. */
+        fun isPairingFile(bytes: ByteArray): Boolean {
+            val prefixes = listOf(PREFIX, OLD_PREFIX).map { it.toByteArray(Charsets.US_ASCII) }
+            return prefixes.any { p -> bytes.size >= p.size && bytes.copyOfRange(0, p.size).contentEquals(p) }
+        }
+
         /** Schlüssel aus einem gescannten QR-Code, null = kein Kopplungscode von Our Days */
         fun keyFromQr(text: String?): ByteArray? {
             if (text == null) return null

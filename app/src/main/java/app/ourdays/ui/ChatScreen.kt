@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -119,8 +120,9 @@ fun ChatScreen(
 
     // imePadding moves the input above the keyboard (edge-to-edge makes
     // adjustResize alone insufficient); navigationBarsPadding keeps it off the
-    // system bar when the keyboard is closed.
-    Column(Modifier.fillMaxSize().navigationBarsPadding().imePadding()) {
+    // system bar when the keyboard is closed. statusBarsPadding keeps the
+    // title row out from under the notification panel.
+    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,

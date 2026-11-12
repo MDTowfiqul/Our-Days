@@ -14,6 +14,7 @@ import app.ourdays.data.LoveSettings
 import app.ourdays.data.Pairing
 import app.ourdays.data.PairingStore
 import app.ourdays.data.SyncCodec
+import app.ourdays.data.SyncCrypto
 import app.ourdays.notify.DailyScheduler
 import app.ourdays.notify.Notifier
 import app.ourdays.widget.LoveWidget
@@ -303,7 +304,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
             val match = withContext(Dispatchers.IO) {
                 val header = app.contentResolver.openInputStream(uri)?.use { readUpTo(it, 64) }
                     ?: throw java.io.IOException("no input stream")
-                pairings.entries.firstOrNull { (_, p) -> app.ourdays.data.SyncCrypto.belongsTo(header, p.key) }
+                pairings.entries.firstOrNull { (_, p) -> SyncCrypto.belongsTo(header, p.key) }
                     ?: throw java.io.IOException("no matching pairing")
             }
             val input = withContext(Dispatchers.IO) { app.contentResolver.openInputStream(uri) }

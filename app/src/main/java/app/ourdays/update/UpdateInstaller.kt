@@ -48,7 +48,7 @@ object UpdateInstaller {
             deleteRecursively()
             mkdirs()
         }
-        val file = File(dir, "SinceUs.apk")
+        val file = File(dir, "OurDays.apk")
         // GitHub leitet auf seinen Download-Server weiter, beides über https
         val connection = (URL(apkUrl).openConnection() as HttpURLConnection).apply {
             connectTimeout = TIMEOUT_MS

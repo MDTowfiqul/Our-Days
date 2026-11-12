@@ -14,7 +14,9 @@ import java.time.LocalDate
 object AutoBackup {
     private const val PREFS = "auto_backup"
     private const val KEEP = 3
-    private const val PREFIX = "since-us-auto-"
+    private const val PREFIX = "our-days-auto-"
+    /** Alter Präfix aus der Since-Us-Zeit: alte automatische Sicherungen werden weiter aufgeräumt */
+    private const val OLD_PREFIX = "since-us-auto-"
     private const val WEEK_MS = 7L * 24 * 60 * 60 * 1000
 
     /** Etwas Spielraum, damit der Wecker kurz nach Mitternacht nicht knapp eine Woche verpasst */
@@ -87,7 +89,7 @@ object AutoBackup {
             while (c.moveToNext()) {
                 val id = c.getString(0) ?: continue
                 val name = c.getString(1) ?: continue
-                if (name.startsWith(PREFIX)) found += id to name
+                if (name.startsWith(PREFIX) || name.startsWith(OLD_PREFIX)) found += id to name
             }
         }
         oldOnes(found.map { it.second }).forEach { old ->
@@ -96,8 +98,13 @@ object AutoBackup {
         }
     }
 
-    /** Welche automatischen Sicherungen weg können: alle außer den [KEEP] neuesten (Datum steht im Namen) */
-    internal fun oldOnes(names: List<String>): List<String> = names.sortedDescending().drop(KEEP)
+    /** Welche automatischen Sicherungen weg können: alle außer den [KEEP] neuesten (Datum steht im Namen).
+     * Sortiert nach Datum statt nach vollem Namen, damit alte "since-us-…"- und neue
+     * "our-days-…"-Dateien in einer gemeinsamen Reihenfolge landen. */
+    internal fun oldOnes(names: List<String>): List<String> {
+        val date = Regex("""(\d{4}-\d{2}-\d{2})""")
+        return names.sortedByDescending { date.find(it)?.groupValues?.getOrNull(1) ?: it }.drop(KEEP)
+    }
 
     private fun displayName(context: Context, tree: Uri): String? {
         val doc = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))

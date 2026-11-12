@@ -81,6 +81,42 @@ class SyncTest {
     }
 
     @Test
+    fun qrCodeUsesNewPrefixButReadsOldOnes() {
+        val p = Pairing.create("a")
+        // Neue QR-Codes heißen our-days, …
+        assertTrue(Pairing.qrText(p).startsWith("ourdays:pair:1:"))
+        // … alte Since-Us-QR-Codes lassen sich trotzdem noch lesen
+        val oldQr = "sinceus:pair:1:" + android.util.Base64.encodeToString(
+            p.key, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING,
+        )
+        assertArrayEquals(p.key, Pairing.keyFromQr(oldQr))
+    }
+
+    @Test
+    fun syncFileNameIsOurDays() {
+        assertEquals("our-days-2026-11-12.ourdays", SyncCodec.fileName(LocalDate.of(2026, 11, 12)))
+        assertEquals("application/vnd.ourdays.sync", SyncCodec.MIME)
+        assertEquals("ourdays", SyncCodec.EXTENSION)
+        assertEquals("our-days-backup-2026-11-12.zip", Backup.fileName(LocalDate.of(2026, 11, 12)))
+    }
+
+    @Test
+    fun oldAutoBackupsAcrossRename() {
+        // Alte "since-us-…"- und neue "our-days-…"-Sicherungen in einer gemeinsamen Reihenfolge
+        val names = listOf(
+            "since-us-auto-2026-09-01.zip",
+            "since-us-auto-2026-09-22.zip",
+            "our-days-auto-2026-10-05.zip",
+            "our-days-auto-2026-10-12.zip",
+            "our-days-auto-2026-11-12.zip",
+        )
+        assertEquals(
+            listOf("since-us-auto-2026-09-22.zip", "since-us-auto-2026-09-01.zip"),
+            AutoBackup.oldOnes(names),
+        )
+    }
+
+    @Test
     fun codecRoundtrip() {
         val data = SyncData(
             people = listOf(Person("a", "Alex"), Person("b", "Sam", "they/them")),
@@ -138,8 +174,8 @@ class SyncTest {
         assertEquals(1, result.added)
         assertEquals(1, result.changed)
         assertEquals(1, result.removed)
-        // Fehlende Menschen kommen dazu, bestehende bleiben
-        assertEquals(listOf("a", "b", "k"), result.people.map { it.id })
+        // Die Datei gibt bei Menschen den Ton an, nur hier vorhandene kommen danach
+        assertEquals(listOf("a", "k", "b"), result.people.map { it.id })
         assertTrue("gone" in result.deleted && "deleted-here" in result.deleted)
     }
 
@@ -176,7 +212,7 @@ class SyncTest {
     fun missingBirthdayComesFromOtherPhone() {
         val birthday = LocalDate.of(1998, 8, 20)
         val remote = SyncData(
-            people = listOf(Person("a", "Alex", birthday = birthday), Person("b", "Samuel", birthday = LocalDate.of(1990, 1, 1))),
+            people = listOf(Person("a", "Alex", birthday = birthday), Person("b", "Samuel")),
             relationships = emptyList(),
             moments = emptyList(),
             deleted = emptyMap(),
@@ -184,9 +220,10 @@ class SyncTest {
         )
         val sam = LocalDate.of(1999, 9, 9)
         val result = SyncMerge.merge(listOf(Person("a", "Alex"), Person("b", "Sam", birthday = sam)), emptyList(), emptyList(), emptyMap(), remote)
+        // Der Eintrag aus der Datei gewinnt: Name und Geburtstag kommen von dort …
         assertEquals(birthday, result.people[0].birthday)
-        // Was hier schon eingetragen ist, bleibt
-        assertEquals("Sam", result.people[1].name)
+        assertEquals("Samuel", result.people[1].name)
+        // … nur ein Geburtstag, den die Datei nicht hat, bleibt von hier erhalten
         assertEquals(sam, result.people[1].birthday)
         assertEquals(remote.people, SyncCodec.decode(SyncCodec.encode(remote)).people)
     }

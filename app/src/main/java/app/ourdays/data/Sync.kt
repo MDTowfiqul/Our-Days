@@ -41,7 +41,9 @@ data class Pairing(
     override fun hashCode() = key.contentHashCode() * 31 + (me?.hashCode() ?: 0)
 
     companion object {
-        private const val PREFIX = "sinceus:pair:1:"
+        private const val PREFIX = "ourdays:pair:1:"
+        /** Alter QR-Präfix aus der Since-Us-Zeit: alte QR-Codes bleiben lesbar */
+        private const val OLD_PREFIX = "sinceus:pair:1:"
 
         fun create(me: String?): Pairing =
             Pairing(ByteArray(32).also { SecureRandom().nextBytes(it) }, me, System.currentTimeMillis())
@@ -50,10 +52,27 @@ data class Pairing(
         fun qrText(p: Pairing): String =
             PREFIX + Base64.encodeToString(p.key, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
 
-        /** Schlüssel aus einem gescannten QR-Code, null = kein Kopplungscode von Since Us */
+        /** Kopplung als Datei, für Handys, die keinen QR-Code scannen können: die Datei enthält denselben Text wie der QR-Code. */
+        const val PAIRING_MIME = "application/vnd.ourdays.pairing"
+        const val PAIRING_EXTENSION = "ourpair"
+        fun pairingFileName() = "our-days-pairing.$PAIRING_EXTENSION"
+        fun pairingFileText(p: Pairing): String = qrText(p)
+
+        /** True, wenn [bytes] mit einem Kopplungs-Präfix beginnen — die Datei enthält eine Kopplung, keinen Abgleich. */
+        fun isPairingFile(bytes: ByteArray): Boolean {
+            val prefixes = listOf(PREFIX, OLD_PREFIX).map { it.toByteArray(Charsets.US_ASCII) }
+            return prefixes.any { p -> bytes.size >= p.size && bytes.copyOfRange(0, p.size).contentEquals(p) }
+        }
+
+        /** Schlüssel aus einem gescannten QR-Code, null = kein Kopplungscode von Our Days */
         fun keyFromQr(text: String?): ByteArray? {
-            if (text == null || !text.startsWith(PREFIX)) return null
-            val key = runCatching { Base64.decode(text.removePrefix(PREFIX), Base64.URL_SAFE) }.getOrNull()
+            if (text == null) return null
+            val encoded = when {
+                text.startsWith(PREFIX) -> text.removePrefix(PREFIX)
+                text.startsWith(OLD_PREFIX) -> text.removePrefix(OLD_PREFIX)
+                else -> return null
+            }
+            val key = runCatching { Base64.decode(encoded, Base64.URL_SAFE) }.getOrNull()
             return key?.takeIf { it.size == 32 }
         }
     }
@@ -97,6 +116,7 @@ object PairingStore {
  * Veränderung, Vertauschung oder abgeschnittene Datei auf.
  */
 object SyncCrypto {
+    /** Dateikopf aus der Since-Us-Zeit, bewusst unverändert: alte Abgleich-Dateien müssen lesbar bleiben */
     private val MAGIC = "SINCEUS-SYNC1".toByteArray(Charsets.US_ASCII)
     private const val CHUNK = 64 * 1024
     private const val TAG_BITS = 128
@@ -201,10 +221,12 @@ object SyncCodec {
     private const val APP = "app.ourdays"
     const val FORMAT = 1
     const val JSON = "sync.json"
-    const val MIME = "application/vnd.sinceus.sync"
-    const val EXTENSION = "sinceus"
+    const val MIME = "application/vnd.ourdays.sync"
+    const val EXTENSION = "ourdays"
+    /** Alte Dateiendung: alte Abgleich-Dateien bleiben lesbar und werden beim Öffnen erkannt */
+    const val OLD_EXTENSION = "sinceus"
 
-    fun fileName(today: java.time.LocalDate) = "since-us-$today.$EXTENSION"
+    fun fileName(today: java.time.LocalDate) = "our-days-$today.$EXTENSION"
 
     fun encode(d: SyncData): String = JSONObject()
         .put("app", APP)
@@ -251,8 +273,10 @@ data class MergeResult(
 object SyncMerge {
     /**
      * Führt die eigenen Daten mit denen des anderen Handys zusammen. Bei Momenten gewinnt die
-     * jüngere Änderung, gelöschte Momente bleiben gelöscht. Menschen und Beziehungen, die hier
-     * noch fehlen, kommen dazu; bestehende bleiben, wie sie hier eingestellt sind.
+     * jüngere Änderung, gelöschte Momente bleiben gelöscht. Bei Menschen und Beziehungen
+     * gewinnt die Datei: Ein Eintrag aus der Datei ersetzt den Eintrag mit derselben ID
+     * hier, damit nach einem Abgleich der neue Name oder das neue Datum auch auf diesem
+     * Handy ankommt; nur hier vorhandene Einträge bleiben erhalten.
      */
     fun merge(
         people: List<Person>,
@@ -288,13 +312,21 @@ object SyncMerge {
                 removed++
             }
         }
-        // Bekannte Menschen bleiben wie hier eingetragen, nur ein fehlender Geburtstag kommt vom anderen Handy
+        // Wer die Datei geschickt hat, gibt bei Menschen und Beziehungen den Ton an: Ein
+        // Eintrag aus der Datei ersetzt den Eintrag mit derselben ID hier, sonst käme nach
+        // einem Abgleich nie der neue Name oder das neue Datum auf diesem Handy an. Nur hier
+        // vorhandene Einträge bleiben erhalten; ein fehlender Geburtstag wird aus dem jeweils
+        // anderen Eintrag übernommen.
         val mergedPeople = (
-            people.map { p -> p.copy(birthday = p.birthday ?: remote.people.firstOrNull { it.id == p.id }?.birthday) } +
-                remote.people.filter { r -> people.none { it.id == r.id } }
+            remote.people.map { r ->
+                r.copy(birthday = r.birthday ?: people.firstOrNull { it.id == r.id }?.birthday)
+            } +
+                people.filter { p -> remote.people.none { it.id == p.id } }
             ).take(MAX_PEOPLE)
-        val mergedRelationships = (relationships + remote.relationships.filter { r -> relationships.none { it.id == r.id } })
-            .take(MAX_RELATIONSHIPS)
+        val mergedRelationships = (
+            remote.relationships +
+                relationships.filter { r -> remote.relationships.none { it.id == r.id } }
+            ).take(MAX_RELATIONSHIPS)
         return MergeResult(
             people = mergedPeople,
             relationships = mergedRelationships,

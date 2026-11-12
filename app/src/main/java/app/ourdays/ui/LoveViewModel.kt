@@ -191,7 +191,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
         val p = _pairing.value ?: return@launch
         try {
             val dir = java.io.File(app.cacheDir, "share").apply { mkdirs() }
-            dir.listFiles { f -> f.name.endsWith(".${SyncCodec.EXTENSION}") }?.forEach { it.delete() }
+            dir.listFiles { f -> f.name.endsWith(".${SyncCodec.EXTENSION}") || f.name.endsWith(".${SyncCodec.OLD_EXTENSION}") }?.forEach { it.delete() }
             val file = java.io.File(dir, SyncCodec.fileName(today.value))
             repo.exportSync(file.outputStream(), p)
             val uri = androidx.core.content.FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", file)
@@ -208,6 +208,78 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
             android.util.Log.w("SinceUs", "Abgleich-Datei fehlgeschlagen", e)
             Toast.makeText(app, app.getString(R.string.sync_send_failed), Toast.LENGTH_LONG).show()
         }
+    }
+
+    /** Kopplung als Datei teilen, für Handys, die keinen QR-Code scannen können: die Datei enthält denselben Text wie der QR-Code. */
+    fun sharePairingFile() = viewModelScope.launch {
+        val app = getApplication<Application>()
+        val p = _pairing.value ?: return@launch
+        try {
+            val dir = java.io.File(app.cacheDir, "share").apply { mkdirs() }
+            val file = java.io.File(dir, Pairing.pairingFileName())
+            file.writeText(Pairing.pairingFileText(p))
+            val uri = androidx.core.content.FileProvider.getUriForFile(app, "${app.packageName}.fileprovider", file)
+            val send = android.content.Intent(android.content.Intent.ACTION_SEND)
+                .setType(Pairing.PAIRING_MIME)
+                .putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            send.clipData = android.content.ClipData.newRawUri(null, uri)
+            app.startActivity(
+                android.content.Intent.createChooser(send, app.getString(R.string.pairing_share_file))
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        } catch (e: Exception) {
+            android.util.Log.w("SinceUs", "Pairing-Datei fehlgeschlagen", e)
+            Toast.makeText(app, app.getString(R.string.sync_send_failed), Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /** Eine geöffnete oder geteilte Datei übernehmen: eine Pairing-Datei koppelt, eine Abgleich-Datei führt Daten zusammen. */
+    fun importFile(uri: Uri) = viewModelScope.launch {
+        val app = getApplication<Application>()
+        val peek = runCatching {
+            withContext(Dispatchers.IO) {
+                app.contentResolver.openInputStream(uri)?.use { readUpTo(it, 64) }
+            }
+        }.getOrNull()
+        if (peek != null && Pairing.isPairingFile(peek)) {
+            importPairing(uri)
+        } else {
+            importSync(uri)
+        }
+    }
+
+    /** Kopplung aus einer Pairing-Datei übernehmen (ersetzt eine bestehende Kopplung). */
+    private fun importPairing(uri: Uri) = viewModelScope.launch {
+        val app = getApplication<Application>()
+        val message = try {
+            val text = withContext(Dispatchers.IO) {
+                app.contentResolver.openInputStream(uri)?.use {
+                    readUpTo(it, 1024).toString(Charsets.UTF_8)
+                }
+            } ?: throw java.io.IOException("no input stream")
+            val key = Pairing.keyFromQr(text.trim()) ?: throw java.io.IOException("not a pairing file")
+            val p = Pairing(key, _pairing.value?.me, System.currentTimeMillis())
+            PairingStore.save(app, p)
+            _pairing.value = p
+            app.getString(R.string.pairing_done)
+        } catch (e: Exception) {
+            android.util.Log.w("SinceUs", "Pairing-Datei fehlgeschlagen", e)
+            app.getString(R.string.pairing_file_invalid)
+        }
+        Toast.makeText(app, message, Toast.LENGTH_LONG).show()
+    }
+
+    /** Liest höchstens [max] Bytes — genug, um eine Datei zu erkennen, ohne eine große Abgleich-Datei ganz zu laden. */
+    private fun readUpTo(input: java.io.InputStream, max: Int): ByteArray {
+        val buf = ByteArray(max)
+        var n = 0
+        while (n < buf.size) {
+            val r = input.read(buf, n, buf.size - n)
+            if (r < 0) break
+            n += r
+        }
+        return buf.copyOf(n)
     }
 
     /** Abgleich-Datei vom anderen Handy übernehmen */

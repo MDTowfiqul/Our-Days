@@ -367,7 +367,6 @@
     <string name="facts_next">পরের সংখ্যা দেখাও</string>
     <string name="fact_weekends_sub">সপ্তাহান্ত ইতিমধ্যে একসাথে কাটিয়েছো</string>
     <string name="fact_full_moons_sub">পূর্ণিমা হয়েছে তোমরা একসাথে হওয়ার পর</string>
-    <string name="fact_christmas_sub">একসাথে উদযাপন করেছো</string>
     <string name="fact_new_years_sub">একসাথে উদযাপন করেছো</string>
     <string name="fact_seasons_sub">একসাথে দেখেছো</string>
     <string name="fact_heartbeats_sub">তোমাদের প্রতিটি হৃদয় স্পন্দিত হয়েছে তোমরা একসাথে হওয়ার পর</string>
@@ -398,10 +397,6 @@
     <plurals name="fact_breaths">
         <item quantity="one">প্রায় %s শ্বাস</item>
         <item quantity="other">প্রায় %s শ্বাস</item>
-    </plurals>
-    <plurals name="fact_christmas">
-        <item quantity="one">%s বড়দিন</item>
-        <item quantity="other">%s বড়দিন</item>
     </plurals>
     <plurals name="fact_new_years">
         <item quantity="one">%s থার্টি ফার্স্ট</item>

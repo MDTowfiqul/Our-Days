@@ -100,7 +100,6 @@ private fun FunFacts.Kind.text(): Int = when (this) {
     FunFacts.Kind.WEEKENDS -> R.plurals.fact_weekends
     FunFacts.Kind.FULL_MOONS -> R.plurals.fact_full_moons
     FunFacts.Kind.VALENTINES -> R.plurals.fact_valentines
-    FunFacts.Kind.CHRISTMAS -> R.plurals.fact_christmas
     FunFacts.Kind.NEW_YEARS -> R.plurals.fact_new_years
     FunFacts.Kind.FRIDAY_13TH -> R.plurals.fact_friday_13th
     FunFacts.Kind.SEASONS -> R.plurals.fact_seasons
@@ -113,7 +112,6 @@ private fun FunFacts.Kind.sub(): Int = when (this) {
     FunFacts.Kind.WEEKENDS -> R.string.fact_weekends_sub
     FunFacts.Kind.FULL_MOONS -> R.string.fact_full_moons_sub
     FunFacts.Kind.VALENTINES -> R.string.fact_valentines_sub
-    FunFacts.Kind.CHRISTMAS -> R.string.fact_christmas_sub
     FunFacts.Kind.NEW_YEARS -> R.string.fact_new_years_sub
     FunFacts.Kind.FRIDAY_13TH -> R.string.fact_friday_13th_sub
     FunFacts.Kind.SEASONS -> R.string.fact_seasons_sub

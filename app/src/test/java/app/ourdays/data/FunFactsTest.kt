@@ -15,7 +15,6 @@ class FunFactsTest {
         val today = LocalDate.of(2026, 1, 1)
         // Der Starttag zählt nicht mit, erst die Samstage danach
         assertEquals(41L, value(FunFacts.Kind.WEEKENDS, start, today))
-        assertEquals(1L, value(FunFacts.Kind.CHRISTMAS, start, today))
         assertEquals(1L, value(FunFacts.Kind.NEW_YEARS, start, today))
         // 20.03., 21.06., 22.09. und 21.12.
         assertEquals(4L, value(FunFacts.Kind.SEASONS, start, today))

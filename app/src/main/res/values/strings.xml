@@ -371,7 +371,6 @@
     <string name="facts_next">Show the next number</string>
     <string name="fact_weekends_sub">you have spent together</string>
     <string name="fact_full_moons_sub">since you got together</string>
-    <string name="fact_christmas_sub">you have celebrated together</string>
     <string name="fact_new_years_sub">you have celebrated together</string>
     <string name="fact_seasons_sub">you have been through together</string>
     <string name="fact_heartbeats_sub">from each of your hearts since you got together</string>
@@ -402,10 +401,6 @@
     <plurals name="fact_breaths">
         <item quantity="one">About %s breath</item>
         <item quantity="other">About %s breaths</item>
-    </plurals>
-    <plurals name="fact_christmas">
-        <item quantity="one">%s Christmas</item>
-        <item quantity="other">%s Christmases</item>
     </plurals>
     <plurals name="fact_new_years">
         <item quantity="one">%s New Year\'s Eve</item>

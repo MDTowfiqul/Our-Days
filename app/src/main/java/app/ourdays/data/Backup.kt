@@ -23,7 +23,7 @@ object Backup {
 
     private val SAFE_NAME = Regex("[A-Za-z0-9_-][A-Za-z0-9._-]{0,127}")
 
-    fun fileName(today: LocalDate) = "since-us-backup-$today.zip"
+    fun fileName(today: LocalDate) = "our-days-backup-$today.zip"
 
     /** Nur einfache Dateinamen ohne Ordner oder „..“, damit nichts außerhalb des App-Speichers landet */
     fun isSafeName(name: String) = SAFE_NAME.matches(name) && name != "." && name != ".."

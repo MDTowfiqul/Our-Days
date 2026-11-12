@@ -41,7 +41,9 @@ data class Pairing(
     override fun hashCode() = key.contentHashCode() * 31 + (me?.hashCode() ?: 0)
 
     companion object {
-        private const val PREFIX = "sinceus:pair:1:"
+        private const val PREFIX = "ourdays:pair:1:"
+        /** Alter QR-Präfix aus der Since-Us-Zeit: alte QR-Codes bleiben lesbar */
+        private const val OLD_PREFIX = "sinceus:pair:1:"
 
         fun create(me: String?): Pairing =
             Pairing(ByteArray(32).also { SecureRandom().nextBytes(it) }, me, System.currentTimeMillis())
@@ -50,10 +52,15 @@ data class Pairing(
         fun qrText(p: Pairing): String =
             PREFIX + Base64.encodeToString(p.key, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
 
-        /** Schlüssel aus einem gescannten QR-Code, null = kein Kopplungscode von Since Us */
+        /** Schlüssel aus einem gescannten QR-Code, null = kein Kopplungscode von Our Days */
         fun keyFromQr(text: String?): ByteArray? {
-            if (text == null || !text.startsWith(PREFIX)) return null
-            val key = runCatching { Base64.decode(text.removePrefix(PREFIX), Base64.URL_SAFE) }.getOrNull()
+            if (text == null) return null
+            val encoded = when {
+                text.startsWith(PREFIX) -> text.removePrefix(PREFIX)
+                text.startsWith(OLD_PREFIX) -> text.removePrefix(OLD_PREFIX)
+                else -> return null
+            }
+            val key = runCatching { Base64.decode(encoded, Base64.URL_SAFE) }.getOrNull()
             return key?.takeIf { it.size == 32 }
         }
     }
@@ -97,6 +104,7 @@ object PairingStore {
  * Veränderung, Vertauschung oder abgeschnittene Datei auf.
  */
 object SyncCrypto {
+    /** Dateikopf aus der Since-Us-Zeit, bewusst unverändert: alte Abgleich-Dateien müssen lesbar bleiben */
     private val MAGIC = "SINCEUS-SYNC1".toByteArray(Charsets.US_ASCII)
     private const val CHUNK = 64 * 1024
     private const val TAG_BITS = 128
@@ -201,10 +209,12 @@ object SyncCodec {
     private const val APP = "app.ourdays"
     const val FORMAT = 1
     const val JSON = "sync.json"
-    const val MIME = "application/vnd.sinceus.sync"
-    const val EXTENSION = "sinceus"
+    const val MIME = "application/vnd.ourdays.sync"
+    const val EXTENSION = "ourdays"
+    /** Alte Dateiendung: alte Abgleich-Dateien bleiben lesbar und werden beim Öffnen erkannt */
+    const val OLD_EXTENSION = "sinceus"
 
-    fun fileName(today: java.time.LocalDate) = "since-us-$today.$EXTENSION"
+    fun fileName(today: java.time.LocalDate) = "our-days-$today.$EXTENSION"
 
     fun encode(d: SyncData): String = JSONObject()
         .put("app", APP)

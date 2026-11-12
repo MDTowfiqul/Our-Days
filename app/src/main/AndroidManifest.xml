@@ -34,6 +34,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" />
                 <data android:scheme="file" />
+                <data android:mimeType="application/vnd.ourdays.sync" />
                 <data android:mimeType="application/vnd.sinceus.sync" />
             </intent-filter>
             <!-- Viele Dateimanager kennen den Typ nicht, erkennen die Datei aber an der Endung -->
@@ -44,6 +45,9 @@
                 <data android:scheme="file" />
                 <data android:host="*" />
                 <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.ourdays" />
+                <data android:pathPattern=".*\\..*\\.ourdays" />
+                <data android:pathPattern=".*\\..*\\..*\\.ourdays" />
                 <data android:pathPattern=".*\\.sinceus" />
                 <data android:pathPattern=".*\\..*\\.sinceus" />
                 <data android:pathPattern=".*\\..*\\..*\\.sinceus" />
@@ -60,6 +64,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/vnd.ourdays.sync" />
                 <data android:mimeType="application/vnd.sinceus.sync" />
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>

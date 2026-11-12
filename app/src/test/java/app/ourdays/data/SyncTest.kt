@@ -174,8 +174,8 @@ class SyncTest {
         assertEquals(1, result.added)
         assertEquals(1, result.changed)
         assertEquals(1, result.removed)
-        // Fehlende Menschen kommen dazu, bestehende bleiben
-        assertEquals(listOf("a", "b", "k"), result.people.map { it.id })
+        // Die Datei gibt bei Menschen den Ton an, nur hier vorhandene kommen danach
+        assertEquals(listOf("a", "k", "b"), result.people.map { it.id })
         assertTrue("gone" in result.deleted && "deleted-here" in result.deleted)
     }
 
@@ -212,7 +212,7 @@ class SyncTest {
     fun missingBirthdayComesFromOtherPhone() {
         val birthday = LocalDate.of(1998, 8, 20)
         val remote = SyncData(
-            people = listOf(Person("a", "Alex", birthday = birthday), Person("b", "Samuel", birthday = LocalDate.of(1990, 1, 1))),
+            people = listOf(Person("a", "Alex", birthday = birthday), Person("b", "Samuel")),
             relationships = emptyList(),
             moments = emptyList(),
             deleted = emptyMap(),
@@ -220,9 +220,10 @@ class SyncTest {
         )
         val sam = LocalDate.of(1999, 9, 9)
         val result = SyncMerge.merge(listOf(Person("a", "Alex"), Person("b", "Sam", birthday = sam)), emptyList(), emptyList(), emptyMap(), remote)
+        // Der Eintrag aus der Datei gewinnt: Name und Geburtstag kommen von dort …
         assertEquals(birthday, result.people[0].birthday)
-        // Was hier schon eingetragen ist, bleibt
-        assertEquals("Sam", result.people[1].name)
+        assertEquals("Samuel", result.people[1].name)
+        // … nur ein Geburtstag, den die Datei nicht hat, bleibt von hier erhalten
         assertEquals(sam, result.people[1].birthday)
         assertEquals(remote.people, SyncCodec.decode(SyncCodec.encode(remote)).people)
     }

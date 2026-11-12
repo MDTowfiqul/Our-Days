@@ -319,6 +319,10 @@
     <string name="sync_open_summary">If tapping the file did not open Our Days</string>
     <string name="sync_show_qr_again">Pair another phone</string>
     <string name="sync_show_qr_again_summary">Shows the QR code again, for example for a new phone</string>
+    <string name="pairing_share_file">Share pairing file</string>
+    <string name="pairing_share_file_summary">Send it to the other phone, like a sync file</string>
+    <string name="pairing_done">Paired with the other phone.</string>
+    <string name="pairing_file_invalid">That is not a pairing file.</string>
     <string name="sync_unpair">Unpair</string>
     <string name="sync_unpair_question">Unpair?</string>
     <string name="sync_unpair_text">This phone can no longer open sync files from the other phones. Your data stays. You can pair again any time.</string>

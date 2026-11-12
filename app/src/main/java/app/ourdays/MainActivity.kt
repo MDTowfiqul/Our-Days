@@ -230,7 +230,7 @@ class MainActivity : ComponentActivity() {
                 ) { uri -> if (uri != null) vm.enableAutoBackup(uri) }
                 val syncOpener = rememberLauncherForActivityResult(
                     ActivityResultContracts.OpenDocument(),
-                ) { uri -> if (uri != null) vm.importSync(uri) }
+                ) { uri -> if (uri != null) vm.importFile(uri) }
 
                 fun saveBackup() = backupSaver.launch(Backup.fileName(today))
                 // Alle Dateien zeigen: manche Dateimanager melden ZIP-Dateien mit seltsamem Typ,
@@ -404,6 +404,7 @@ class MainActivity : ComponentActivity() {
                                         onUnpair = vm::unpair,
                                         onSend = { vm.shareSync() },
                                         onOpen = { syncOpener.launch(arrayOf("*/*")) },
+                                        onSharePairing = { vm.sharePairingFile() },
                                     ),
                                 )
                                 else -> HomeScreen(
@@ -519,9 +520,9 @@ class MainActivity : ComponentActivity() {
             Notifier.ACTION_INSTALL_UPDATE -> vm.installUpdate()
             Shortcuts.ACTION_ADD_MOMENT -> vm.jump.value = "moment"
             Shortcuts.ACTION_LIVE -> vm.jump.value = "live"
-            Intent.ACTION_VIEW -> intent.data?.let(vm::importSync)
+            Intent.ACTION_VIEW -> intent.data?.let(vm::importFile)
             Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
-                ?.let(vm::importSync)
+                ?.let(vm::importFile)
         }
     }
 

@@ -52,6 +52,18 @@ data class Pairing(
         fun qrText(p: Pairing): String =
             PREFIX + Base64.encodeToString(p.key, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
 
+        /** Kopplung als Datei, für Handys, die keinen QR-Code scannen können: die Datei enthält denselben Text wie der QR-Code. */
+        const val PAIRING_MIME = "application/vnd.ourdays.pairing"
+        const val PAIRING_EXTENSION = "ourpair"
+        fun pairingFileName() = "our-days-pairing.$PAIRING_EXTENSION"
+        fun pairingFileText(p: Pairing): String = qrText(p)
+
+        /** True, wenn [bytes] mit einem Kopplungs-Präfix beginnen — die Datei enthält eine Kopplung, keinen Abgleich. */
+        fun isPairingFile(bytes: ByteArray): Boolean {
+            val prefixes = listOf(PREFIX, OLD_PREFIX).map { it.toByteArray(Charsets.US_ASCII) }
+            return prefixes.any { p -> bytes.size >= p.size && bytes.copyOfRange(0, p.size).contentEquals(p) }
+        }
+
         /** Schlüssel aus einem gescannten QR-Code, null = kein Kopplungscode von Our Days */
         fun keyFromQr(text: String?): ByteArray? {
             if (text == null) return null
@@ -261,8 +273,10 @@ data class MergeResult(
 object SyncMerge {
     /**
      * Führt die eigenen Daten mit denen des anderen Handys zusammen. Bei Momenten gewinnt die
-     * jüngere Änderung, gelöschte Momente bleiben gelöscht. Menschen und Beziehungen, die hier
-     * noch fehlen, kommen dazu; bestehende bleiben, wie sie hier eingestellt sind.
+     * jüngere Änderung, gelöschte Momente bleiben gelöscht. Bei Menschen und Beziehungen
+     * gewinnt die Datei: Ein Eintrag aus der Datei ersetzt den Eintrag mit derselben ID
+     * hier, damit nach einem Abgleich der neue Name oder das neue Datum auch auf diesem
+     * Handy ankommt; nur hier vorhandene Einträge bleiben erhalten.
      */
     fun merge(
         people: List<Person>,
@@ -298,13 +312,21 @@ object SyncMerge {
                 removed++
             }
         }
-        // Bekannte Menschen bleiben wie hier eingetragen, nur ein fehlender Geburtstag kommt vom anderen Handy
+        // Wer die Datei geschickt hat, gibt bei Menschen und Beziehungen den Ton an: Ein
+        // Eintrag aus der Datei ersetzt den Eintrag mit derselben ID hier, sonst käme nach
+        // einem Abgleich nie der neue Name oder das neue Datum auf diesem Handy an. Nur hier
+        // vorhandene Einträge bleiben erhalten; ein fehlender Geburtstag wird aus dem jeweils
+        // anderen Eintrag übernommen.
         val mergedPeople = (
-            people.map { p -> p.copy(birthday = p.birthday ?: remote.people.firstOrNull { it.id == p.id }?.birthday) } +
-                remote.people.filter { r -> people.none { it.id == r.id } }
+            remote.people.map { r ->
+                r.copy(birthday = r.birthday ?: people.firstOrNull { it.id == r.id }?.birthday)
+            } +
+                people.filter { p -> remote.people.none { it.id == p.id } }
             ).take(MAX_PEOPLE)
-        val mergedRelationships = (relationships + remote.relationships.filter { r -> relationships.none { it.id == r.id } })
-            .take(MAX_RELATIONSHIPS)
+        val mergedRelationships = (
+            remote.relationships +
+                relationships.filter { r -> remote.relationships.none { it.id == r.id } }
+            ).take(MAX_RELATIONSHIPS)
         return MergeResult(
             people = mergedPeople,
             relationships = mergedRelationships,

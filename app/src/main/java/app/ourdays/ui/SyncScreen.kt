@@ -17,6 +17,7 @@ import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Send
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -63,6 +64,8 @@ class SyncActions(
     val onUnpair: () -> Unit = {},
     val onSend: () -> Unit = {},
     val onOpen: () -> Unit = {},
+    /** Kopplung als Datei teilen (für Handys, die keinen QR-Code scannen können) */
+    val onSharePairing: () -> Unit = {},
 )
 
 /** Abgleich mit dem Handy des anderen Menschen: koppeln per QR-Code, dann Dateien austauschen */
@@ -130,6 +133,8 @@ internal fun SyncPage(settings: LoveSettings, pairing: Pairing?, actions: SyncAc
             SyncRow(Icons.Rounded.QrCode2, stringResource(R.string.sync_show_qr_again), stringResource(R.string.sync_show_qr_again_summary)) {
                 showQr = true
             }
+            Line()
+            SyncRow(Icons.Rounded.Share, stringResource(R.string.pairing_share_file), stringResource(R.string.pairing_share_file_summary), onClick = actions.onSharePairing)
             Line()
             ListItem(
                 headlineContent = { Text(stringResource(R.string.sync_unpair), color = MaterialTheme.colorScheme.error) },

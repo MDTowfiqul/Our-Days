@@ -316,6 +316,10 @@
     <string name="sync_open_summary">ফাইলে ট্যাপ করলে Our Days না খুললে</string>
     <string name="sync_show_qr_again">আরেকটা ফোন পেয়ার করো</string>
     <string name="sync_show_qr_again_summary">QR কোড আবার দেখাও, যেমন নতুন ফোনের জন্য</string>
+    <string name="pairing_share_file">পেয়ারিং ফাইল শেয়ার করুন</string>
+    <string name="pairing_share_file_summary">সিঙ্ক ফাইলের মতো অন্য ফোনে পাঠান</string>
+    <string name="pairing_done">অন্য ফোনের সাথে পেয়ার হয়েছে।</string>
+    <string name="pairing_file_invalid">এটি পেয়ারিং ফাইল নয়।</string>
     <string name="sync_unpair">পেয়ারিং ভাঙো</string>
     <string name="sync_unpair_question">পেয়ারিং ভাঙবে?</string>
     <string name="sync_unpair_text">এই ফোন আর সিঙ্ক ফাইল খুলতে পারবে না। তোমাদের ডেটা থেকে যাবে। যেকোনো সময় আবার পেয়ার করতে পারবে।</string>

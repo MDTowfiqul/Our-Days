@@ -32,6 +32,16 @@ class ScreenshotTest {
     private val today = LocalDate.of(2025, 8, 15)
 
     @Test
+    fun homeLongNames() = shot("home_long_names") {
+        val long = settings.copy(
+            people = settings.people.mapIndexed { i, p ->
+                p.copy(name = if (i == 0) "Towfiqul Islam" else "Ainon Nahar")
+            },
+        )
+        HomeScreen(long, today, {}, {})
+    }
+
+    @Test
     fun home() = shot("home") { HomeScreen(settings, today, {}, {}) }
 
     @Test

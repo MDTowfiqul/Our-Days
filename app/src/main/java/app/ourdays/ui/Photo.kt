@@ -211,7 +211,7 @@ fun PhotoEditorScreen(
                     .fillMaxSize()
                     .background(PhotoScrim),
             )
-            NamesOverlay(settings, Modifier.align(Alignment.BottomStart))
+            NamesOverlay(settings, Modifier.align(Alignment.BottomCenter))
         }
 
         Column(

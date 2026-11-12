@@ -32,8 +32,12 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -366,7 +370,7 @@ internal fun Hero(settings: LoveSettings, onSelect: (String) -> Unit) {
                 .fillMaxSize()
                 .background(PhotoScrim),
         )
-        NamesOverlay(settings, Modifier.align(Alignment.BottomStart))
+        NamesOverlay(settings, Modifier.align(Alignment.BottomCenter))
     }
 }
 
@@ -381,14 +385,41 @@ fun NamesOverlay(settings: LoveSettings, modifier: Modifier = Modifier) {
     )
 }
 
-/** Namen mit schlagendem Herz dazwischen; bei mehr als zwei Menschen mit Zeilenumbruch */
+/** Namen mit schlagendem Herz dazwischen, mittig; passen zwei Namen nicht in eine Zeile,
+ *  stehen sie untereinander — Name, Herz, Name — alles mittig. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NamesRow(names: List<String>, style: TextStyle, heart: Dp, modifier: Modifier = Modifier) {
-    FlowRow(modifier, itemVerticalAlignment = Alignment.CenterVertically) {
-        names.forEachIndexed { i, name ->
-            if (i > 0) BeatingHeart(Modifier.padding(horizontal = heart * 0.4f), size = heart)
-            Text(name, style = style, color = Color.White, maxLines = 1)
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val density = LocalDensity.current
+        val measurer = rememberTextMeasurer()
+        val availablePx = with(density) { maxWidth.toPx() }
+        val oneLinePx = remember(names, style, heart) {
+            val heartPx = with(density) { (heart * 1.8f).toPx() }
+            names.sumOf { measurer.measure(AnnotatedString(it), style).size.width.toDouble() } +
+                (names.size - 1).coerceAtLeast(0) * heartPx
+        }
+        val stacked = names.size == 2 && oneLinePx > availablePx
+        if (stacked) {
+            Column(
+                Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(names[0], style = style, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                BeatingHeart(Modifier.padding(vertical = 2.dp), size = heart)
+                Text(names[1], style = style, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        } else {
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                names.forEachIndexed { i, name ->
+                    if (i > 0) BeatingHeart(Modifier.padding(horizontal = heart * 0.4f), size = heart)
+                    Text(name, style = style, color = Color.White, maxLines = 1)
+                }
+            }
         }
     }
 }

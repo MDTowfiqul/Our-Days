@@ -2,7 +2,18 @@ package app.ourdays.ui
 
 import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.unit.dp
 import androidx.core.view.drawToBitmap
 import app.ourdays.data.LoveSettings
 import org.junit.Rule
@@ -132,34 +143,44 @@ class ScreenshotTest {
 
     // Echte Bildschirmfotos für die Anleitung in der App („How to pair & sync“):
     // die Anleitung zeigt diese PNGs, keine gezeichneten Handy-Attrappen.
+    // SyncPage ist ein Spalten-Fragment und braucht eine Spalte mit Bildlauf wie in
+    // der App; Dialoge leben in einem eigenen Fenster und erscheinen in drawToBitmap
+    // nicht — darum wird ihr Inhalt hier direkt gerendert.
     private val guidePairing = mapOf(
         app.ourdays.data.PeopleCodec.MAIN_ID to app.ourdays.data.Pairing.create("a"),
     )
 
     @Test
     fun guideSyncUnpaired() = shot("guide_sync_unpaired") {
-        SyncPage(settings, emptyMap(), SyncActions())
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            SyncPage(settings, emptyMap(), SyncActions())
+        }
     }
 
     @Test
     fun guideSyncPaired() = shot("guide_sync_paired") {
-        SyncPage(settings, guidePairing, SyncActions())
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            SyncPage(settings, guidePairing, SyncActions())
+        }
     }
 
     @Test
-    fun guideQrDialog() = shot(
-        "guide_qr",
-        before = { compose.onNodeWithText("Pair another phone").performClick() },
-    ) {
-        SyncPage(settings, guidePairing, SyncActions())
+    fun guideQrDialog() = shot("guide_qr") {
+        val pairing = guidePairing.getValue(app.ourdays.data.PeopleCodec.MAIN_ID)
+        Column(Modifier.padding(24.dp)) {
+            Text(stringResource(R.string.sync_show_qr), style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(16.dp))
+            QrDialogContent(pairing, app.ourdays.data.PeopleCodec.MAIN_ID)
+        }
     }
 
     @Test
-    fun guideSendScope() = shot(
-        "guide_send_scope",
-        before = { compose.onNodeWithText("Send sync").performClick() },
-    ) {
-        SyncPage(settings, guidePairing, SyncActions())
+    fun guideSendScope() = shot("guide_send_scope") {
+        Column(Modifier.padding(24.dp)) {
+            Text(stringResource(R.string.sync_send_scope_title), style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(16.dp))
+            SendScopeContent(true) {}
+        }
     }
 
     // Einzelbilder der Intro-Animation, um zu prüfen, dass die Herzen wirklich

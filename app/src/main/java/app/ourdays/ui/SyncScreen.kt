@@ -217,17 +217,7 @@ internal fun SyncPage(
         AlertDialog(
             onDismissRequest = { showQrFor = null },
             title = { Text(stringResource(R.string.sync_show_qr)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.sync_qr_text))
-                    QrCode(
-                        Pairing.qrText(qrPairing, showQrFor!!),
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp)),
-                    )
-                }
-            },
+            text = { QrDialogContent(qrPairing, showQrFor!!) },
             confirmButton = { TextButton(onClick = { showQrFor = null }) { Text(stringResource(R.string.done)) } },
         )
     }
@@ -236,25 +226,7 @@ internal fun SyncPage(
         AlertDialog(
             onDismissRequest = { sendScopeFor = null },
             title = { Text(stringResource(R.string.sync_send_scope_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf(true to R.string.sync_send_all, false to R.string.sync_send_names_only).forEach { (all, title) ->
-                        val sub = if (all) R.string.sync_send_all_sub else R.string.sync_send_names_only_sub
-                        ListItem(
-                            headlineContent = { Text(stringResource(title)) },
-                            supportingContent = { Text(stringResource(sub)) },
-                            leadingContent = {
-                                androidx.compose.material3.RadioButton(
-                                    selected = sendIncludeMoments == all,
-                                    onClick = { sendIncludeMoments = all },
-                                )
-                            },
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                            modifier = Modifier.clickable { sendIncludeMoments = all },
-                        )
-                    }
-                }
-            },
+            text = { SendScopeContent(sendIncludeMoments) { sendIncludeMoments = it } },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -358,6 +330,42 @@ private fun SyncRow(icon: ImageVector, title: String, summary: String, onClick: 
 
 /** QR-Code als schwarze Quadrate auf Weiß */
 @Composable
+/** Inhalt des QR-Dialogs — auch direkt für die Anleitungs-Bilder nutzbar (ohne Dialogfenster) */
+@Composable
+internal fun QrDialogContent(pairing: Pairing, relationshipId: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(stringResource(R.string.sync_qr_text))
+        QrCode(
+            Pairing.qrText(pairing, relationshipId),
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp)),
+        )
+    }
+}
+
+/** Inhalt des Sende-Dialogs — auch direkt für die Anleitungs-Bilder nutzbar (ohne Dialogfenster) */
+@Composable
+internal fun SendScopeContent(includeMoments: Boolean, onSelect: (Boolean) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        listOf(true to R.string.sync_send_all, false to R.string.sync_send_names_only).forEach { (all, title) ->
+            val sub = if (all) R.string.sync_send_all_sub else R.string.sync_send_names_only_sub
+            ListItem(
+                headlineContent = { Text(stringResource(title)) },
+                supportingContent = { Text(stringResource(sub)) },
+                leadingContent = {
+                    androidx.compose.material3.RadioButton(
+                        selected = includeMoments == all,
+                        onClick = { onSelect(all) },
+                    )
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier.clickable { onSelect(all) },
+            )
+        }
+    }
+}
+
 internal fun QrCode(text: String, modifier: Modifier = Modifier) {
     val matrix = remember(text) {
         QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, 0, 0, mapOf(EncodeHintType.MARGIN to 2))

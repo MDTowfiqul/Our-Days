@@ -33,6 +33,38 @@ object ChatStore {
         return merged
     }
 
+    /**
+     * Applies edit/delete events to history: an edit replaces the target's text
+     * (kept in place, marked edited), a delete removes the target — and its
+     * media file, if it had one. Events are never stored as messages.
+     * Returns the updated history.
+     */
+    fun applyEvents(context: Context, events: List<ChatMessage>): List<ChatMessage> {
+        if (events.isEmpty()) return load(context)
+        var stored = load(context)
+        for (event in events) {
+            val target = event.targetId ?: continue
+            when (event.kind) {
+                ChatMessage.KIND_EDIT -> {
+                    stored = stored.map {
+                        if (it.id == target && it.kind == ChatMessage.KIND_TEXT) {
+                            it.copy(text = event.text, edited = true)
+                        } else it
+                    }
+                }
+                ChatMessage.KIND_DELETE -> {
+                    val victim = stored.firstOrNull { it.id == target }
+                    if (victim?.mediaLocal != null) {
+                        runCatching { mediaFile(context, victim.mediaLocal).delete() }
+                    }
+                    stored = stored.filterNot { it.id == target }
+                }
+            }
+        }
+        save(context, stored)
+        return stored
+    }
+
     fun clear(context: Context) {
         file(context).delete()
         File(context.filesDir, MEDIA_DIR).deleteRecursively()

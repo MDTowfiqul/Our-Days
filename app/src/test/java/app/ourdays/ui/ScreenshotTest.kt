@@ -187,29 +187,10 @@ class ScreenshotTest {
         }
     }
 
-    // Einzelbilder der Intro-Animation, um zu prüfen, dass die Herzen wirklich
-    // von außen hereinlaufen und erst beim Treffen das Logo bilden.
-    private fun introShot(name: String, advanceMs: Long) {
-        compose.mainClock.autoAdvance = false
-        compose.setContent { LoveTheme { IntroScreen(onContinue = {}) } }
-        compose.mainClock.advanceTimeBy(advanceMs)
-        compose.waitForIdle()
-        val bitmap = compose.activity.window.decorView.drawToBitmap()
-        val dir = File("build/screenshots/en").apply { mkdirs() }
-        File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-    }
-
+    // Das Intro ist ein Video — hier nur prüfen, dass der Bildschirm ohne
+    // Absturz aufgebaut wird. Das Video selbst wird als MP4 geprüft.
     @Test
-    fun introFrameStart() = introShot("intro_frame_start", 0)
-
-    @Test
-    fun introFrameMid() = introShot("intro_frame_mid", 400)
-
-    @Test
-    fun introFrameMet() = introShot("intro_frame_met", 1100)
-
-    @Test
-    fun introFrameText() = introShot("intro_frame_text", 1800)
+    fun introVideo() = shot("intro_video") { IntroScreen(onContinue = {}) }
 
     @Test
     fun privacy() = shot("privacy") {

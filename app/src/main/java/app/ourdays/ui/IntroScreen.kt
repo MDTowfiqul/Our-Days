@@ -1,83 +1,53 @@
 package app.ourdays.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
+import android.content.Context
+import android.util.Base64
+import android.view.View
+import android.widget.VideoView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
+// Das Intro ist jetzt ein echtes Video (Full HD, 60 fps, 3,2 s), kein
+// gezeichnetes Compose-Intro mehr. Das Video liegt als Base64-Text in den
+// Assets (push kann keine Binärdateien), wird beim ersten Start in den Cache
+// entpackt und dann mit dem eingebauten VideoView abgespielt — keine neue
+// Bibliothek nötig.
 @Composable
 fun IntroScreen(onContinue: () -> Unit) {
-    var started by remember { mutableStateOf(false) }
-    var met by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        started = true
-        delay(1000)
-        met = true
-        // Kurz stehen lassen, dann von selbst weiter — kein Knopf nötig, es geht automatisch weiter
-        delay(1200)
-        onContinue()
+    val context = LocalContext.current
+    var videoFile by remember { mutableStateOf<File?>(null) }
+    val done = remember { AtomicBoolean(false) }
+    val finish: () -> Unit = {
+        if (done.compareAndSet(false, true)) {
+            onContinue()
+        }
     }
-    // Die beiden Herzen laufen von links und rechts aufeinander zu und bilden das Logo:
-    // Wenn sie sich treffen, erscheint der abgerundete Kasten dahinter — wie das App-Symbol.
-    val whiteX by animateDpAsState(
-        if (started) (-16).dp else (-440).dp,
-        tween(1000, easing = FastOutSlowInEasing),
-        label = "whiteHeart",
-    )
-    val redX by animateDpAsState(
-        if (started) 16.dp else 440.dp,
-        tween(1000, easing = FastOutSlowInEasing),
-        label = "redHeart",
-    )
-    // Kleiner Aufprall, wenn die Herzen sich treffen
-    val pop by animateFloatAsState(
-        if (met) 1f else 0.9f,
-        spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-        label = "logoPop",
-    )
-    // Der Logokasten blendet sich erst ein, wenn die Herzen sich getroffen haben
-    val logoAlpha by animateFloatAsState(
-        if (met) 1f else 0f,
-        tween(400),
-        label = "logoAlpha",
-    )
+    LaunchedEffect(Unit) {
+        videoFile = withContext(Dispatchers.IO) { introVideoFile(context) }
+    }
+    // Sicherheitsnetz: Das Intro darf nie länger als 5 Sekunden dauern,
+    // auch wenn das Video nicht lädt oder nicht abspielt.
+    LaunchedEffect(Unit) {
+        delay(5000)
+        finish()
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -91,93 +61,42 @@ fun IntroScreen(onContinue: () -> Unit) {
                 )
             )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(140.dp)
-                    .scale(pop),
-                contentAlignment = Alignment.Center,
-            ) {
-                // Der Logokasten: erscheint erst, wenn die Herzen sich getroffen haben
-                Box(
-                    modifier = Modifier
-                        .size(140.dp)
-                        .graphicsLayer { alpha = logoAlpha }
-                        .background(
-                            Brush.linearGradient(
-                                listOf(Color(0xFFA92A40), Color(0xFF6E1626))
-                            ),
-                            RoundedCornerShape(32.dp),
-                        ),
-                )
-                Icon(
-                    Icons.Rounded.Favorite,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier
-                        .offset(x = whiteX)
-                        .size(84.dp),
-                )
-                Icon(
-                    Icons.Rounded.Favorite,
-                    contentDescription = null,
-                    tint = Color(0xFFFF5A78),
-                    modifier = Modifier
-                        .offset(x = redX)
-                        .size(84.dp),
-                )
-            }
-            Spacer(modifier = Modifier.height(28.dp))
-            AnimatedVisibility(
-                visible = met,
-                enter = fadeIn(animationSpec = tween(700, delayMillis = 100)) +
-                    slideInVertically(
-                        initialOffsetY = { 60 },
-                        animationSpec = tween(700, delayMillis = 100)
-                    )
-            ) {
-                Text(
-                    text = "Our Days",
-                    color = Color.White,
-                    fontSize = 34.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            AnimatedVisibility(
-                visible = met,
-                enter = fadeIn(animationSpec = tween(700, delayMillis = 350)) +
-                    slideInVertically(
-                        initialOffsetY = { 60 },
-                        animationSpec = tween(700, delayMillis = 350)
-                    )
-            ) {
-                Text(
-                    text = "Count every day that matters.",
-                    color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 18.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-        AnimatedVisibility(
-            visible = met,
-            enter = fadeIn(animationSpec = tween(700, delayMillis = 850)),
-            modifier = Modifier.align(Alignment.BottomCenter)
-        ) {
-            Text(
-                text = "Your story stays yours.",
-                color = Color.White.copy(alpha = 0.6f),
-                fontSize = 13.sp,
-                modifier = Modifier.padding(bottom = 48.dp)
+        val file = videoFile
+        if (file != null) {
+            AndroidView(
+                factory = { ctx ->
+                    try {
+                        VideoView(ctx).apply {
+                            setVideoPath(file.absolutePath)
+                            setOnPreparedListener { it.start() }
+                            setOnCompletionListener { finish() }
+                            setOnErrorListener { _, _, _ ->
+                                finish()
+                                true
+                            }
+                        }
+                    } catch (_: Exception) {
+                        View(ctx)
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
             )
         }
+    }
+}
+
+// Entpackt das Intro-Video aus den Assets in den Cache. Schreibt die Datei
+// nur neu, wenn sie fehlt oder eine andere Größe hat.
+private fun introVideoFile(context: Context): File? {
+    return try {
+        val out = File(context.cacheDir, "intro.mp4")
+        val encoded = context.assets.open("intro/intro.mp4.b64").readBytes()
+        val bytes = Base64.decode(encoded, Base64.DEFAULT)
+        if (!out.exists() || out.length() != bytes.size.toLong()) {
+            out.writeBytes(bytes)
+        }
+        out
+    } catch (_: Exception) {
+        null
     }
 }

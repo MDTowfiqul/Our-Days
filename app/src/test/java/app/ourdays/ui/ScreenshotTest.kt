@@ -56,6 +56,23 @@ class ScreenshotTest {
         HomeScreen(long, today, {}, {})
     }
 
+    // Drei lange Namen: sie stehen untereinander — Name, Herz, Name, Herz, Name
+    @Test
+    fun homeThreeLongNames() = shot("home_three_long_names") {
+        val three = settings.copy(
+            people = listOf(
+                app.ourdays.data.Person("a", "Towfiqul"),
+                app.ourdays.data.Person("b", "MD. Tariqul Islam"),
+                app.ourdays.data.Person("c", "MD. Zahidul Islam"),
+            ),
+            relationships = listOf(
+                app.ourdays.data.Relationship("r1", listOf("a", "b", "c"), LocalDate.of(1999, 5, 11)),
+            ),
+            selected = "r1",
+        )
+        HomeScreen(three, today, {}, {})
+    }
+
     @Test
     fun home() = shot("home") { HomeScreen(settings, today, {}, {}) }
 

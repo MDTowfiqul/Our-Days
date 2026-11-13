@@ -128,6 +128,7 @@ fun LiveScreen(settings: LoveSettings, active: Boolean, now: LocalDateTime? = nu
                 .fillMaxSize()
                 .blur(28.dp)
                 .alpha(0.55f),
+            photoPath = settings.photoFor(settings.relationship.id),
         )
         Box(
             Modifier

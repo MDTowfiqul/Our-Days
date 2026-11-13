@@ -86,7 +86,8 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
     fun setShowChangelog(on: Boolean) = viewModelScope.launch { repo.setShowChangelog(on) }
 
     fun setNewestFirst(on: Boolean) = viewModelScope.launch { repo.setNewestFirst(on) }
-    fun setPhoto(uri: Uri) = viewModelScope.launch { repo.setPhoto(uri) }
+    fun setPhoto(uri: Uri, relationshipId: String? = null) = viewModelScope.launch { repo.setPhoto(uri, relationshipId) }
+    fun removePhoto(relationshipId: String) = viewModelScope.launch { repo.removePhoto(relationshipId) }
     fun setPreset(index: Int) = viewModelScope.launch { repo.setPreset(index) }
     fun resetPhoto() = viewModelScope.launch { repo.resetPhoto() }
     fun setPhotoFrame(x: Float, y: Float, zoom: Float) = viewModelScope.launch { repo.setPhotoFrame(x, y, zoom) }

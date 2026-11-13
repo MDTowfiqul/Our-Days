@@ -47,7 +47,14 @@ object ShareCard {
         val h = HEIGHT.toFloat()
 
         // Foto (mit dem Ausschnitt aus der App) oder Farbverlauf
-        WidgetPhoto.render(context, s, w, h, maxSide = HEIGHT.toFloat())?.let {
+        WidgetPhoto.render(
+            context,
+            s,
+            w,
+            h,
+            maxSide = HEIGHT.toFloat(),
+            photoPath = s.photoFor(if (s.showAll) null else s.relationship.id),
+        )?.let {
             canvas.drawBitmap(it, null, RectF(0f, 0f, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
         }
         // Verlauf von unten ins Weinrot, damit die Schrift auf jedem Foto lesbar ist
@@ -180,7 +187,14 @@ object ShareCard {
         val canvas = Canvas(out)
         val w = WIDTH.toFloat()
         val h = HEIGHT.toFloat()
-        (background ?: WidgetPhoto.render(context, s, w, h, maxSide = h))?.let {
+        (background ?: WidgetPhoto.render(
+            context,
+            s,
+            w,
+            h,
+            maxSide = h,
+            photoPath = s.photoFor(if (s.showAll) null else s.relationship.id),
+        ))?.let {
             canvas.drawBitmap(it, null, RectF(0f, 0f, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
         }
         shade(canvas, w, h)

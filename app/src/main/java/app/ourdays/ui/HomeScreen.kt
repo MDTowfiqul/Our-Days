@@ -361,7 +361,11 @@ internal fun Hero(settings: LoveSettings, onSelect: (String) -> Unit) {
             .fillMaxWidth()
             .height(heroHeight()),
     ) {
-        HeroPhoto(settings, Modifier.fillMaxSize())
+        HeroPhoto(
+            settings,
+            Modifier.fillMaxSize(),
+            photoPath = settings.photoFor(if (settings.showAll) null else settings.relationship.id),
+        )
         Box(
             Modifier
                 .fillMaxSize()
@@ -382,8 +386,8 @@ fun NamesOverlay(settings: LoveSettings, modifier: Modifier = Modifier) {
     )
 }
 
-/** Namen mit schlagendem Herz dazwischen, mittig; passen zwei Namen nicht in eine Zeile,
- *  stehen sie untereinander — Name, Herz, Name — alles mittig. */
+/** Namen mit schlagendem Herz dazwischen, mittig; passen die Namen nicht in eine Zeile,
+ *  stehen sie untereinander — Name, Herz, Name, Herz, Name — alles mittig. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NamesRow(names: List<String>, style: TextStyle, heart: Dp, modifier: Modifier = Modifier) {
@@ -396,15 +400,16 @@ fun NamesRow(names: List<String>, style: TextStyle, heart: Dp, modifier: Modifie
             names.sumOf { measurer.measure(AnnotatedString(it), style).size.width.toDouble() } +
                 (names.size - 1).coerceAtLeast(0) * heartPx
         }
-        val stacked = names.size == 2 && oneLinePx > availablePx
+        val stacked = oneLinePx > availablePx
         if (stacked) {
             Column(
                 Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(names[0], style = style, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                BeatingHeart(Modifier.padding(vertical = 2.dp), size = heart)
-                Text(names[1], style = style, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                names.forEachIndexed { i, name ->
+                    if (i > 0) BeatingHeart(Modifier.padding(vertical = 2.dp), size = heart)
+                    Text(name, style = style, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         } else {
             FlowRow(

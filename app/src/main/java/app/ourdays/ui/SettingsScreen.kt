@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Crop
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Collections
@@ -176,6 +177,10 @@ fun SettingsScreen(
     notificationsAllowed: Boolean,
     onBack: () -> Unit = {},
     onPickPhoto: () -> Unit = {},
+    /** Foto für eine bestimmte Beziehung wählen (null = für alle zusammen) */
+    onPickPhotoFor: (String?) -> Unit = {},
+    /** Eigenes Foto einer Beziehung entfernen (danach gilt wieder das gemeinsame Foto) */
+    onRemovePhoto: (String) -> Unit = {},
     onPreset: (Int) -> Unit = {},
     onResetPhoto: () -> Unit = {},
     onNotifications: (Boolean) -> Unit = {},
@@ -320,9 +325,9 @@ fun SettingsScreen(
                         }
                     }
                     SettingsPage.Photo -> Section(null) {
-                        Row(Icons.Rounded.AddPhotoAlternate, stringResource(R.string.pick_own_photo), null, onClick = onPickPhoto)
+                        Row(Icons.Rounded.AddPhotoAlternate, stringResource(R.string.pick_own_photo), null) { dialog = "photo_for" }
                         Divider()
-                        if (settings.photoPath != null) {
+                        if (settings.photoPath != null || settings.photos.isNotEmpty()) {
                             Row(Icons.Rounded.Crop, stringResource(R.string.adjust_crop), null, onClick = onAdjustPhoto)
                             Divider()
                         }
@@ -693,6 +698,51 @@ fun SettingsScreen(
             onPreset(it)
             dialog = null
         }
+        // Foto wählen: für alle zusammen oder für eine einzelne Beziehung
+        "photo_for" -> AlertDialog(
+            onDismissRequest = { dialog = null },
+            icon = { Icon(Icons.Rounded.AddPhotoAlternate, null) },
+            title = { Text(stringResource(R.string.photo_for_title)) },
+            text = {
+                Column {
+                    PhotoForRow(
+                        name = stringResource(R.string.photo_for_all),
+                        subtitle = stringResource(R.string.photo_for_shared),
+                        hasOwnPhoto = false,
+                        onPick = {
+                            dialog = null
+                            onPickPhotoFor(null)
+                        },
+                        onRemove = null,
+                    )
+                    Divider()
+                    settings.relationships.forEach { r ->
+                        val own = settings.photos.containsKey(r.id)
+                        PhotoForRow(
+                            name = settings.namesOf(r),
+                            subtitle = stringResource(
+                                if (own) R.string.photo_for_own else R.string.photo_for_shared,
+                            ),
+                            hasOwnPhoto = own,
+                            onPick = {
+                                dialog = null
+                                onPickPhotoFor(r.id)
+                            },
+                            onRemove = if (own) {
+                                {
+                                    onRemovePhoto(r.id)
+                                    dialog = null
+                                }
+                            } else {
+                                null
+                            },
+                        )
+                        Divider()
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { dialog = null }) { Text(stringResource(R.string.close)) } },
+        )
         "slides" -> SlidesDialog(
             slides = settings.slides,
             onAdd = onAddSlides,
@@ -897,6 +947,33 @@ private fun Row(icon: ImageVector, title: String, value: String?, onClick: () ->
         leadingContent = { Icon(icon, null) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(onClick = onClick),
+    )
+}
+
+/** Zeile im „Foto für“-Dialog: tippen wählt ein Foto, das Kreuz entfernt ein eigenes Foto */
+@Composable
+private fun PhotoForRow(
+    name: String,
+    subtitle: String,
+    hasOwnPhoto: Boolean,
+    onPick: () -> Unit,
+    onRemove: (() -> Unit)?,
+) {
+    ListItem(
+        headlineContent = { Text(name) },
+        supportingContent = { Text(subtitle, color = MaterialTheme.colorScheme.primary) },
+        leadingContent = { Icon(Icons.Rounded.AddPhotoAlternate, null) },
+        trailingContent = if (hasOwnPhoto && onRemove != null) {
+            {
+                IconButton(onClick = onRemove) {
+                    Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.remove))
+                }
+            }
+        } else {
+            null
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier.clickable(onClick = onPick),
     )
 }
 

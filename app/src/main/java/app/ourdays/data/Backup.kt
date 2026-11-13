@@ -59,6 +59,10 @@ object BackupCodec {
         .put("widgetRelationship", s.widgetRelationship)
         .put("discreet", s.discreet)
         .put("photo", s.photoPath?.let { File(it).name } ?: JSONObject.NULL)
+        .put(
+            "photos",
+            JSONObject().apply { s.photos.forEach { (id, path) -> put(id, File(path).name) } },
+        )
         .put("preset", s.presetIndex)
         .put("focusX", s.focusX.toDouble())
         .put("focusY", s.focusY.toDouble())
@@ -114,6 +118,12 @@ object BackupCodec {
             .takeIf { id -> id == ALL_RELATIONSHIPS || cleanRelationships.any { it.id == id } }
             ?: cleanRelationships.first().id
         fun fileName(value: String?) = value?.takeIf { Backup.isSafeName(it) }
+        val photos = o.optJSONObject("photos")?.let { obj ->
+            obj.keys().asSequence().mapNotNull { id ->
+                val name = obj.optString(id).takeIf { Backup.isSafeName(it) } ?: return@mapNotNull null
+                id to name
+            }.toMap()
+        }.orEmpty().filterKeys { id -> cleanRelationships.any { it.id == id } }
         val slides = o.optJSONArray("slides")
         return LoveSettings(
             people = cleanPeople,
@@ -122,6 +132,7 @@ object BackupCodec {
             widgetRelationship = o.optString("widgetRelationship").takeIf { id -> cleanRelationships.any { it.id == id } }.orEmpty(),
             discreet = o.optBoolean("discreet", false),
             photoPath = if (o.isNull("photo")) null else fileName(o.optString("photo")),
+            photos = photos,
             presetIndex = o.optInt("preset", d.presetIndex),
             notificationsEnabled = o.optBoolean("notifications", d.notificationsEnabled),
             notifyHour = o.optInt("notifyHour", d.notifyHour).coerceIn(0, 23),
@@ -146,6 +157,21 @@ object BackupCodec {
                 .distinct()
                 .take(MAX_SLIDES),
         )
+    }
+}
+
+/** Foto je Beziehung als JSON-Text (Beziehungs-ID → Pfad im App-Speicher) */
+object PhotoMapCodec {
+    fun encode(photos: Map<String, String>): String =
+        JSONObject().apply { photos.forEach { (id, path) -> put(id, path) } }.toString()
+
+    fun decode(json: String?): Map<String, String> {
+        if (json.isNullOrBlank()) return emptyMap()
+        val obj = runCatching { JSONObject(json) }.getOrNull() ?: return emptyMap()
+        return obj.keys().asSequence().mapNotNull { id ->
+            val path = obj.optString(id).ifBlank { null } ?: return@mapNotNull null
+            id to path
+        }.toMap()
     }
 }
 

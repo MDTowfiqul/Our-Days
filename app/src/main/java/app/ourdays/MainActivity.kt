@@ -176,20 +176,25 @@ class MainActivity : ComponentActivity() {
                     if (on && !allowed) askPermission()
                 }
 
-                // Nach der Auswahl direkt den Bildausschnitt anpassen lassen
+                // Nach der Auswahl direkt den Bildausschnitt anpassen lassen.
+                // photoFor = Beziehung, für die das Foto gilt (null = gemeinsames Foto für alle)
+                var photoFor by remember { mutableStateOf<String?>(null) }
                 val photoPicker = rememberLauncherForActivityResult(
                     ActivityResultContracts.PickVisualMedia(),
                 ) { uri ->
                     if (uri != null) {
                         scope.launch {
-                            vm.setPhoto(uri).join()
+                            vm.setPhoto(uri, photoFor).join()
                             editingPhoto = true
                         }
                     }
                 }
-                fun pickPhoto() = photoPicker.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                )
+                fun pickPhoto(relationshipId: String? = null) {
+                    photoFor = relationshipId
+                    photoPicker.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                }
 
                 // Weitere Fotos für die Diashow im Titelbild
                 val slidePicker = rememberLauncherForActivityResult(
@@ -325,6 +330,7 @@ class MainActivity : ComponentActivity() {
                                         vm.setPhotoFrame(x, y, z)
                                         editingPhoto = false
                                     },
+                                    photoPath = s.photoFor(if (s.showAll) null else s.relationship.id),
                                 )
                                 "cloud-restore" -> CloudRestoreScreen(
                                     onBack = { showCloudRestore = false },
@@ -372,6 +378,8 @@ class MainActivity : ComponentActivity() {
                                     notificationsAllowed = allowed,
                                     onBack = { showSettings = false },
                                     onPickPhoto = ::pickPhoto,
+                                    onPickPhotoFor = ::pickPhoto,
+                                    onRemovePhoto = vm::removePhoto,
                                     onPreset = vm::setPreset,
                                     onResetPhoto = vm::resetPhoto,
                                     onNotifications = ::setNotifications,

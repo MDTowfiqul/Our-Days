@@ -76,11 +76,13 @@ fun CouplePhoto(
     focusY: Float = settings.focusY,
     zoom: Float = settings.zoom,
     onImageSize: (Size) -> Unit = {},
+    /** Gezeigtes Foto: ohne Angabe das gemeinsame Foto */
+    photoPath: String? = settings.photoPath,
 ) {
     Box(modifier.clipToBounds()) {
-        if (settings.photoPath != null) {
+        if (photoPath != null) {
             AsyncImage(
-                model = File(settings.photoPath),
+                model = File(photoPath),
                 contentDescription = stringResource(R.string.your_photo),
                 contentScale = ContentScale.Crop,
                 alignment = BiasAlignment(focusX, focusY),
@@ -107,7 +109,12 @@ private const val SLIDE_MS = 6_000L
  * im sanften Wechsel. Ohne weitere Fotos steht einfach euer Foto da.
  */
 @Composable
-fun HeroPhoto(settings: LoveSettings, modifier: Modifier = Modifier) {
+fun HeroPhoto(
+    settings: LoveSettings,
+    modifier: Modifier = Modifier,
+    /** Gezeigtes Foto: ohne Angabe das gemeinsame Foto */
+    photoPath: String? = settings.photoPath,
+) {
     val slides = settings.slides
     val count = 1 + slides.size
     var index by remember(slides) { mutableIntStateOf(0) }
@@ -128,7 +135,7 @@ fun HeroPhoto(settings: LoveSettings, modifier: Modifier = Modifier) {
         // Während des Überblendens kann die Liste schon kürzer geworden sein
         val slide = slides.getOrNull(i - 1)
         if (slide == null) {
-            CouplePhoto(settings, Modifier.fillMaxSize())
+            CouplePhoto(settings, Modifier.fillMaxSize(), photoPath = photoPath)
         } else {
             AsyncImage(
                 model = File(slide),
@@ -174,10 +181,12 @@ fun PhotoEditorScreen(
     onPickOther: () -> Unit,
     onCancel: () -> Unit,
     onSave: (Float, Float, Float) -> Unit,
+    /** Bearbeitetes Foto: ohne Angabe das gemeinsame Foto */
+    photoPath: String? = settings.photoPath,
 ) {
-    var fx by remember(settings.photoPath) { mutableFloatStateOf(settings.focusX) }
-    var fy by remember(settings.photoPath) { mutableFloatStateOf(settings.focusY) }
-    var zoom by remember(settings.photoPath) { mutableFloatStateOf(settings.zoom) }
+    var fx by remember(photoPath) { mutableFloatStateOf(settings.focusX) }
+    var fy by remember(photoPath) { mutableFloatStateOf(settings.focusY) }
+    var zoom by remember(photoPath) { mutableFloatStateOf(settings.zoom) }
     var frame by remember { mutableStateOf(IntSize.Zero) }
     var image by remember { mutableStateOf(Size.Unspecified) }
 
@@ -191,7 +200,7 @@ fun PhotoEditorScreen(
                 .fillMaxWidth()
                 .height(heroHeight())
                 .onSizeChanged { frame = it }
-                .pointerInput(settings.photoPath) {
+                .pointerInput(photoPath) {
                     detectTransformGestures { _, pan, gestureZoom, _ ->
                         zoom = (zoom * gestureZoom).coerceIn(1f, 4f)
                         if (image.isSpecified() && frame != IntSize.Zero) {
@@ -205,7 +214,7 @@ fun PhotoEditorScreen(
                     }
                 },
         ) {
-            CouplePhoto(settings, Modifier.fillMaxSize(), fx, fy, zoom, onImageSize = { image = it })
+            CouplePhoto(settings, Modifier.fillMaxSize(), fx, fy, zoom, onImageSize = { image = it }, photoPath = photoPath)
             Box(
                 Modifier
                     .fillMaxSize()

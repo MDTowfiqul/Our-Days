@@ -412,7 +412,9 @@ fun NamesRow(names: List<String>, style: TextStyle, heart: Dp, modifier: Modifie
             }.maxOrNull() ?: 0.0
         }
         if (names.size >= 4) {
-            val scale = (availablePx / gridRowPx.toFloat()).coerceIn(0.5f, 1f)
+            // 0,97 lässt Luft für kleine Unterschiede zwischen Messen und Zeichnen;
+            // die Untergrenze 0,35 reicht auch für drei lange Namen in einer Reihe
+            val scale = (availablePx * 0.97f / gridRowPx.toFloat()).coerceIn(0.35f, 1f)
             val rowStyle = style.copy(fontSize = style.fontSize * scale)
             val rowHeart = heart * scale
             Column(

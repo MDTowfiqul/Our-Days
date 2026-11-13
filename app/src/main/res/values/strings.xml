@@ -321,8 +321,6 @@
     <string name="sync_show_qr_again">Pair another phone</string>
     <string name="sync_show_qr_again_summary">Shows the QR code again, for example for a new phone</string>
     <string name="sync_not_paired_yet">Not paired yet</string>
-    <string name="sync_how_title">How sync works</string>
-    <string name="sync_how_text">Each connection has its own secret key. Pick the connection above, then pair it once — one phone shows its QR code, the other scans it.\n• A sync file carries only that one connection.\n• You choose what it carries: 1) Names &amp; date only — the other person sees only your names and the date you got together. 2) Names, date &amp; moments — they also receive all your moments, with photos.\n• The sender’s names and dates win; only new moments are added.\n• Open the file on the other phone to receive the data. Pairing alone sends nothing.</string>
     <string name="sync_share_which">Which connection do you want to share?</string>
     <string name="sync_send_scope_title">What do you want to share?</string>
     <string name="sync_send_names_only">Names &amp; date only</string>
@@ -344,7 +342,13 @@
     <string name="guide_step4_title">Send a sync file and choose what to share</string>
     <string name="guide_step4_text">Tap Send sync and choose: Names &amp; date only, or Names, date &amp; moments. A sync file carries only this one connection.</string>
     <string name="guide_step5_title">Open it on the other phone</string>
-    <string name="guide_step5_text">Send the file, for example through a messenger, and open it on the other phone. The names, dates and moments appear on the home screen.</string>
+    <string name="guide_step5_text">On the other phone, tap Open sync file — the row marked in red in the picture — and choose the file you received. If tapping the file in your messenger already opened Our Days, you can skip this step.</string>
+    <string name="guide_step6_title">Done — you’re synced!</string>
+    <string name="guide_step6_text">Your names, date and moments now appear on the home screen, on both phones. That’s the whole setup — enjoy counting your days together.</string>
+    <string name="guide_help_title">Still stuck?</string>
+    <string name="guide_help_text">Message us and we’ll help you through it.</string>
+    <string name="guide_help_telegram">Telegram: t.me/Our_Family_bd</string>
+    <string name="guide_help_facebook">Facebook: facebook.com/FBOurFamily</string>
     <string name="guide_footer">Pairing alone sends nothing. A sync file carries only one connection.</string>
     <string name="sync_unpair_question">Unpair?</string>
     <string name="sync_unpair_text">This phone can no longer open sync files from the other phones. Your data stays. You can pair again any time.</string>

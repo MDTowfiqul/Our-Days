@@ -4,6 +4,7 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,15 +37,18 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import ourdays.app.R
 
-/** Anleitung zum Koppeln und Abgleichen — fünf Schritte mit echten Bildschirmfotos,
+/** Anleitung zum Koppeln und Abgleichen — sechs Schritte mit echten Bildschirmfotos,
  *  keine gezeichneten Handy-Attrappen. Die Bilder liegen als Base64-Text in
  *  assets/guide (sie kommen aus den ScreenshotTests: guide_qr, guide_sync_unpaired,
- *  guide_sync_paired, guide_send_scope, home). */
+ *  guide_sync_paired, guide_send_scope; Schritt 5 ist das gepaarte Bild mit rot
+ *  markierter „Open sync file"-Zeile, Schritt 6 der fertige Startbildschirm). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GuideScreen(onBack: () -> Unit) {
@@ -96,6 +102,13 @@ fun GuideScreen(onBack: () -> Unit) {
                 text = stringResource(R.string.guide_step5_text),
                 imageName = "step5_open",
             )
+            GuideStep(
+                number = 6,
+                title = stringResource(R.string.guide_step6_title),
+                text = stringResource(R.string.guide_step6_text),
+                imageName = "step6_done",
+            )
+            HelpCard()
             Text(
                 stringResource(R.string.guide_footer),
                 style = MaterialTheme.typography.bodyMedium,
@@ -138,6 +151,40 @@ private fun GuideStep(number: Int, title: String, text: String, imageName: Strin
                         .clip(RoundedCornerShape(16.dp)),
                 )
             }
+        }
+    }
+}
+
+/** Wer trotzdem nicht weiterkommt: Telegram und Facebook von Our Family — antippen öffnet sie. */
+@Composable
+private fun HelpCard() {
+    val uriHandler = LocalUriHandler.current
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.guide_help_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.guide_help_text),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                stringResource(R.string.guide_help_telegram),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                textDecoration = TextDecoration.Underline,
+                modifier = Modifier.clickable { uriHandler.openUri("https://t.me/Our_Family_bd") },
+            )
+            Text(
+                stringResource(R.string.guide_help_facebook),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                textDecoration = TextDecoration.Underline,
+                modifier = Modifier.clickable { uriHandler.openUri("https://www.facebook.com/FBOurFamily") },
+            )
         }
     }
 }

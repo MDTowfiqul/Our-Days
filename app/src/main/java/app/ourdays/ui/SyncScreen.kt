@@ -1,5 +1,6 @@
 package app.ourdays.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -105,8 +106,8 @@ internal fun SyncPage(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
     )
 
-    // Anleitung mit echten Bildschirmfotos
-    SyncCard {
+    // Anleitung mit echten Bildschirmfotos — hervorgehoben, damit man sie sofort findet
+    SyncCard(highlight = true) {
         SyncRow(Icons.Rounded.HelpOutline, stringResource(R.string.guide_title), stringResource(R.string.guide_open_summary), onClick = actions.onGuide)
     }
 
@@ -207,19 +208,6 @@ internal fun SyncPage(
         }
     }
 
-    // Kurze Anleitung, wie Abgleich und Abgleich-Datei funktionieren
-    SyncCard {
-        Column(Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.sync_how_title), style = MaterialTheme.typography.titleSmall)
-            Text(
-                stringResource(R.string.sync_how_text),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
-    }
-
     val qrPairing = showQrFor?.let { pairings[it] }
     if (qrPairing != null && showQrFor != null) {
         AlertDialog(
@@ -309,10 +297,14 @@ internal fun PartnerSyncPage(
 private fun day(millis: Long) = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
 
 @Composable
-private fun SyncCard(content: @Composable () -> Unit) {
+private fun SyncCard(highlight: Boolean = false, content: @Composable () -> Unit) {
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.cardColors(
+            containerColor = if (highlight) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        border = if (highlight) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null,
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp),

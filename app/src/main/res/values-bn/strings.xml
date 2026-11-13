@@ -318,8 +318,6 @@
     <string name="sync_show_qr_again">আরেকটা ফোন পেয়ার করো</string>
     <string name="sync_show_qr_again_summary">QR কোড আবার দেখাও, যেমন নতুন ফোনের জন্য</string>
     <string name="sync_not_paired_yet">এখনো জোড়া দেওয়া হয়নি</string>
-    <string name="sync_how_title">সিঙ্ক কীভাবে কাজ করে</string>
-    <string name="sync_how_text">প্রতিটি সম্পর্কের নিজস্ব গোপন চাবি আছে। উপরে সম্পর্কটি বেছে নিন, তারপর একবার জোড়া দিন — একটি ফোন QR কোড দেখাবে, অন্যটি স্ক্যান করবে।\n• একটি সিঙ্ক ফাইলে শুধু সেই একটি সম্পর্ক থাকে।\n• কী যাবে, আপনি বেছে নিন: ১) শুধু নাম ও তারিখ — অন্য ব্যক্তি শুধু তোমাদের নাম ও একসাথে হওয়ার তারিখ দেখবে। ২) নাম, তারিখ ও মুহূর্ত — ছবিসহ সব মুহূর্তও পাবে।\n• পাঠানো ফোনের নাম ও তারিখই প্রযোজ্য হয়; শুধু নতুন মুহূর্ত যোগ হয়।\n• ডেটা পেতে অন্য ফোনে ফাইলটি খুলুন। শুধু জোড়া দিলে কিছুই যায় না।</string>
     <string name="sync_share_which">কোন সংযোগটি শেয়ার করতে চান?</string>
     <string name="sync_send_scope_title">কী শেয়ার করতে চান?</string>
     <string name="sync_send_names_only">শুধু নাম ও তারিখ</string>
@@ -341,7 +339,13 @@
     <string name="guide_step4_title">সিঙ্ক ফাইল পাঠান ও কী শেয়ার করবেন বেছে নিন</string>
     <string name="guide_step4_text">Send sync চাপুন এবং বেছে নিন: শুধু নাম ও তারিখ, নাকি নাম, তারিখ ও মুহূর্তগুলো। একটি সিঙ্ক ফাইলে শুধু এই একটি সংযোগ থাকে।</string>
     <string name="guide_step5_title">অন্য ফোনে ফাইলটি খুলুন</string>
-    <string name="guide_step5_text">ফাইলটি পাঠান, যেমন মেসেঞ্জারে, এবং অন্য ফোনে খুলুন। নাম, তারিখ ও মুহূর্তগুলো হোম স্ক্রিনে চলে আসবে।</string>
+    <string name="guide_step5_text">অন্য ফোনে ছবিতে লাল দাগ দিয়ে চিহ্নিত Open sync file চাপুন এবং পাওয়া ফাইলটি বেছে নিন। মেসেঞ্জারে ফাইল চাপলেই Our Days খুলে গেলে এই ধাপটি লাগবে না।</string>
+    <string name="guide_step6_title">হয়ে গেছে — সিঙ্ক সম্পূর্ণ!</string>
+    <string name="guide_step6_text">তোমাদের নাম, তারিখ ও মুহূর্তগুলো এখন দুই ফোনের হোম স্ক্রিনেই দেখাবে। সেটআপ এখানেই শেষ — একসাথে দিন গোনা উপভোগ করো।</string>
+    <string name="guide_help_title">তবুও আটকে গেলে?</string>
+    <string name="guide_help_text">আমাদের মেসেজ করুন, আমরা সাহায্য করব।</string>
+    <string name="guide_help_telegram">Telegram: t.me/Our_Family_bd</string>
+    <string name="guide_help_facebook">Facebook: facebook.com/FBOurFamily</string>
     <string name="guide_footer">শুধু পেয়ার করলে কিছুই পাঠানো হয় না। একটি সিঙ্ক ফাইলে শুধু একটি সংযোগ থাকে।</string>
     <string name="sync_unpair_question">পেয়ারিং ভাঙবে?</string>
     <string name="sync_unpair_text">এই ফোন আর সিঙ্ক ফাইল খুলতে পারবে না। তোমাদের ডেটা থেকে যাবে। যেকোনো সময় আবার পেয়ার করতে পারবে।</string>

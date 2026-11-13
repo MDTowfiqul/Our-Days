@@ -111,7 +111,10 @@ class MainActivity : ComponentActivity() {
                 var editingMoment by rememberSaveable { mutableStateOf<String?>(null) }
                 var momentSuggestion by rememberSaveable { mutableStateOf<String?>(null) }
                 var onboardingStep by rememberSaveable { mutableIntStateOf(0) }
-                var introDone by rememberSaveable { mutableStateOf(false) }
+                // Absichtlich nur remember, kein rememberSaveable: Der gespeicherte Zustand
+                // würde introDone=true nach einem Prozess-Neustart wiederherstellen und das
+                // Intro danach nie wieder zeigen — es soll bei jedem Kaltstart laufen.
+                var introDone by remember { mutableStateOf(false) }
                 // Ändert sich bei jedem Zurückkehren, damit der Berechtigungsstatus neu gelesen wird
                 var resumeCount by rememberSaveable { mutableIntStateOf(0) }
 
@@ -286,6 +289,14 @@ class MainActivity : ComponentActivity() {
                             },
                             label = "screen",
                         ) { target ->
+                            // Das Intro hängt von nichts ab — es läuft ab dem ersten Frame,
+                            // auch während die Einstellungen noch laden. Vorher hat das
+                            // s==null hier einen leeren Bildschirm gezeigt und das Intro erst
+                            // verspätet (manchmal schon fertig) erscheinen lassen.
+                            if (target == "intro") {
+                                IntroScreen(onContinue = { introDone = true })
+                                return@AnimatedContent
+                            }
                             if (s == null) return@AnimatedContent
                             when (target) {
                                 "licenses" -> LicensesScreen(onBack = { showLicenses = false })
@@ -315,7 +326,6 @@ class MainActivity : ComponentActivity() {
                                         editingPhoto = false
                                     },
                                 )
-                                "intro" -> IntroScreen(onContinue = { introDone = true })
                                 "cloud-restore" -> CloudRestoreScreen(
                                     onBack = { showCloudRestore = false },
                                     onRestored = { showCloudRestore = false },

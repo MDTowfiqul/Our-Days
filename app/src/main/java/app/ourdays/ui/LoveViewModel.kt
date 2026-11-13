@@ -112,7 +112,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
             repo.exportBackup(out)
             true
         } catch (e: Exception) {
-            android.util.Log.w("SinceUs", "Sicherung fehlgeschlagen", e)
+            android.util.Log.w("OurDays", "Sicherung fehlgeschlagen", e)
             false
         }
         Toast.makeText(app, app.getString(if (ok) R.string.backup_saved else R.string.backup_save_failed), Toast.LENGTH_SHORT).show()
@@ -128,7 +128,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
             val state = AutoBackup.enable(app, tree)
             withContext(Dispatchers.IO) { AutoBackup.run(app, state) }
         } catch (e: Exception) {
-            android.util.Log.w("SinceUs", "Automatische Sicherung fehlgeschlagen", e)
+            android.util.Log.w("OurDays", "Automatische Sicherung fehlgeschlagen", e)
             false
         }
         _autoBackup.value = AutoBackup.load(app)
@@ -149,7 +149,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
             input.use { repo.importBackup(it) }
             true
         } catch (e: Exception) {
-            android.util.Log.w("SinceUs", "Wiederherstellung fehlgeschlagen", e)
+            android.util.Log.w("OurDays", "Wiederherstellung fehlgeschlagen", e)
             false
         }
         Toast.makeText(app, app.getString(if (ok) R.string.backup_restored else R.string.backup_restore_failed), Toast.LENGTH_LONG).show()
@@ -211,7 +211,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
                     .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
             )
         } catch (e: Exception) {
-            android.util.Log.w("SinceUs", "Abgleich-Datei fehlgeschlagen", e)
+            android.util.Log.w("OurDays", "Abgleich-Datei fehlgeschlagen", e)
             Toast.makeText(app, app.getString(R.string.sync_send_failed), Toast.LENGTH_LONG).show()
         }
     }
@@ -253,7 +253,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
             _pairings.value = PairingStore.loadAll(app)
             app.getString(R.string.sync_done, result.added, result.changed, result.removed)
         } catch (e: Exception) {
-            android.util.Log.w("SinceUs", "Abgleich fehlgeschlagen", e)
+            android.util.Log.w("OurDays", "Abgleich fehlgeschlagen", e)
             app.getString(R.string.sync_failed)
         }
         Toast.makeText(app, message, Toast.LENGTH_LONG).show()
@@ -292,7 +292,7 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
             }
             UpdateInstaller.downloadAndInstall(app, apk)
         } catch (e: Exception) {
-            android.util.Log.w("SinceUs", "Update fehlgeschlagen", e)
+            android.util.Log.w("OurDays", "Update fehlgeschlagen", e)
             Toast.makeText(app, app.getString(R.string.update_download_failed), Toast.LENGTH_LONG).show()
         }
     }

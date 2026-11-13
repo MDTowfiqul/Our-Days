@@ -4,13 +4,17 @@ import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -33,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -47,8 +52,10 @@ import ourdays.app.R
 /** Anleitung zum Koppeln und Abgleichen — sechs Schritte mit echten Bildschirmfotos,
  *  keine gezeichneten Handy-Attrappen. Die Bilder liegen als Base64-Text in
  *  assets/guide (sie kommen aus den ScreenshotTests: guide_qr, guide_sync_unpaired,
- *  guide_sync_paired, guide_send_scope; Schritt 5 ist das gepaarte Bild mit rot
- *  markierter „Open sync file"-Zeile, Schritt 6 der fertige Startbildschirm). */
+ *  guide_sync_paired, guide_send_scope; Schritt 5 ist dasselbe gepaarte Bild wie
+ *  Schritt 3, der rote Rahmen um die „Open sync file"-Zeile wird zur Laufzeit
+ *  gezeichnet, damit das Bild nicht zweimal in der App liegt; Schritt 6 der
+ *  fertige Startbildschirm). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GuideScreen(onBack: () -> Unit) {
@@ -100,7 +107,8 @@ fun GuideScreen(onBack: () -> Unit) {
                 number = 5,
                 title = stringResource(R.string.guide_step5_title),
                 text = stringResource(R.string.guide_step5_text),
-                imageName = "step5_open",
+                imageName = "step3_paired",
+                markRow = true,
             )
             GuideStep(
                 number = 6,
@@ -123,7 +131,7 @@ fun GuideScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun GuideStep(number: Int, title: String, text: String, imageName: String) {
+private fun GuideStep(number: Int, title: String, text: String, imageName: String, markRow: Boolean = false) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
             Modifier
@@ -142,14 +150,42 @@ private fun GuideStep(number: Int, title: String, text: String, imageName: Strin
             Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             val bitmap = guideBitmap(imageName)
             if (bitmap != null) {
-                Image(
-                    bitmap,
-                    contentDescription = null,
-                    contentScale = ContentScale.FillWidth,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp)),
-                )
+                if (markRow) {
+                    // Dasselbe Bild wie Schritt 3 (1233×1110) — der rote Rahmen um die
+                    // „Open sync file"-Zeile (im Bild bei 24,452 bis 1209,637) wird hier
+                    // gezeichnet, statt das Bild zweimal zu speichern.
+                    BoxWithConstraints(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp)),
+                    ) {
+                        val w = maxWidth
+                        val h = w * 1110f / 1233f
+                        Image(
+                            bitmap,
+                            contentDescription = null,
+                            contentScale = ContentScale.FillWidth,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1233f / 1110f),
+                        )
+                        Box(
+                            Modifier
+                                .offset(x = w * 24f / 1233f, y = h * 452f / 1110f)
+                                .size(width = w * 1185f / 1233f, height = h * 185f / 1110f)
+                                .border(3.dp, Color(0xFFD32F2F), RoundedCornerShape(10.dp)),
+                        )
+                    }
+                } else {
+                    Image(
+                        bitmap,
+                        contentDescription = null,
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp)),
+                    )
+                }
             }
         }
     }

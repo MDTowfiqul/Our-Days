@@ -76,9 +76,7 @@ object ShareCard {
 
 
         // Kleiner Schriftzug oben, mit gezeichnetem Herz statt Emoji
-        val brand = paint(40f, sansMedium, soft)
-        canvas.drawText("Since Us", MARGIN, 120f, brand)
-        drawHeart(canvas, MARGIN + brand.measureText("Since Us") + 12f, 120f - 30f, 34f, pink)
+        brand(canvas)
 
         val together = LoveMath.together(s.startDate, today)
         val future = s.startDate.isAfter(today)
@@ -236,11 +234,11 @@ object ShareCard {
     private val SOFT = 0xE6FFE3E7.toInt()
     private val PINK = 0xFFFF8FA3.toInt()
 
-    /** Schriftzug „Since Us“ mit Herz oben links */
+    /** Schriftzug „Our Days“ mit Herz oben links */
     private fun brand(canvas: Canvas) {
         val brand = paint(40f, sansMedium, SOFT)
-        canvas.drawText("Since Us", MARGIN, 120f, brand)
-        drawHeart(canvas, MARGIN + brand.measureText("Since Us") + 12f, 120f - 30f, 34f, PINK)
+        canvas.drawText("Our Days", MARGIN, 120f, brand)
+        drawHeart(canvas, MARGIN + brand.measureText("Our Days") + 12f, 120f - 30f, 34f, PINK)
     }
 
     /** Text in höchstens [maxLines] Zeilen umbrechen; was nicht passt, wird mit „…“ gekürzt */

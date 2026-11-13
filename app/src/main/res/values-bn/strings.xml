@@ -8,7 +8,6 @@
     <string name="channel_description">মাসপূর্তি, বছরপূর্তি আর গোলগাল সংখ্যার দিন</string>
     <string name="settings">সেটিংস</string>
     <string name="back">পেছনে</string>
-    <string name="names">নাম</string>
     <string name="together_since_date">একসাথে আছো যেদিন থেকে</string>
     <string name="start_time_optional">সময় (ঐচ্ছিক)</string>
     <string name="not_set">ঠিক করা হয়নি</string>
@@ -33,7 +32,6 @@
     <string name="delete_all_question">সব ডেটা মুছে ফেলবে?</string>
     <string name="delete_all_text">নাম, তারিখ, ছবি, মুহূর্ত আর সব সেটিংস এই ফোন থেকে মুছে যাবে। এরপর সেটআপ আবার শুরু হবে। এটা আর ফেরানো যাবে না।</string>
     <string name="ok">ঠিক আছে</string>
-    <string name="your_names">তোমাদের নাম</string>
     <string name="save">সেভ করো</string>
     <string name="cancel">বাতিল</string>
     <string name="remove">সরাও</string>
@@ -192,10 +190,8 @@
     <string name="moment_field_title">কী ঘটেছিল?</string>
     <string name="moment_field_date">তারিখ</string>
     <string name="moment_field_note">নোট (ঐচ্ছিক)</string>
-    <string name="moment_add_photo">ছবি যোগ করো</string>
     <string name="moment_add_photos">ছবিগুলো যোগ করো</string>
     <string name="moment_photos">ছবি</string>
-    <string name="moment_change_photo">ছবি বদলাও</string>
     <string name="moment_remove_photo">ছবি সরাও</string>
     <string name="moment_remind">প্রতি বছর মনে করিয়ে দাও</string>
     <string name="moment_remind_summary">বছরপূর্তিতে নোটিফিকেশন</string>
@@ -522,7 +518,6 @@
     <string name="privacy_full">পুরো নীতিমালা</string>
     <!-- ক্লাউড ব্যাকআপ -->
     <string name="cloud_title">ক্লাউড ব্যাকআপ</string>
-    <string name="cloud_summary">টেলিগ্রাম বা গুগল ড্রাইভে এনক্রিপ্ট করা ব্যাকআপ</string>
     <string name="cloud_intro">তোমার ডেটা আর ছবি আপলোডের আগে তোমার পাসওয়ার্ড দিয়ে এনক্রিপ্ট করা হয়। শুধু তুমিই পড়তে পারবে।</string>
     <string name="cloud_off">বন্ধ</string>
     <string name="cloud_telegram">টেলিগ্রাম</string>

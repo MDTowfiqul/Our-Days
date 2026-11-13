@@ -9,7 +9,6 @@
     <string name="channel_description">Monthly and yearly anniversaries and milestone days</string>
     <string name="settings">Settings</string>
     <string name="back">Back</string>
-    <string name="names">Names</string>
     <string name="together_since_date">Together since</string>
     <string name="start_time_optional">Time (optional)</string>
     <string name="not_set">Not set</string>
@@ -34,7 +33,6 @@
     <string name="delete_all_question">Delete all data?</string>
     <string name="delete_all_text">Names, dates, photos, moments and all settings will be deleted from this device and setup starts again. This cannot be undone.</string>
     <string name="ok">OK</string>
-    <string name="your_names">Your names</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
     <string name="remove">Remove</string>
@@ -193,10 +191,8 @@
     <string name="moment_field_title">What happened?</string>
     <string name="moment_field_date">Date</string>
     <string name="moment_field_note">Note (optional)</string>
-    <string name="moment_add_photo">Add photo</string>
     <string name="moment_add_photos">Add photos</string>
     <string name="moment_photos">Photos</string>
-    <string name="moment_change_photo">Change photo</string>
     <string name="moment_remove_photo">Remove photo</string>
     <string name="moment_remind">Yearly reminder</string>
     <string name="moment_remind_summary">Get a notification on the anniversary</string>
@@ -527,7 +523,6 @@
     <string name="privacy_full">Full policy</string>
     <!-- Cloud-Sicherung -->
     <string name="cloud_title">Cloud backup</string>
-    <string name="cloud_summary">Encrypted backups via Telegram or Google Drive</string>
     <string name="cloud_intro">Your data and photos are encrypted with your password before upload. Only you can read them.</string>
     <string name="cloud_off">Off</string>
     <string name="cloud_telegram">Telegram</string>

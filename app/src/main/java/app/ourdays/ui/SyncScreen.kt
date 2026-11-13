@@ -24,7 +24,6 @@ import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Send
-import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults

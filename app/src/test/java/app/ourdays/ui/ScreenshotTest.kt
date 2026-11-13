@@ -187,10 +187,10 @@ class ScreenshotTest {
         }
     }
 
-    // Das Intro ist ein Video — hier nur prüfen, dass der Bildschirm ohne
-    // Absturz aufgebaut wird. Das Video selbst wird als MP4 geprüft.
+    // Einfacher Willkommens-Bildschirm (wie früher) — nur prüfen, dass er
+    // ohne Absturz aufgebaut wird. Weiter geht es nach 2 Sekunden von selbst.
     @Test
-    fun introVideo() = shot("intro_video") { IntroScreen(onContinue = {}) }
+    fun introWelcome() = shot("intro_welcome") { IntroScreen(onContinue = {}) }
 
     @Test
     fun privacy() = shot("privacy") {

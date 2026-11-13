@@ -1,38 +1,37 @@
 package app.ourdays.ui
 
-import android.content.Context
-import android.util.Base64
-import android.view.View
-import android.widget.VideoView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
-import kotlinx.coroutines.Dispatchers
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
-import java.io.File
+import ourdays.app.R
 import java.util.concurrent.atomic.AtomicBoolean
 
-// Das Intro ist jetzt ein echtes Video (Full HD, 60 fps, 3,2 s), kein
-// gezeichnetes Compose-Intro mehr. Das Video liegt als Base64-Text in den
-// Assets (push kann keine Binärdateien), wird beim ersten Start in den Cache
-// entpackt und dann mit dem eingebauten VideoView abgespielt — keine neue
-// Bibliothek nötig.
+// Einfacher Willkommens-Bildschirm wie früher: App-Symbol, "Welcome" und ein
+// kurzer Satz — kein Video, keine Animation. Nach 2 Sekunden geht es von
+// selbst weiter.
 @Composable
 fun IntroScreen(onContinue: () -> Unit) {
-    val context = LocalContext.current
-    var videoFile by remember { mutableStateOf<File?>(null) }
     val done = remember { AtomicBoolean(false) }
     val finish: () -> Unit = {
         if (done.compareAndSet(false, true)) {
@@ -40,63 +39,43 @@ fun IntroScreen(onContinue: () -> Unit) {
         }
     }
     LaunchedEffect(Unit) {
-        videoFile = withContext(Dispatchers.IO) { introVideoFile(context) }
-    }
-    // Sicherheitsnetz: Das Intro darf nie länger als 5 Sekunden dauern,
-    // auch wenn das Video nicht lädt oder nicht abspielt.
-    LaunchedEffect(Unit) {
-        delay(5000)
+        delay(2000)
         finish()
     }
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF9A2438),
-                        Color(0xFF7A1A2C),
-                        Color(0xFF3D0D16)
-                    )
-                )
-            )
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center,
     ) {
-        val file = videoFile
-        if (file != null) {
-            AndroidView(
-                factory = { ctx ->
-                    try {
-                        VideoView(ctx).apply {
-                            setVideoPath(file.absolutePath)
-                            setOnPreparedListener { it.start() }
-                            setOnCompletionListener { finish() }
-                            setOnErrorListener { _, _, _ ->
-                                finish()
-                                true
-                            }
-                        }
-                    } catch (_: Exception) {
-                        View(ctx)
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                Modifier
+                    .size(160.dp)
+                    .clip(RoundedCornerShape(48.dp))
+                    .background(Presets[0].brush),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_heart),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(96.dp),
+                )
+            }
+            Text(
+                stringResource(R.string.welcome),
+                style = MaterialTheme.typography.displayMedium,
+                modifier = Modifier.padding(top = 40.dp),
             )
+            Text(
+                stringResource(R.string.welcome_sub),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp),
+            )
+            Spacer(Modifier.height(16.dp))
         }
-    }
-}
-
-// Entpackt das Intro-Video aus den Assets in den Cache. Schreibt die Datei
-// nur neu, wenn sie fehlt oder eine andere Größe hat.
-private fun introVideoFile(context: Context): File? {
-    return try {
-        val out = File(context.cacheDir, "intro.mp4")
-        val encoded = context.assets.open("intro/intro.mp4.b64").readBytes()
-        val bytes = Base64.decode(encoded, Base64.DEFAULT)
-        if (!out.exists() || out.length() != bytes.size.toLong()) {
-            out.writeBytes(bytes)
-        }
-        out
-    } catch (_: Exception) {
-        null
     }
 }

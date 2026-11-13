@@ -204,7 +204,7 @@ fun SettingsScreen(
     /** Diashow-Fotos für eine Beziehung hinzufügen (null = gemeinsame Diashow) */
     onAddSlidesFor: (String?) -> Unit = {},
     /** Ein Diashow-Foto entfernen (null = gemeinsame Diashow) */
-    onRemoveSlideFor: (String?, String) -> Unit = {},
+    onRemoveSlideFor: (String?, String) -> Unit = { _, _ -> },
     onExportBackup: () -> Unit = {},
     onImportBackup: () -> Unit = {},
     /** Automatische Sicherung, null = aus */

@@ -365,6 +365,7 @@ internal fun Hero(settings: LoveSettings, onSelect: (String) -> Unit) {
             settings,
             Modifier.fillMaxSize(),
             photoPath = settings.photoFor(if (settings.showAll) null else settings.relationship.id),
+            slides = settings.slidesFor(if (settings.showAll) null else settings.relationship.id),
         )
         Box(
             Modifier
@@ -386,8 +387,10 @@ fun NamesOverlay(settings: LoveSettings, modifier: Modifier = Modifier) {
     )
 }
 
-/** Namen mit schlagendem Herz dazwischen, mittig; passen die Namen nicht in eine Zeile,
- *  stehen sie untereinander — Name, Herz, Name, Herz, Name — alles mittig. */
+/** Namen mit schlagendem Herz dazwischen, mittig. Zwei Namen stehen in einer Zeile oder
+ *  untereinander — Name, Herz, Name. Ab vier Namen liegen sie in Reihen zu dritt,
+ *  kleiner gesetzt, damit sie das Titelbild nicht verdecken:
+ *  A ❤ B ❤ C ❤ / D ❤ E ❤ F — das Herz am Reihenende verbindet zur nächsten Reihe. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NamesRow(names: List<String>, style: TextStyle, heart: Dp, modifier: Modifier = Modifier) {
@@ -395,13 +398,38 @@ fun NamesRow(names: List<String>, style: TextStyle, heart: Dp, modifier: Modifie
         val density = LocalDensity.current
         val measurer = rememberTextMeasurer()
         val availablePx = with(density) { maxWidth.toPx() }
+        val heartPx = with(density) { (heart * 1.8f).toPx() }
         val oneLinePx = remember(names, style, heart) {
-            val heartPx = with(density) { (heart * 1.8f).toPx() }
             names.sumOf { measurer.measure(AnnotatedString(it), style).size.width.toDouble() } +
                 (names.size - 1).coerceAtLeast(0) * heartPx
         }
-        val stacked = oneLinePx > availablePx
-        if (stacked) {
+        // Breiteste Reihe im Raster (Namen + Herzen dazwischen und am Reihenende)
+        val rows = if (names.size >= 4) names.chunked(3) else emptyList()
+        val gridRowPx = remember(names, style, heart) {
+            rows.mapIndexed { ri, row ->
+                row.sumOf { measurer.measure(AnnotatedString(it), style).size.width.toDouble() } +
+                    (row.size - 1 + if (ri < rows.size - 1) 1 else 0) * heartPx
+            }.maxOrNull() ?: 0.0
+        }
+        if (names.size >= 4) {
+            val scale = (availablePx / gridRowPx.toFloat()).coerceIn(0.5f, 1f)
+            val rowStyle = style.copy(fontSize = style.fontSize * scale)
+            val rowHeart = heart * scale
+            Column(
+                Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                rows.forEachIndexed { ri, row ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        row.forEachIndexed { i, name ->
+                            if (i > 0) BeatingHeart(Modifier.padding(horizontal = rowHeart * 0.4f), size = rowHeart)
+                            Text(name, style = rowStyle, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        if (ri < rows.size - 1) BeatingHeart(Modifier.padding(horizontal = rowHeart * 0.4f), size = rowHeart)
+                    }
+                }
+            }
+        } else if (oneLinePx > availablePx) {
             Column(
                 Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,

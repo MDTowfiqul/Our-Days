@@ -73,6 +73,28 @@ class ScreenshotTest {
         HomeScreen(three, today, {}, {})
     }
 
+    // Alle sechs Namen: Reihen zu dritt — Name, Herz, Name, Herz, Name, Herz / Name, Herz, Name
+    @Test
+    fun homeAllNames() = shot("home_all_names") {
+        val all = settings.copy(
+            people = listOf(
+                app.ourdays.data.Person("a", "Towfiqul"),
+                app.ourdays.data.Person("s", "Ainon"),
+                app.ourdays.data.Person("r", "Rafiqul Islam"),
+                app.ourdays.data.Person("m", "Samsun Nahar"),
+                app.ourdays.data.Person("t", "MD. Tariqul Islam"),
+                app.ourdays.data.Person("z", "MD. Zahidul Islam"),
+            ),
+            relationships = listOf(
+                app.ourdays.data.Relationship("r1", listOf("a", "s"), LocalDate.of(2026, 5, 31)),
+                app.ourdays.data.Relationship("r2", listOf("a", "r", "m"), LocalDate.of(1999, 5, 11)),
+                app.ourdays.data.Relationship("r3", listOf("a", "t", "z"), LocalDate.of(1999, 5, 11)),
+            ),
+            selected = app.ourdays.data.ALL_RELATIONSHIPS,
+        )
+        HomeScreen(all, today, {}, {})
+    }
+
     @Test
     fun home() = shot("home") { HomeScreen(settings, today, {}, {}) }
 

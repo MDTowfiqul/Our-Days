@@ -201,8 +201,10 @@ fun SettingsScreen(
     /** Download-Fortschritt eines Updates in Prozent (-1 = unbekannt), null = kein Download */
     updateProgress: Int? = null,
     onOpenLicenses: () -> Unit = {},
-    onAddSlides: () -> Unit = {},
-    onRemoveSlide: (String) -> Unit = {},
+    /** Diashow-Fotos für eine Beziehung hinzufügen (null = gemeinsame Diashow) */
+    onAddSlidesFor: (String?) -> Unit = {},
+    /** Ein Diashow-Foto entfernen (null = gemeinsame Diashow) */
+    onRemoveSlideFor: (String?, String) -> Unit = {},
     onExportBackup: () -> Unit = {},
     onImportBackup: () -> Unit = {},
     /** Automatische Sicherung, null = aus */
@@ -232,6 +234,8 @@ fun SettingsScreen(
     initialPage: SettingsPage? = null,
 ) {
     var dialog by remember { mutableStateOf<String?>(null) }
+    /** Beziehung, deren Diashow gerade bearbeitet wird (null = gemeinsame Diashow) */
+    var slidesFor by remember { mutableStateOf<String?>(null) }
     var page by rememberSaveable { mutableStateOf(initialPage) }
     BackHandler(enabled = page != null) { page = null }
     val context = LocalContext.current
@@ -332,16 +336,6 @@ fun SettingsScreen(
                             Divider()
                         }
                         Row(Icons.Rounded.Collections, stringResource(R.string.pick_preset), null) { dialog = "presets" }
-                        Divider()
-                        Row(
-                            Icons.Rounded.Slideshow,
-                            stringResource(R.string.slideshow),
-                            if (settings.slides.isEmpty()) {
-                                stringResource(R.string.slideshow_off)
-                            } else {
-                                pluralStringResource(R.plurals.slideshow_count, settings.slides.size, settings.slides.size.toString())
-                            },
-                        ) { dialog = "slides" }
                         Divider()
                         Row(Icons.Rounded.RestartAlt, stringResource(R.string.reset_photo), null, onClick = onResetPhoto)
                         Divider()
@@ -714,6 +708,10 @@ fun SettingsScreen(
                             onPickPhotoFor(null)
                         },
                         onRemove = null,
+                        onSlides = {
+                            slidesFor = null
+                            dialog = "slides"
+                        },
                     )
                     Divider()
                     settings.relationships.forEach { r ->
@@ -736,6 +734,10 @@ fun SettingsScreen(
                             } else {
                                 null
                             },
+                            onSlides = {
+                                slidesFor = r.id
+                                dialog = "slides"
+                            },
                         )
                         Divider()
                     }
@@ -744,9 +746,11 @@ fun SettingsScreen(
             confirmButton = { TextButton(onClick = { dialog = null }) { Text(stringResource(R.string.close)) } },
         )
         "slides" -> SlidesDialog(
-            slides = settings.slides,
-            onAdd = onAddSlides,
-            onRemove = onRemoveSlide,
+            slides = if (slidesFor == null) settings.slides else settings.slidesByRelationship[slidesFor].orEmpty(),
+            subtitle = slidesFor?.let { id -> settings.relationships.firstOrNull { it.id == id }?.let { settings.namesOf(it) } },
+            emptyText = if (slidesFor == null) R.string.slideshow_empty else R.string.slideshow_empty_own,
+            onAdd = { onAddSlidesFor(slidesFor) },
+            onRemove = { onRemoveSlideFor(slidesFor, it) },
             onDismiss = { dialog = null },
         )
         "import" -> AlertDialog(
@@ -950,7 +954,8 @@ private fun Row(icon: ImageVector, title: String, value: String?, onClick: () ->
     )
 }
 
-/** Zeile im „Foto für“-Dialog: tippen wählt ein Foto, das Kreuz entfernt ein eigenes Foto */
+/** Zeile im „Foto für“-Dialog: tippen wählt ein Foto, das Kreuz entfernt ein eigenes Foto,
+ *  das Diashow-Symbol öffnet die Diashow dieser Beziehung */
 @Composable
 private fun PhotoForRow(
     name: String,
@@ -958,19 +963,23 @@ private fun PhotoForRow(
     hasOwnPhoto: Boolean,
     onPick: () -> Unit,
     onRemove: (() -> Unit)?,
+    onSlides: () -> Unit,
 ) {
     ListItem(
         headlineContent = { Text(name) },
         supportingContent = { Text(subtitle, color = MaterialTheme.colorScheme.primary) },
         leadingContent = { Icon(Icons.Rounded.AddPhotoAlternate, null) },
-        trailingContent = if (hasOwnPhoto && onRemove != null) {
-            {
-                IconButton(onClick = onRemove) {
-                    Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.remove))
+        trailingContent = {
+            Row {
+                IconButton(onClick = onSlides) {
+                    Icon(Icons.Rounded.Slideshow, contentDescription = stringResource(R.string.slideshow))
+                }
+                if (hasOwnPhoto && onRemove != null) {
+                    IconButton(onClick = onRemove) {
+                        Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.remove))
+                    }
                 }
             }
-        } else {
-            null
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(onClick = onPick),
@@ -1514,14 +1523,22 @@ internal fun PresetDialog(selected: Int, onDismiss: () -> Unit, onPick: (Int) ->
 
 /** Weitere Fotos für die Diashow im Titelbild: ansehen, hinzufügen, entfernen */
 @Composable
-private fun SlidesDialog(slides: List<String>, onAdd: () -> Unit, onRemove: (String) -> Unit, onDismiss: () -> Unit) {
+private fun SlidesDialog(
+    slides: List<String>,
+    subtitle: String? = null,
+    emptyText: Int = R.string.slideshow_empty,
+    onAdd: () -> Unit,
+    onRemove: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.Slideshow, null) },
         title = { Text(stringResource(R.string.slideshow)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(if (slides.isEmpty()) R.string.slideshow_empty else R.string.slideshow_hint))
+                if (subtitle != null) Text(subtitle, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(if (slides.isEmpty()) emptyText else R.string.slideshow_hint))
                 if (slides.isNotEmpty()) {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(3),

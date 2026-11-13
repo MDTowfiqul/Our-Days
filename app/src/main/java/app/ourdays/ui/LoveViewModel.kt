@@ -101,8 +101,8 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
     fun setShowLive(show: Boolean) = viewModelScope.launch { repo.setShowLive(show) }
     fun setShowFacts(show: Boolean) = viewModelScope.launch { repo.setShowFacts(show) }
     fun setCelebrate(on: Boolean) = viewModelScope.launch { repo.setCelebrate(on) }
-    fun addSlides(uris: List<Uri>) = viewModelScope.launch { repo.addSlides(uris) }
-    fun removeSlide(path: String) = viewModelScope.launch { repo.removeSlide(path) }
+    fun addSlides(uris: List<Uri>, relationshipId: String? = null) = viewModelScope.launch { repo.addSlides(uris, relationshipId) }
+    fun removeSlide(path: String, relationshipId: String? = null) = viewModelScope.launch { repo.removeSlide(path, relationshipId) }
 
     /** Speichert alle Daten mit Fotos in die gewählte Datei. */
     fun exportBackup(uri: Uri) = viewModelScope.launch {

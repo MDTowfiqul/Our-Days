@@ -80,6 +80,14 @@ object BackupCodec {
         .put("celebrate", s.celebrate)
         .put("slides", JSONArray().apply { s.slides.forEach { put(File(it).name) } })
         .put(
+            "slidesByRelationship",
+            JSONObject().apply {
+                s.slidesByRelationship.forEach { (id, paths) ->
+                    put(id, JSONArray().apply { paths.forEach { put(File(it).name) } })
+                }
+            },
+        )
+        .put(
             "moments",
             JSONArray(MomentCodec.encode(s.moments.map { m -> m.copy(photoPaths = m.photoPaths.map { File(it).name }) })),
         )
@@ -125,6 +133,15 @@ object BackupCodec {
             }.toMap()
         }.orEmpty().filterKeys { id -> cleanRelationships.any { it.id == id } }
         val slides = o.optJSONArray("slides")
+        val slidesByRelationship = o.optJSONObject("slidesByRelationship")?.let { obj ->
+            obj.keys().asSequence().mapNotNull { id ->
+                val arr = obj.optJSONArray(id) ?: return@mapNotNull null
+                val names = (0 until arr.length()).mapNotNull { fileName(arr.optString(it)) }
+                    .distinct().take(MAX_SLIDES)
+                id to names
+            }.toMap()
+        }.orEmpty().filterKeys { id -> cleanRelationships.any { it.id == id } }
+            .filterValues { it.isNotEmpty() }
         return LoveSettings(
             people = cleanPeople,
             relationships = cleanRelationships,
@@ -156,7 +173,28 @@ object BackupCodec {
                 .mapNotNull { fileName(slides?.optString(it)) }
                 .distinct()
                 .take(MAX_SLIDES),
+            slidesByRelationship = slidesByRelationship,
         )
+    }
+}
+
+/** Diashow je Beziehung als JSON-Text (Beziehungs-ID → Pfade im App-Speicher) */
+object SlideMapCodec {
+    fun encode(slides: Map<String, List<String>>): String =
+        JSONObject().apply {
+            slides.forEach { (id, paths) ->
+                put(id, JSONArray().apply { paths.forEach { put(it) } })
+            }
+        }.toString()
+
+    fun decode(json: String?): Map<String, List<String>> {
+        if (json.isNullOrBlank()) return emptyMap()
+        val obj = runCatching { JSONObject(json) }.getOrNull() ?: return emptyMap()
+        return obj.keys().asSequence().mapNotNull { id ->
+            val arr = obj.optJSONArray(id) ?: return@mapNotNull null
+            val paths = (0 until arr.length()).mapNotNull { arr.optString(it).ifBlank { null } }
+            id to paths
+        }.toMap()
     }
 }
 

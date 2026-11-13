@@ -226,6 +226,7 @@
     </plurals>
     <string name="slideshow_hint">তোমাদের টাইটেল ছবি কয়েক সেকেন্ড পরপর মূল ছবি আর এই ছবিগুলোর মধ্যে বদলাবে।</string>
     <string name="slideshow_empty">এখনো ছবি নেই। স্লাইডশো শুরু করতে কয়েকটা ছবি যোগ করো।</string>
+    <string name="slideshow_empty_own">এখনো নিজের কোনো ছবি নেই — যোগ না করা পর্যন্ত এই সম্পর্ক সাধারণ স্লাইডশো ব্যবহার করবে।</string>
     <string name="slideshow_add">ছবি যোগ করো</string>
     <string name="slideshow_remove">ছবি সরাও</string>
     <string name="section_backup">ব্যাকআপ</string>

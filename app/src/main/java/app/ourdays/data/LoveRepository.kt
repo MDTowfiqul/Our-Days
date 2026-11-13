@@ -90,6 +90,8 @@ data class LoveSettings(
     val celebrate: Boolean = true,
     /** Weitere Fotos für die Diashow im Titelbild (Pfade im App-Speicher, files/slides/) */
     val slides: List<String> = emptyList(),
+    /** Diashow je Beziehung (Beziehungs-ID → Pfade im App-Speicher); ohne Eintrag gilt die gemeinsame Diashow oben */
+    val slidesByRelationship: Map<String, List<String>> = emptyMap(),
     /** Version (versionCode), deren Neuigkeiten schon gezeigt wurden, 0 = unbekannt */
     val changelogSeen: Int = 0,
     /** Nach einem Update zeigen, was neu ist */
@@ -119,6 +121,12 @@ data class LoveSettings(
     fun photoFor(relationshipId: String?): String? {
         if (relationshipId == null || relationshipId == ALL_RELATIONSHIPS) return photoPath
         return photos[relationshipId]?.takeIf { File(it).exists() } ?: photoPath
+    }
+
+    /** Diashow für eine Beziehung: eigene Fotos, sonst die gemeinsame Diashow; null/„alle“ = gemeinsame Diashow */
+    fun slidesFor(relationshipId: String?): List<String> {
+        if (relationshipId == null || relationshipId == ALL_RELATIONSHIPS) return slides
+        return slidesByRelationship[relationshipId]?.filter { File(it).exists() }?.takeIf { it.isNotEmpty() } ?: slides
     }
 
     /** Namen für Widgets und Mitteilungen, im diskreten Modus nur Anfangsbuchstaben */
@@ -195,6 +203,7 @@ private object Keys {
     val showFacts = booleanPreferencesKey("show_facts")
     val celebrate = booleanPreferencesKey("celebrate")
     val slides = stringPreferencesKey("slides")
+    val slidesByRelationship = stringPreferencesKey("slides_by_relationship")
     val people = stringPreferencesKey("people")
     val relationships = stringPreferencesKey("relationships")
     val selected = stringPreferencesKey("selected_relationship")
@@ -284,6 +293,10 @@ class LoveRepository(private val context: Context) {
             showFacts = this[Keys.showFacts] ?: d.showFacts,
             celebrate = this[Keys.celebrate] ?: d.celebrate,
             slides = PathListCodec.decode(this[Keys.slides]).filter { File(it).exists() },
+            slidesByRelationship = SlideMapCodec.decode(this[Keys.slidesByRelationship])
+                .filterKeys { id -> relationships.any { it.id == id } }
+                .mapValues { (_, paths) -> paths.filter { File(it).exists() } }
+                .filterValues { it.isNotEmpty() },
             changelogSeen = this[Keys.changelogSeen] ?: d.changelogSeen,
             showChangelog = this[Keys.showChangelog] ?: d.showChangelog,
             newestFirst = this[Keys.newestFirst] ?: d.newestFirst,
@@ -557,25 +570,40 @@ class LoveRepository(private val context: Context) {
 
     private suspend fun deleteFile(path: String) = withContext(Dispatchers.IO) { File(path).delete() }
 
-    /** Fügt weitere Fotos für die Diashow hinzu (höchstens [MAX_SLIDES] insgesamt). */
-    suspend fun addSlides(uris: List<Uri>) {
-        val room = MAX_SLIDES - current().slides.size
+    /** Fügt weitere Fotos für die Diashow hinzu (höchstens [MAX_SLIDES] insgesamt): ohne Beziehung die gemeinsame Diashow, sonst die dieser Beziehung. */
+    suspend fun addSlides(uris: List<Uri>, relationshipId: String? = null) {
+        val current = if (relationshipId == null) current().slides else current().slidesByRelationship[relationshipId].orEmpty()
+        val room = MAX_SLIDES - current.size
         if (room <= 0 || uris.isEmpty()) return
         val stamp = System.currentTimeMillis()
+        val prefix = relationshipId ?: "all"
         val added = withContext(Dispatchers.IO) {
             uris.take(room).mapIndexedNotNull { i, uri ->
-                val file = File(slideDir(), "slide_${stamp}_$i.jpg")
+                val file = File(slideDir(), "slide_${prefix}_${stamp}_$i.jpg")
                 if (PhotoShrink.copy(context, uri, file)) file.absolutePath else null
             }
         }
         context.dataStore.edit { prefs ->
-            prefs[Keys.slides] = PathListCodec.encode(PathListCodec.decode(prefs[Keys.slides]) + added)
+            if (relationshipId == null) {
+                prefs[Keys.slides] = PathListCodec.encode(PathListCodec.decode(prefs[Keys.slides]) + added)
+            } else {
+                val map = SlideMapCodec.decode(prefs[Keys.slidesByRelationship]).toMutableMap()
+                map[relationshipId] = map[relationshipId].orEmpty() + added
+                prefs[Keys.slidesByRelationship] = SlideMapCodec.encode(map)
+            }
         }
     }
 
-    suspend fun removeSlide(path: String) {
+    suspend fun removeSlide(path: String, relationshipId: String? = null) {
         context.dataStore.edit { prefs ->
-            prefs[Keys.slides] = PathListCodec.encode(PathListCodec.decode(prefs[Keys.slides]) - path)
+            if (relationshipId == null) {
+                prefs[Keys.slides] = PathListCodec.encode(PathListCodec.decode(prefs[Keys.slides]) - path)
+            } else {
+                val map = SlideMapCodec.decode(prefs[Keys.slidesByRelationship]).toMutableMap()
+                map[relationshipId] = map[relationshipId].orEmpty() - path
+                if (map[relationshipId].isNullOrEmpty()) map.remove(relationshipId)
+                prefs[Keys.slidesByRelationship] = SlideMapCodec.encode(map)
+            }
         }
         deleteFile(path)
     }
@@ -605,6 +633,7 @@ class LoveRepository(private val context: Context) {
                 add(Backup.PHOTOS, s.photoPath)
                 s.photos.values.forEach { add(Backup.PHOTOS, it) }
                 s.slides.forEach { add(Backup.SLIDES, it) }
+                s.slidesByRelationship.values.flatten().forEach { add(Backup.SLIDES, it) }
                 s.moments.forEach { m -> m.photoPaths.forEach { add(Backup.MOMENTS, it) } }
             }
         }
@@ -653,6 +682,9 @@ class LoveRepository(private val context: Context) {
                     move(Backup.PHOTOS, photoDir(), name)?.let { id to it }
                 }.toMap(),
                 slides = data.slides.mapNotNull { move(Backup.SLIDES, slideDir(), it) },
+                slidesByRelationship = data.slidesByRelationship.mapValues { (_, names) ->
+                    names.mapNotNull { move(Backup.SLIDES, slideDir(), it) }
+                }.filterValues { it.isNotEmpty() },
                 moments = data.moments.map { m ->
                     m.copy(photoPaths = m.photoPaths.mapNotNull { move(Backup.MOMENTS, momentDir(), it) })
                 },
@@ -691,6 +723,7 @@ class LoveRepository(private val context: Context) {
             p[Keys.showFacts] = restored.showFacts
             p[Keys.celebrate] = restored.celebrate
             p[Keys.slides] = PathListCodec.encode(restored.slides)
+            if (restored.slidesByRelationship.isNotEmpty()) p[Keys.slidesByRelationship] = SlideMapCodec.encode(restored.slidesByRelationship)
         }
     }
 

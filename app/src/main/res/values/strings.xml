@@ -227,6 +227,7 @@
     </plurals>
     <string name="slideshow_hint">Your title picture switches between your main photo and these photos every few seconds.</string>
     <string name="slideshow_empty">No photos yet. Add a few to start the slideshow.</string>
+    <string name="slideshow_empty_own">No photos of its own yet — until you add some, this relationship uses the shared slideshow.</string>
     <string name="slideshow_add">Add photos</string>
     <string name="slideshow_remove">Remove photo</string>
     <string name="section_backup">Backup</string>

@@ -114,8 +114,9 @@ fun HeroPhoto(
     modifier: Modifier = Modifier,
     /** Gezeigtes Foto: ohne Angabe das gemeinsame Foto */
     photoPath: String? = settings.photoPath,
+    /** Diashow-Fotos: ohne Angabe die gemeinsame Diashow */
+    slides: List<String> = settings.slides,
 ) {
-    val slides = settings.slides
     val count = 1 + slides.size
     var index by remember(slides) { mutableIntStateOf(0) }
     if (count > 1) {

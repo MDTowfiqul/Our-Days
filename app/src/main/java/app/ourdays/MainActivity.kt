@@ -196,13 +196,18 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                // Weitere Fotos für die Diashow im Titelbild
+                // Weitere Fotos für die Diashow im Titelbild.
+                // slidesFor = Beziehung, für die die Fotos gelten (null = gemeinsame Diashow)
+                var slidesFor by remember { mutableStateOf<String?>(null) }
                 val slidePicker = rememberLauncherForActivityResult(
                     ActivityResultContracts.PickMultipleVisualMedia(MAX_SLIDES),
-                ) { uris -> if (uris.isNotEmpty()) vm.addSlides(uris) }
-                fun pickSlides() = slidePicker.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                )
+                ) { uris -> if (uris.isNotEmpty()) vm.addSlides(uris, slidesFor) }
+                fun pickSlides(relationshipId: String? = null) {
+                    slidesFor = relationshipId
+                    slidePicker.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                }
 
                 // Sicherung als Datei über den Dateidialog von Android, ganz ohne Internet
                 val backupSaver = rememberLauncherForActivityResult(
@@ -411,8 +416,8 @@ class MainActivity : ComponentActivity() {
                                     onOpenUpdate = vm::installUpdate,
                                     updateProgress = updateProgress,
                                     onOpenLicenses = { showLicenses = true },
-                                    onAddSlides = ::pickSlides,
-                                    onRemoveSlide = vm::removeSlide,
+                                    onAddSlidesFor = ::pickSlides,
+                                    onRemoveSlideFor = { relationshipId, path -> vm.removeSlide(path, relationshipId) },
                                     onExportBackup = ::saveBackup,
                                     onImportBackup = ::loadBackup,
                                     autoBackup = autoBackup,

@@ -30,12 +30,14 @@ object WidgetPhoto {
         widthPx: Float,
         heightPx: Float,
         maxSide: Float = MAX_SIDE,
+        /** Gezeigtes Foto: ohne Angabe das gemeinsame Foto */
+        photoPath: String? = s.photoPath,
     ): Bitmap? {
         if (widthPx <= 0f || heightPx <= 0f) return null
         val scale = minOf(1f, maxSide / max(widthPx, heightPx))
         val w = (widthPx * scale).roundToInt().coerceAtLeast(1)
         val h = (heightPx * scale).roundToInt().coerceAtLeast(1)
-        val path = s.photoPath ?: return gradient(s.presetIndex, w, h)
+        val path = photoPath ?: return gradient(s.presetIndex, w, h)
         val source = decode(File(path), max(w, h)) ?: return gradient(s.presetIndex, w, h)
         return crop(source, w, h, s.focusX, s.focusY, s.zoom)
     }

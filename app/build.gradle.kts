@@ -145,16 +145,12 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     // Die Icon-Bibliothek wird nicht mehr weiterentwickelt, 1.7.8 ist die letzte Version
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
     implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation("androidx.glance:glance-appwidget:1.1.1")
-    implementation("androidx.glance:glance-material3:1.1.1")
     implementation("io.coil-kt.coil3:coil-compose:3.4.0")
     // QR-Code für die Kopplung zum Abgleich (erzeugen und scannen, Apache 2.0)
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")

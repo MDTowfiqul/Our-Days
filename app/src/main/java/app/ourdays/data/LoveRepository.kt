@@ -52,6 +52,8 @@ data class LoveSettings(
     val discreet: Boolean = false,
     /** Pfad zum eigenen Foto im App-Speicher, null = Standardmotiv */
     val photoPath: String? = null,
+    /** Eigenes Foto je Beziehung (Beziehungs-ID → Pfad im App-Speicher); ohne Eintrag gilt das gemeinsame Foto oben */
+    val photos: Map<String, String> = emptyMap(),
     val presetIndex: Int = 0,
     val notificationsEnabled: Boolean = true,
     val notifyHour: Int = 9,
@@ -60,12 +62,14 @@ data class LoveSettings(
     val remindBefore: Int = 0,
     /** Gewählte Schrift (ID aus AppFonts), "" = Standardschrift der App */
     val font: String = "",
+    /** Gewähltes Farbschema (ID aus AppThemes), "light" = helles Weiß als Standard */
+    val theme: String = "light",
     /** Bildausschnitt: Fokuspunkt (-1..1) und Zoom (1..4) */
     val focusX: Float = 0f,
     val focusY: Float = DEFAULT_FOCUS_Y,
     val zoom: Float = 1f,
     val onboardingDone: Boolean = false,
-    /** 0 = Übersicht, 1 = Live-Zähler */
+    /** 0 = Übersicht, 1 = Spaß, 2 = Momente */
     val homePage: Int = 0,
     /** Nur GitHub-Variante: automatisch nach neuen Versionen suchen */
     val updateCheck: Boolean = true,
@@ -86,6 +90,8 @@ data class LoveSettings(
     val celebrate: Boolean = true,
     /** Weitere Fotos für die Diashow im Titelbild (Pfade im App-Speicher, files/slides/) */
     val slides: List<String> = emptyList(),
+    /** Diashow je Beziehung (Beziehungs-ID → Pfade im App-Speicher); ohne Eintrag gilt die gemeinsame Diashow oben */
+    val slidesByRelationship: Map<String, List<String>> = emptyMap(),
     /** Version (versionCode), deren Neuigkeiten schon gezeigt wurden, 0 = unbekannt */
     val changelogSeen: Int = 0,
     /** Nach einem Update zeigen, was neu ist */
@@ -110,6 +116,18 @@ data class LoveSettings(
     fun memberNames(r: Relationship = relationship): List<String> = members(r).map { it.name }
 
     fun namesOf(r: Relationship): String = Names.join(memberNames(r))
+
+    /** Foto für eine Beziehung: eigenes Foto, sonst das gemeinsame Foto; null/„alle“ = gemeinsames Foto */
+    fun photoFor(relationshipId: String?): String? {
+        if (relationshipId == null || relationshipId == ALL_RELATIONSHIPS) return photoPath
+        return photos[relationshipId]?.takeIf { File(it).exists() } ?: photoPath
+    }
+
+    /** Diashow für eine Beziehung: eigene Fotos, sonst die gemeinsame Diashow; null/„alle“ = gemeinsame Diashow */
+    fun slidesFor(relationshipId: String?): List<String> {
+        if (relationshipId == null || relationshipId == ALL_RELATIONSHIPS) return slides
+        return slidesByRelationship[relationshipId]?.filter { File(it).exists() }?.takeIf { it.isNotEmpty() } ?: slides
+    }
 
     /** Namen für Widgets und Mitteilungen, im diskreten Modus nur Anfangsbuchstaben */
     fun shownNames(r: Relationship = relationship): List<String> =
@@ -157,6 +175,7 @@ private object Keys {
     val start = longPreferencesKey("start_epoch_day")
     val startTime = intPreferencesKey("start_second_of_day")
     val photo = stringPreferencesKey("photo_path")
+    val photos = stringPreferencesKey("relationship_photos")
     val preset = intPreferencesKey("preset")
     val notify = booleanPreferencesKey("notify")
     val notifyHour = intPreferencesKey("notify_hour")
@@ -184,12 +203,16 @@ private object Keys {
     val showFacts = booleanPreferencesKey("show_facts")
     val celebrate = booleanPreferencesKey("celebrate")
     val slides = stringPreferencesKey("slides")
+    val slidesByRelationship = stringPreferencesKey("slides_by_relationship")
     val people = stringPreferencesKey("people")
     val relationships = stringPreferencesKey("relationships")
     val selected = stringPreferencesKey("selected_relationship")
     val widgetRelationship = stringPreferencesKey("widget_relationship")
     val discreet = booleanPreferencesKey("discreet")
     val deleted = stringPreferencesKey("deleted_moments")
+    val deletedPeople = stringPreferencesKey("deleted_people")
+    val deletedRelationships = stringPreferencesKey("deleted_relationships")
+    val theme = stringPreferencesKey("theme")
 }
 
 /**
@@ -245,12 +268,16 @@ class LoveRepository(private val context: Context) {
             widgetRelationship = this[Keys.widgetRelationship].orEmpty(),
             discreet = this[Keys.discreet] ?: false,
             photoPath = this[Keys.photo]?.takeIf { File(it).exists() },
+            photos = PhotoMapCodec.decode(this[Keys.photos])
+                .filterKeys { id -> relationships.any { it.id == id } }
+                .filterValues { File(it).exists() },
             presetIndex = this[Keys.preset] ?: d.presetIndex,
             notificationsEnabled = this[Keys.notify] ?: d.notificationsEnabled,
             notifyHour = this[Keys.notifyHour] ?: d.notifyHour,
             notifyMinute = this[Keys.notifyMinute] ?: d.notifyMinute,
             remindBefore = this[Keys.remindBefore] ?: d.remindBefore,
             font = this[Keys.font] ?: d.font,
+            theme = this[Keys.theme] ?: d.theme,
             focusX = this[Keys.focusX] ?: d.focusX,
             focusY = this[Keys.focusY] ?: d.focusY,
             zoom = this[Keys.zoom] ?: d.zoom,
@@ -266,6 +293,10 @@ class LoveRepository(private val context: Context) {
             showFacts = this[Keys.showFacts] ?: d.showFacts,
             celebrate = this[Keys.celebrate] ?: d.celebrate,
             slides = PathListCodec.decode(this[Keys.slides]).filter { File(it).exists() },
+            slidesByRelationship = SlideMapCodec.decode(this[Keys.slidesByRelationship])
+                .filterKeys { id -> relationships.any { it.id == id } }
+                .mapValues { (_, paths) -> paths.filter { File(it).exists() } }
+                .filterValues { it.isNotEmpty() },
             changelogSeen = this[Keys.changelogSeen] ?: d.changelogSeen,
             showChangelog = this[Keys.showChangelog] ?: d.showChangelog,
             newestFirst = this[Keys.newestFirst] ?: d.newestFirst,
@@ -322,6 +353,9 @@ class LoveRepository(private val context: Context) {
         val (people, relationships) = prefs.model()
         if (people.size <= 2) return@edit
         prefs.writeModel(people.filterNot { it.id == id }, relationships)
+        prefs[Keys.deletedPeople] = encodeDeleted(
+            decodeDeleted(prefs[Keys.deletedPeople]) + (id to System.currentTimeMillis()),
+        )
     }
 
     /** Neue oder geänderte Beziehung */
@@ -341,6 +375,9 @@ class LoveRepository(private val context: Context) {
         val (people, relationships) = prefs.model()
         if (relationships.size <= 1) return@edit
         prefs.writeModel(people, relationships.filterNot { it.id == id })
+        prefs[Keys.deletedRelationships] = encodeDeleted(
+            decodeDeleted(prefs[Keys.deletedRelationships]) + (id to System.currentTimeMillis()),
+        )
         prefs[Keys.moments] = MomentCodec.encode(
             MomentCodec.decode(prefs[Keys.moments]).map { if (it.relationshipId == id) it.copy(relationshipId = null) else it },
         )
@@ -372,7 +409,7 @@ class LoveRepository(private val context: Context) {
         val saved = moment.copy(
             photoPaths = photos,
             updatedAt = System.currentTimeMillis(),
-            addedBy = old?.addedBy ?: moment.addedBy ?: PairingStore.load(context)?.me,
+            addedBy = old?.addedBy ?: moment.addedBy ?: PairingStore.me(context),
         )
         context.dataStore.edit { prefs ->
             val list = MomentCodec.decode(prefs[Keys.moments]).filterNot { it.id == moment.id } + saved
@@ -401,24 +438,41 @@ class LoveRepository(private val context: Context) {
     }
 
     /**
-     * Schreibt eine verschlüsselte Abgleich-Datei für das gekoppelte Handy: Menschen, Beziehungen,
-     * Momente mit Fotos und gelöschte Momente. Der Stream wird danach geschlossen.
+     * Schreibt eine verschlüsselte Abgleich-Datei für das gekoppelte Handy: eine Beziehung mit
+     * ihren Menschen, ihren Momenten mit Fotos und den gelöschten Einträgen. Momente ohne
+     * Beziehung reisen nur mit der Hauptbeziehung mit. Der Stream wird danach geschlossen.
      */
-    suspend fun exportSync(out: OutputStream, pairing: Pairing) {
+    suspend fun exportSync(out: OutputStream, pairing: Pairing, relationshipId: String = PeopleCodec.MAIN_ID, includeMoments: Boolean = true) {
         val s = current()
         val deleted = decodeDeleted(context.dataStore.data.first()[Keys.deleted])
+        val deletedPeople = decodeDeleted(context.dataStore.data.first()[Keys.deletedPeople])
+        val deletedRelationships = decodeDeleted(context.dataStore.data.first()[Keys.deletedRelationships])
+        val relationship = s.relationships.firstOrNull { it.id == relationshipId } ?: s.relationships.first()
+        val memberIds = relationship.members.toSet()
+        val people = s.people.filter { it.id in memberIds }
+        // Nur Namen und Datum: keine Momente und keine gelöschten Momente in der Datei
+        val moments = if (includeMoments) {
+            s.moments.filter {
+                it.relationshipId == relationship.id ||
+                    (relationship.id == PeopleCodec.MAIN_ID && it.relationshipId == null)
+            }
+        } else {
+            emptyList()
+        }
+        val deletedMoments = if (includeMoments) deleted else emptyMap()
         withContext(Dispatchers.IO) {
             val zipFile = File(context.cacheDir, "sync-out.zip")
             try {
                 ZipOutputStream(zipFile.outputStream().buffered()).use { zip ->
                     zip.putNextEntry(ZipEntry(SyncCodec.JSON))
                     zip.write(
-                        SyncCodec.encode(SyncData(s.people, s.relationships, s.moments, deleted, pairing.me))
-                            .toByteArray(Charsets.UTF_8),
+                        SyncCodec.encode(
+                            SyncData(people, listOf(relationship), moments, deletedMoments, pairing.me, relationship.id, deletedPeople, deletedRelationships, includeMoments),
+                        ).toByteArray(Charsets.UTF_8),
                     )
                     zip.closeEntry()
                     val written = mutableSetOf<String>()
-                    s.moments.forEach { m ->
+                    moments.forEach { m ->
                         m.photoPaths.forEach { path ->
                             val file = File(path).takeIf { it.isFile } ?: return@forEach
                             if (!written.add(file.name)) return@forEach
@@ -440,7 +494,7 @@ class LoveRepository(private val context: Context) {
      * zusammen. Gehört die Datei zu keiner Kopplung mit diesem Handy oder ist sie beschädigt,
      * wird eine Exception geworfen und nichts verändert.
      */
-    suspend fun importSync(input: InputStream, pairing: Pairing): MergeResult {
+    suspend fun importSync(input: InputStream, pairing: Pairing, relationshipId: String = PeopleCodec.MAIN_ID): MergeResult {
         val dir = File(context.cacheDir, "sync-in")
         val remote = withContext(Dispatchers.IO) {
             dir.deleteRecursively()
@@ -465,12 +519,15 @@ class LoveRepository(private val context: Context) {
         }
 
         val local = current()
+        val prefs0 = context.dataStore.data.first()
         val result = SyncMerge.merge(
             local.people,
             local.relationships,
             local.moments,
-            decodeDeleted(context.dataStore.data.first()[Keys.deleted]),
+            decodeDeleted(prefs0[Keys.deleted]),
             remote,
+            decodeDeleted(prefs0[Keys.deletedPeople]),
+            decodeDeleted(prefs0[Keys.deletedRelationships]),
         )
         // Fotos der übernommenen Momente in den App-Speicher holen, alte Fotos aufräumen
         val takenIds = result.taken.map { it.id }.toSet()
@@ -494,8 +551,10 @@ class LoveRepository(private val context: Context) {
             prefs.writeModel(result.people, result.relationships)
             prefs[Keys.moments] = MomentCodec.encode(moments)
             prefs[Keys.deleted] = encodeDeleted(result.deleted)
+            prefs[Keys.deletedPeople] = encodeDeleted(result.deletedPeople)
+            prefs[Keys.deletedRelationships] = encodeDeleted(result.deletedRelationships)
         }
-        PairingStore.save(context, pairing.copy(lastSync = System.currentTimeMillis()))
+        PairingStore.save(context, relationshipId, pairing.copy(lastSync = System.currentTimeMillis()))
         return result
     }
 
@@ -511,25 +570,40 @@ class LoveRepository(private val context: Context) {
 
     private suspend fun deleteFile(path: String) = withContext(Dispatchers.IO) { File(path).delete() }
 
-    /** Fügt weitere Fotos für die Diashow hinzu (höchstens [MAX_SLIDES] insgesamt). */
-    suspend fun addSlides(uris: List<Uri>) {
-        val room = MAX_SLIDES - current().slides.size
+    /** Fügt weitere Fotos für die Diashow hinzu (höchstens [MAX_SLIDES] insgesamt): ohne Beziehung die gemeinsame Diashow, sonst die dieser Beziehung. */
+    suspend fun addSlides(uris: List<Uri>, relationshipId: String? = null) {
+        val current = if (relationshipId == null) current().slides else current().slidesByRelationship[relationshipId].orEmpty()
+        val room = MAX_SLIDES - current.size
         if (room <= 0 || uris.isEmpty()) return
         val stamp = System.currentTimeMillis()
+        val prefix = relationshipId ?: "all"
         val added = withContext(Dispatchers.IO) {
             uris.take(room).mapIndexedNotNull { i, uri ->
-                val file = File(slideDir(), "slide_${stamp}_$i.jpg")
+                val file = File(slideDir(), "slide_${prefix}_${stamp}_$i.jpg")
                 if (PhotoShrink.copy(context, uri, file)) file.absolutePath else null
             }
         }
         context.dataStore.edit { prefs ->
-            prefs[Keys.slides] = PathListCodec.encode(PathListCodec.decode(prefs[Keys.slides]) + added)
+            if (relationshipId == null) {
+                prefs[Keys.slides] = PathListCodec.encode(PathListCodec.decode(prefs[Keys.slides]) + added)
+            } else {
+                val map = SlideMapCodec.decode(prefs[Keys.slidesByRelationship]).toMutableMap()
+                map[relationshipId] = map[relationshipId].orEmpty() + added
+                prefs[Keys.slidesByRelationship] = SlideMapCodec.encode(map)
+            }
         }
     }
 
-    suspend fun removeSlide(path: String) {
+    suspend fun removeSlide(path: String, relationshipId: String? = null) {
         context.dataStore.edit { prefs ->
-            prefs[Keys.slides] = PathListCodec.encode(PathListCodec.decode(prefs[Keys.slides]) - path)
+            if (relationshipId == null) {
+                prefs[Keys.slides] = PathListCodec.encode(PathListCodec.decode(prefs[Keys.slides]) - path)
+            } else {
+                val map = SlideMapCodec.decode(prefs[Keys.slidesByRelationship]).toMutableMap()
+                map[relationshipId] = map[relationshipId].orEmpty() - path
+                if (map[relationshipId].isNullOrEmpty()) map.remove(relationshipId)
+                prefs[Keys.slidesByRelationship] = SlideMapCodec.encode(map)
+            }
         }
         deleteFile(path)
     }
@@ -557,7 +631,9 @@ class LoveRepository(private val context: Context) {
                     zip.closeEntry()
                 }
                 add(Backup.PHOTOS, s.photoPath)
+                s.photos.values.forEach { add(Backup.PHOTOS, it) }
                 s.slides.forEach { add(Backup.SLIDES, it) }
+                s.slidesByRelationship.values.flatten().forEach { add(Backup.SLIDES, it) }
                 s.moments.forEach { m -> m.photoPaths.forEach { add(Backup.MOMENTS, it) } }
             }
         }
@@ -602,7 +678,13 @@ class LoveRepository(private val context: Context) {
             momentDir().listFiles()?.forEach { it.delete() }
             val result = data.copy(
                 photoPath = move(Backup.PHOTOS, photoDir(), data.photoPath),
+                photos = data.photos.mapNotNull { (id, name) ->
+                    move(Backup.PHOTOS, photoDir(), name)?.let { id to it }
+                }.toMap(),
                 slides = data.slides.mapNotNull { move(Backup.SLIDES, slideDir(), it) },
+                slidesByRelationship = data.slidesByRelationship.mapValues { (_, names) ->
+                    names.mapNotNull { move(Backup.SLIDES, slideDir(), it) }
+                }.filterValues { it.isNotEmpty() },
                 moments = data.moments.map { m ->
                     m.copy(photoPaths = m.photoPaths.mapNotNull { move(Backup.MOMENTS, momentDir(), it) })
                 },
@@ -621,6 +703,7 @@ class LoveRepository(private val context: Context) {
             if (restored.widgetRelationship.isNotEmpty()) p[Keys.widgetRelationship] = restored.widgetRelationship
             p[Keys.discreet] = restored.discreet
             restored.photoPath?.let { p[Keys.photo] = it }
+            if (restored.photos.isNotEmpty()) p[Keys.photos] = PhotoMapCodec.encode(restored.photos)
             p[Keys.preset] = restored.presetIndex
             p[Keys.notify] = restored.notificationsEnabled
             p[Keys.notifyHour] = restored.notifyHour
@@ -640,6 +723,7 @@ class LoveRepository(private val context: Context) {
             p[Keys.showFacts] = restored.showFacts
             p[Keys.celebrate] = restored.celebrate
             p[Keys.slides] = PathListCodec.encode(restored.slides)
+            if (restored.slidesByRelationship.isNotEmpty()) p[Keys.slidesByRelationship] = SlideMapCodec.encode(restored.slidesByRelationship)
         }
     }
 
@@ -668,7 +752,7 @@ class LoveRepository(private val context: Context) {
     }
 
     suspend fun setPreset(index: Int) {
-        deletePhotos()
+        deleteGlobalPhoto()
         context.dataStore.edit {
             it.remove(Keys.photo)
             it[Keys.preset] = index
@@ -677,22 +761,48 @@ class LoveRepository(private val context: Context) {
 
     suspend fun resetPhoto() = setPreset(0)
 
-    /** Kopiert das gewählte Bild in den privaten App-Speicher. */
-    suspend fun setPhoto(uri: Uri) {
+    /** Kopiert das gewählte Bild in den privaten App-Speicher: ohne Beziehung das gemeinsame Foto, sonst das Foto dieser Beziehung. */
+    suspend fun setPhoto(uri: Uri, relationshipId: String? = null) {
+        if (relationshipId == null) {
+            val target = withContext(Dispatchers.IO) {
+                deleteGlobalPhoto()
+                // Neuer Dateiname pro Foto, damit der Bild-Cache sicher aktualisiert
+                val file = File(photoDir(), "photo_${System.currentTimeMillis()}.jpg")
+                if (!PhotoShrink.copy(context, uri, file)) return@withContext null
+                file
+            } ?: return
+            context.dataStore.edit {
+                it[Keys.photo] = target.absolutePath
+                // Neues Foto startet mit dem Standard-Ausschnitt
+                it.remove(Keys.focusX)
+                it.remove(Keys.focusY)
+                it.remove(Keys.zoom)
+            }
+            return
+        }
         val target = withContext(Dispatchers.IO) {
-            deletePhotos()
-            // Neuer Dateiname pro Foto, damit der Bild-Cache sicher aktualisiert
-            val file = File(photoDir(), "photo_${System.currentTimeMillis()}.jpg")
+            val file = File(photoDir(), "photo_${relationshipId}_${System.currentTimeMillis()}.jpg")
             if (!PhotoShrink.copy(context, uri, file)) return@withContext null
             file
         } ?: return
-        context.dataStore.edit {
-            it[Keys.photo] = target.absolutePath
-            // Neues Foto startet mit dem Standard-Ausschnitt
-            it.remove(Keys.focusX)
-            it.remove(Keys.focusY)
-            it.remove(Keys.zoom)
+        context.dataStore.edit { prefs ->
+            val photos = PhotoMapCodec.decode(prefs[Keys.photos]).toMutableMap()
+            photos.remove(relationshipId)?.let { File(it).delete() }
+            photos[relationshipId] = target.absolutePath
+            prefs[Keys.photos] = PhotoMapCodec.encode(photos)
         }
+    }
+
+    /** Entfernt das eigene Foto einer Beziehung (danach gilt wieder das gemeinsame Foto). */
+    suspend fun removePhoto(relationshipId: String) = context.dataStore.edit { prefs ->
+        val photos = PhotoMapCodec.decode(prefs[Keys.photos]).toMutableMap()
+        photos.remove(relationshipId)?.let { File(it).delete() }
+        prefs[Keys.photos] = PhotoMapCodec.encode(photos)
+    }
+
+    /** Löscht nur das gemeinsame Foto (die Fotos der einzelnen Beziehungen bleiben). */
+    private suspend fun deleteGlobalPhoto() = context.dataStore.edit { prefs ->
+        prefs[Keys.photo]?.let { File(it).delete() }
     }
 
     suspend fun setPhotoFrame(focusX: Float, focusY: Float, zoom: Float) = context.dataStore.edit {
@@ -746,6 +856,8 @@ class LoveRepository(private val context: Context) {
     suspend fun setRemindBefore(days: Int) = context.dataStore.edit { it[Keys.remindBefore] = days }
 
     suspend fun setFont(id: String) = context.dataStore.edit { it[Keys.font] = id }
+
+    suspend fun setTheme(id: String) = context.dataStore.edit { it[Keys.theme] = id }
 
     suspend fun setHomePage(page: Int) = context.dataStore.edit { it[Keys.homePage] = page }
 

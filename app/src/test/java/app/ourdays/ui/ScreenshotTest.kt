@@ -2,9 +2,21 @@ package app.ourdays.ui
 
 import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.unit.dp
 import androidx.core.view.drawToBitmap
 import app.ourdays.data.LoveSettings
+import ourdays.app.R
 import org.junit.Rule
 import org.junit.Test
 import androidx.compose.ui.test.onNodeWithText
@@ -30,6 +42,58 @@ class ScreenshotTest {
 
     private val settings = LoveSettings.couple("Towfiqul", "Ainon", LocalDate.of(2025, 3, 15)).copy(onboardingDone = true)
     private val today = LocalDate.of(2025, 8, 15)
+
+    @Test
+    fun guideScreen() = shot("guide_screen") { GuideScreen(onBack = {}) }
+
+    @Test
+    fun homeLongNames() = shot("home_long_names") {
+        val long = settings.copy(
+            people = settings.people.mapIndexed { i, p ->
+                p.copy(name = if (i == 0) "Towfiqul Islam" else "Ainon Nahar")
+            },
+        )
+        HomeScreen(long, today, {}, {})
+    }
+
+    // Drei lange Namen: sie stehen untereinander — Name, Herz, Name, Herz, Name
+    @Test
+    fun homeThreeLongNames() = shot("home_three_long_names") {
+        val three = settings.copy(
+            people = listOf(
+                app.ourdays.data.Person("a", "Towfiqul"),
+                app.ourdays.data.Person("b", "MD. Tariqul Islam"),
+                app.ourdays.data.Person("c", "MD. Zahidul Islam"),
+            ),
+            relationships = listOf(
+                app.ourdays.data.Relationship("r1", listOf("a", "b", "c"), LocalDate.of(1999, 5, 11)),
+            ),
+            selected = "r1",
+        )
+        HomeScreen(three, today, {}, {})
+    }
+
+    // Alle sechs Namen: Reihen zu dritt — Name, Herz, Name, Herz, Name, Herz / Name, Herz, Name
+    @Test
+    fun homeAllNames() = shot("home_all_names") {
+        val all = settings.copy(
+            people = listOf(
+                app.ourdays.data.Person("a", "Towfiqul"),
+                app.ourdays.data.Person("s", "Ainon"),
+                app.ourdays.data.Person("r", "Rafiqul Islam"),
+                app.ourdays.data.Person("m", "Samsun Nahar"),
+                app.ourdays.data.Person("t", "MD. Tariqul Islam"),
+                app.ourdays.data.Person("z", "MD. Zahidul Islam"),
+            ),
+            relationships = listOf(
+                app.ourdays.data.Relationship("r1", listOf("a", "s"), LocalDate.of(2026, 5, 31)),
+                app.ourdays.data.Relationship("r2", listOf("a", "r", "m"), LocalDate.of(1999, 5, 11)),
+                app.ourdays.data.Relationship("r3", listOf("a", "t", "z"), LocalDate.of(1999, 5, 11)),
+            ),
+            selected = app.ourdays.data.ALL_RELATIONSHIPS,
+        )
+        HomeScreen(all, today, {}, {})
+    }
 
     @Test
     fun home() = shot("home") { HomeScreen(settings, today, {}, {}) }
@@ -120,6 +184,53 @@ class ScreenshotTest {
     @Test
     fun syncBengali() = shot("sync", lang = "bn") { SettingsScreen(settings, true, initialPage = SettingsPage.Sync) }
 
+    // Echte Bildschirmfotos für die Anleitung in der App („How to pair & sync“):
+    // die Anleitung zeigt diese PNGs, keine gezeichneten Handy-Attrappen.
+    // SyncPage ist ein Spalten-Fragment und braucht eine Spalte mit Bildlauf wie in
+    // der App; Dialoge leben in einem eigenen Fenster und erscheinen in drawToBitmap
+    // nicht — darum wird ihr Inhalt hier direkt gerendert.
+    private val guidePairing = mapOf(
+        app.ourdays.data.PeopleCodec.MAIN_ID to app.ourdays.data.Pairing.create("a"),
+    )
+
+    @Test
+    fun guideSyncUnpaired() = shot("guide_sync_unpaired") {
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            SyncPage(settings, emptyMap(), SyncActions())
+        }
+    }
+
+    @Test
+    fun guideSyncPaired() = shot("guide_sync_paired") {
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            SyncPage(settings, guidePairing, SyncActions())
+        }
+    }
+
+    @Test
+    fun guideQrDialog() = shot("guide_qr") {
+        val pairing = guidePairing.getValue(app.ourdays.data.PeopleCodec.MAIN_ID)
+        Column(Modifier.padding(24.dp)) {
+            Text(stringResource(R.string.sync_show_qr), style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(16.dp))
+            QrDialogContent(pairing, app.ourdays.data.PeopleCodec.MAIN_ID)
+        }
+    }
+
+    @Test
+    fun guideSendScope() = shot("guide_send_scope") {
+        Column(Modifier.padding(24.dp)) {
+            Text(stringResource(R.string.sync_send_scope_title), style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(16.dp))
+            SendScopeContent(true) {}
+        }
+    }
+
+    // Einfacher Willkommens-Bildschirm (wie früher) — nur prüfen, dass er
+    // ohne Absturz aufgebaut wird. Weiter geht es nach 2 Sekunden von selbst.
+    @Test
+    fun introWelcome() = shot("intro_welcome") { IntroScreen(onContinue = {}) }
+
     @Test
     fun privacy() = shot("privacy") {
         SettingsScreen(settings.copy(discreet = true), true, appLock = true, initialPage = SettingsPage.Privacy)
@@ -128,13 +239,6 @@ class ScreenshotTest {
     @Test
     fun privacyBengali() = shot("privacy", lang = "bn") {
         SettingsScreen(settings.copy(discreet = true), true, appLock = true, initialPage = SettingsPage.Privacy)
-    }
-
-    @Test
-    fun homePrideBengali() = shot("home_pride", lang = "bn") {
-        androidx.compose.runtime.CompositionLocalProvider(LocalPrideMonth provides true) {
-            HomeScreen(settings, today, {}, {})
-        }
     }
 
     @Test

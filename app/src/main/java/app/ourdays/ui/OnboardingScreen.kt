@@ -4,9 +4,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Restore
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import ourdays.app.R
 import app.ourdays.data.Texts
 import androidx.compose.ui.platform.LocalContext
@@ -105,6 +108,8 @@ fun OnboardingScreen(
     onRestoreBackup: (() -> Unit)? = null,
     /** Sicherung aus Google Drive wiederherstellen (eigene Seite mit Anmeldung) */
     onRestoreFromDrive: (() -> Unit)? = null,
+    /** Mit einem Partner verbinden, der die App schon eingerichtet hat (Koppeln + Abgleich-Datei öffnen) */
+    onSyncWithPartner: (() -> Unit)? = null,
 ) {
     // Alle Namen; mit „Weitere Person“ kommen Felder dazu (Poly-Modus)
     var names by rememberSaveable { mutableStateOf(ArrayList(settings.people.map { it.name })) }
@@ -313,6 +318,12 @@ fun OnboardingScreen(
                 Button(onClick = ::next, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                     Text(stringResource(R.string.lets_go))
                 }
+                if (onSyncWithPartner != null) {
+                    OutlinedButton(onClick = onSyncWithPartner, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                        Icon(Icons.Rounded.Sync, null, Modifier.size(20.dp))
+                        Text(stringResource(R.string.welcome_sync_partner), Modifier.padding(start = 8.dp))
+                    }
+                }
                 if (onRestoreBackup != null) {
                     OutlinedButton(onClick = { restoreChoice = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                         Icon(Icons.Rounded.Restore, null, Modifier.size(20.dp))
@@ -432,7 +443,12 @@ private fun Welcome() {
             .background(Presets[0].brush),
         contentAlignment = Alignment.Center,
     ) {
-        BeatingHeart(size = 80.dp)
+        Icon(
+            painter = painterResource(R.drawable.ic_heart),
+            contentDescription = null,
+            tint = Color.Unspecified,
+            modifier = Modifier.size(96.dp),
+        )
     }
     Text(
         stringResource(R.string.welcome),

@@ -9,12 +9,15 @@
     <string name="channel_description">Monthly and yearly anniversaries and milestone days</string>
     <string name="settings">Settings</string>
     <string name="back">Back</string>
-    <string name="names">Names</string>
     <string name="together_since_date">Together since</string>
     <string name="start_time_optional">Time (optional)</string>
     <string name="not_set">Not set</string>
     <string name="section_photo">Appearance</string>
     <string name="pick_own_photo">Choose your own photo</string>
+    <string name="photo_for_title">Photo for</string>
+    <string name="photo_for_all">All relationships</string>
+    <string name="photo_for_shared">Uses the shared photo</string>
+    <string name="photo_for_own">Own photo</string>
     <string name="adjust_crop">Adjust framing</string>
     <string name="pick_preset">Choose a background</string>
     <string name="reset_photo">Reset photo</string>
@@ -34,7 +37,6 @@
     <string name="delete_all_question">Delete all data?</string>
     <string name="delete_all_text">Names, dates, photos, moments and all settings will be deleted from this device and setup starts again. This cannot be undone.</string>
     <string name="ok">OK</string>
-    <string name="your_names">Your names</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
     <string name="remove">Remove</string>
@@ -43,6 +45,9 @@
     <string name="next">Next</string>
     <string name="skip">Skip</string>
     <string name="lets_go">Let\'s go</string>
+    <string name="welcome_sync_partner">Sync with My Partner</string>
+    <string name="fun_title">Fun</string>
+    <string name="fun_premium_soon">Premium features are coming soon — fun games and activities for the two of you are on the way.</string>
     <string name="together_since_title">Together since</string>
     <string name="notify_time_title">Notification time</string>
     <string name="backgrounds">Backgrounds</string>
@@ -71,6 +76,7 @@
     <string name="welcome_sub">Counts your time together and reminds you of every special day.</string>
     <string name="tab_overview">Overview</string>
     <string name="tab_live">Live</string>
+    <string name="tab_fun">Fun</string>
     <string name="together_for">Together for</string>
     <string name="starts_in">Starting in</string>
     <string name="today_word">today</string>
@@ -176,23 +182,21 @@
     <string name="moments_title">Your moments</string>
     <string name="moment_add">Add a moment</string>
     <string name="moments_empty_title">Keep your special moments</string>
-    <string name="moments_empty_sub">First date, first kiss, first trip: save the moments that matter to you. Tap a suggestion to start.</string>
+    <string name="moments_empty_sub">Getting married, first trip, first Eid: save the moments that matter to you. Tap a suggestion to start.</string>
     <string name="suggest_met">Met each other</string>
-    <string name="suggest_first_date">First date</string>
-    <string name="suggest_first_kiss">First kiss</string>
-    <string name="suggest_i_love_you">First “I love you”</string>
+    <string name="suggest_married">Getting married</string>
     <string name="suggest_first_trip">First trip together</string>
-    <string name="suggest_moved_in">Moved in together</string>
+    <string name="suggest_first_eid">First Eid together</string>
+    <string name="suggest_umrah">First Umrah together</string>
+    <string name="suggest_birthday">A birthday together</string>
     <string name="moment_together_start">You got together</string>
     <string name="moment_new">New moment</string>
     <string name="moment_edit">Edit moment</string>
     <string name="moment_field_title">What happened?</string>
     <string name="moment_field_date">Date</string>
     <string name="moment_field_note">Note (optional)</string>
-    <string name="moment_add_photo">Add photo</string>
     <string name="moment_add_photos">Add photos</string>
     <string name="moment_photos">Photos</string>
-    <string name="moment_change_photo">Change photo</string>
     <string name="moment_remove_photo">Remove photo</string>
     <string name="moment_remind">Yearly reminder</string>
     <string name="moment_remind_summary">Get a notification on the anniversary</string>
@@ -223,6 +227,7 @@
     </plurals>
     <string name="slideshow_hint">Your title picture switches between your main photo and these photos every few seconds.</string>
     <string name="slideshow_empty">No photos yet. Add a few to start the slideshow.</string>
+    <string name="slideshow_empty_own">No photos of its own yet — until you add some, this relationship uses the shared slideshow.</string>
     <string name="slideshow_add">Add photos</string>
     <string name="slideshow_remove">Remove photo</string>
     <string name="section_backup">Backup</string>
@@ -249,9 +254,6 @@
     <string name="photo_own">Your own photo</string>
     <string name="notify_off">Off</string>
     <string name="notify_daily_at">On special days at %1$s</string>
-    <string name="all_couples">For every kind of love</string>
-    <string name="all_couples_text">Our Days is for everyone in love, no matter who you are, whom you love or how many of you there are.</string>
-    <string name="pride_title">Happy Pride Month!</string>
     <string name="credit_before" translatable="false">Built with</string>
     <string name="credit_heart">love</string>
     <string name="credit_after" translatable="false">by Towfiqul</string>
@@ -274,7 +276,7 @@
     <string name="remove_person_confirm">Tap again to remove</string>
     <string name="pronouns">Pronouns (optional)</string>
     <string name="pronouns_hint">e.g. she/her, they/them</string>
-    <string name="ob_names_poly_hint">More than two of you? Add more people. You can set up several relationships with their own dates later in the settings.</string>
+    <string name="ob_names_poly_hint">More than a partner? Add your parents, siblings, children or friends — every connection gets its own date and counter.</string>
     <string name="poly_all">All</string>
     <string name="poly_title">Your relationships</string>
     <string name="poly_hint">More than two of you, or several relationships? Add more people here and give every relationship its own date.</string>
@@ -319,11 +321,36 @@
     <string name="sync_open_summary">If tapping the file did not open Our Days</string>
     <string name="sync_show_qr_again">Pair another phone</string>
     <string name="sync_show_qr_again_summary">Shows the QR code again, for example for a new phone</string>
-    <string name="pairing_share_file">Share pairing file</string>
-    <string name="pairing_share_file_summary">Send it to the other phone, like a sync file</string>
-    <string name="pairing_done">Paired with the other phone.</string>
-    <string name="pairing_file_invalid">That is not a pairing file.</string>
+    <string name="sync_not_paired_yet">Not paired yet</string>
+    <string name="sync_share_which">Which connection do you want to share?</string>
+    <string name="sync_send_scope_title">What do you want to share?</string>
+    <string name="sync_send_names_only">Names &amp; date only</string>
+    <string name="sync_send_names_only_sub">The other person sees only your names and the date you got together — no moments.</string>
+    <string name="sync_send_all">Names, date &amp; moments</string>
+    <string name="sync_send_all_sub">The other person also receives all your moments, with photos.</string>
+    <string name="partner_sync_title">Sync with My Partner</string>
+    <string name="partner_sync_text">Pair with your partner\'s phone, then open their sync file — your shared names, dates and moments will appear here. No need to fill in the setup.</string>
+    <string name="partner_sync_continue">Continue to the app</string>
     <string name="sync_unpair">Unpair</string>
+    <string name="guide_title">How to pair &amp; sync</string>
+    <string name="guide_open_summary">See the steps with pictures</string>
+    <string name="guide_step1_title">One phone shows the code</string>
+    <string name="guide_step1_text">On the first phone, open Settings → Sync and tap Show QR code.</string>
+    <string name="guide_step2_title">The other phone scans it</string>
+    <string name="guide_step2_text">On the second phone, open Settings → Sync and tap Scan QR code, then point the camera at the first phone.</string>
+    <string name="guide_step3_title">Paired</string>
+    <string name="guide_step3_text">Once paired, the connection shows “Paired since …”. Pairing alone sends nothing — no names, no dates, no moments.</string>
+    <string name="guide_step4_title">Send a sync file and choose what to share</string>
+    <string name="guide_step4_text">Tap Send sync and choose: Names &amp; date only, or Names, date &amp; moments. A sync file carries only this one connection.</string>
+    <string name="guide_step5_title">Open it on the other phone</string>
+    <string name="guide_step5_text">On the other phone, tap Open sync file — the row marked in red in the picture — and choose the file you received. If tapping the file in your messenger already opened Our Days, you can skip this step.</string>
+    <string name="guide_step6_title">Done — you’re synced!</string>
+    <string name="guide_step6_text">Your names, date and moments now appear on the home screen, on both phones. That’s the whole setup — enjoy counting your days together.</string>
+    <string name="guide_help_title">Still stuck?</string>
+    <string name="guide_help_text">Message us and we’ll help you through it.</string>
+    <string name="guide_help_telegram">Telegram: t.me/Our_Family_bd</string>
+    <string name="guide_help_facebook">Facebook: facebook.com/FBOurFamily</string>
+    <string name="guide_footer">Pairing alone sends nothing. A sync file carries only one connection.</string>
     <string name="sync_unpair_question">Unpair?</string>
     <string name="sync_unpair_text">This phone can no longer open sync files from the other phones. Your data stays. You can pair again any time.</string>
     <string name="sync_not_paired">Pair your phones first: Settings, Sync.</string>
@@ -358,13 +385,10 @@
     <string name="facts_next">Show the next number</string>
     <string name="fact_weekends_sub">you have spent together</string>
     <string name="fact_full_moons_sub">since you got together</string>
-    <string name="fact_christmas_sub">you have celebrated together</string>
     <string name="fact_new_years_sub">you have celebrated together</string>
     <string name="fact_seasons_sub">you have been through together</string>
     <string name="fact_heartbeats_sub">from each of your hearts since you got together</string>
     <string name="fact_valentines_sub">you have spent together</string>
-    <string name="fact_pride_months_sub">you have celebrated together</string>
-    <string name="fact_halloweens_sub">you have spent together</string>
     <string name="fact_friday_13th_sub">you have survived together</string>
     <string name="fact_earth_km_sub">the Earth has carried you around the sun</string>
     <string name="fact_breaths_sub">each of you has taken since you got together</string>
@@ -380,14 +404,6 @@
         <item quantity="one">%s Valentine\'s Day</item>
         <item quantity="other">%s Valentine\'s Days</item>
     </plurals>
-    <plurals name="fact_pride_months">
-        <item quantity="one">%s Pride Month</item>
-        <item quantity="other">%s Pride Months</item>
-    </plurals>
-    <plurals name="fact_halloweens">
-        <item quantity="one">%s Halloween</item>
-        <item quantity="other">%s Halloweens</item>
-    </plurals>
     <plurals name="fact_friday_13th">
         <item quantity="one">%s Friday the 13th</item>
         <item quantity="other">%s Fridays the 13th</item>
@@ -399,10 +415,6 @@
     <plurals name="fact_breaths">
         <item quantity="one">About %s breath</item>
         <item quantity="other">About %s breaths</item>
-    </plurals>
-    <plurals name="fact_christmas">
-        <item quantity="one">%s Christmas</item>
-        <item quantity="other">%s Christmases</item>
     </plurals>
     <plurals name="fact_new_years">
         <item quantity="one">%s New Year\'s Eve</item>
@@ -487,6 +499,13 @@
     <string name="lock_unlock">Unlock</string>
     <string name="lock_no_screen_lock">Set up a screen lock on your phone first.</string>
     <string name="font_title">Font</string>
+    <string name="theme_title">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_rose">Rose</string>
+    <string name="theme_ocean">Ocean</string>
+    <string name="theme_forest">Forest</string>
     <string name="font_sample">583 days together</string>
     <string name="font_group_standard">Classic</string>
     <string name="font_group_round">Round and soft</string>
@@ -509,7 +528,6 @@
     <string name="privacy_full">Full policy</string>
     <!-- Cloud-Sicherung -->
     <string name="cloud_title">Cloud backup</string>
-    <string name="cloud_summary">Encrypted backups via Telegram or Google Drive</string>
     <string name="cloud_intro">Your data and photos are encrypted with your password before upload. Only you can read them.</string>
     <string name="cloud_off">Off</string>
     <string name="cloud_telegram">Telegram</string>

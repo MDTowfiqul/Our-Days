@@ -33,9 +33,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.CompositionLocalProvider
-import app.ourdays.ui.LocalPrideMonth
-import app.ourdays.ui.isPrideMonth
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -53,11 +50,13 @@ import app.ourdays.data.MAX_SLIDES
 import app.ourdays.notify.Notifier
 import app.ourdays.share.ShareCard
 import app.ourdays.ui.CloudRestoreScreen
+import app.ourdays.ui.GuideScreen
 import app.ourdays.ui.HomeScreen
 import app.ourdays.ui.LicensesScreen
 import app.ourdays.ui.LockScreen
 import app.ourdays.ui.MomentEditorScreen
 import app.ourdays.ui.OnboardingScreen
+import app.ourdays.ui.PartnerSyncPage
 import app.ourdays.ui.PhotoEditorScreen
 import app.ourdays.ui.LoveTheme
 import app.ourdays.ui.LoveViewModel
@@ -96,21 +95,26 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) handleIntent(intent)
         setContent {
             val settings by vm.settings.collectAsStateWithLifecycle()
-            LoveTheme(font = settings?.font.orEmpty()) {
+            LoveTheme(theme = settings?.theme.orEmpty(), font = settings?.font.orEmpty()) {
                 val today by vm.today.collectAsStateWithLifecycle()
                 val updateProgress by vm.updateProgress.collectAsStateWithLifecycle()
-                val pairing by vm.pairing.collectAsStateWithLifecycle()
+                val pairings by vm.pairings.collectAsStateWithLifecycle()
                 val autoBackup by vm.autoBackup.collectAsStateWithLifecycle()
                 val scope = rememberCoroutineScope()
                 var showSettings by rememberSaveable { mutableStateOf(false) }
                 var showCloudRestore by rememberSaveable { mutableStateOf(false) }
+                var showPartnerSync by rememberSaveable { mutableStateOf(false) }
+                var showGuide by rememberSaveable { mutableStateOf(false) }
                 var editingPhoto by rememberSaveable { mutableStateOf(false) }
                 var showLicenses by rememberSaveable { mutableStateOf(false) }
                 // Moment-Editor: null = zu, "" = neuer Moment, sonst ID; dazu optional ein vorgeschlagener Titel
                 var editingMoment by rememberSaveable { mutableStateOf<String?>(null) }
                 var momentSuggestion by rememberSaveable { mutableStateOf<String?>(null) }
                 var onboardingStep by rememberSaveable { mutableIntStateOf(0) }
-                var introDone by rememberSaveable { mutableStateOf(false) }
+                // Absichtlich nur remember, kein rememberSaveable: Der gespeicherte Zustand
+                // würde introDone=true nach einem Prozess-Neustart wiederherstellen und das
+                // Intro danach nie wieder zeigen — es soll bei jedem Kaltstart laufen.
+                var introDone by remember { mutableStateOf(false) }
                 // Ändert sich bei jedem Zurückkehren, damit der Berechtigungsstatus neu gelesen wird
                 var resumeCount by rememberSaveable { mutableIntStateOf(0) }
 
@@ -172,28 +176,38 @@ class MainActivity : ComponentActivity() {
                     if (on && !allowed) askPermission()
                 }
 
-                // Nach der Auswahl direkt den Bildausschnitt anpassen lassen
+                // Nach der Auswahl direkt den Bildausschnitt anpassen lassen.
+                // photoFor = Beziehung, für die das Foto gilt (null = gemeinsames Foto für alle)
+                var photoFor by remember { mutableStateOf<String?>(null) }
                 val photoPicker = rememberLauncherForActivityResult(
                     ActivityResultContracts.PickVisualMedia(),
                 ) { uri ->
                     if (uri != null) {
                         scope.launch {
-                            vm.setPhoto(uri).join()
+                            vm.setPhoto(uri, photoFor).join()
                             editingPhoto = true
                         }
                     }
                 }
-                fun pickPhoto() = photoPicker.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                )
+                fun pickPhoto(relationshipId: String? = null) {
+                    photoFor = relationshipId
+                    photoPicker.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                }
 
-                // Weitere Fotos für die Diashow im Titelbild
+                // Weitere Fotos für die Diashow im Titelbild.
+                // slidesFor = Beziehung, für die die Fotos gelten (null = gemeinsame Diashow)
+                var slidesFor by remember { mutableStateOf<String?>(null) }
                 val slidePicker = rememberLauncherForActivityResult(
                     ActivityResultContracts.PickMultipleVisualMedia(MAX_SLIDES),
-                ) { uris -> if (uris.isNotEmpty()) vm.addSlides(uris) }
-                fun pickSlides() = slidePicker.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                )
+                ) { uris -> if (uris.isNotEmpty()) vm.addSlides(uris, slidesFor) }
+                fun pickSlides(relationshipId: String? = null) {
+                    slidesFor = relationshipId
+                    slidePicker.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                }
 
                 // Sicherung als Datei über den Dateidialog von Android, ganz ohne Internet
                 val backupSaver = rememberLauncherForActivityResult(
@@ -237,10 +251,12 @@ class MainActivity : ComponentActivity() {
                 // ob es wirklich eine Sicherung ist, prüft die App beim Laden selbst
                 fun loadBackup() = backupLoader.launch(arrayOf("*/*"))
 
-                BackHandler(enabled = showSettings || showCloudRestore || editingPhoto || editingMoment != null || showLicenses) {
+                BackHandler(enabled = showSettings || showCloudRestore || showPartnerSync || showGuide || editingPhoto || editingMoment != null || showLicenses) {
                     when {
                         showLicenses -> showLicenses = false
                         showCloudRestore -> showCloudRestore = false
+                        showPartnerSync -> showPartnerSync = false
+                        showGuide -> showGuide = false
                         editingMoment != null -> editingMoment = null
                         editingPhoto -> editingPhoto = false
                         else -> showSettings = false
@@ -249,18 +265,18 @@ class MainActivity : ComponentActivity() {
 
                 val s = settings
                 val screen = when {
+                    !introDone -> "intro"
                     s == null -> "loading"
                     editingPhoto && s.photoPath != null -> "editor"
                     editingMoment != null && s.onboardingDone -> "moment"
-                    !s.onboardingDone && !introDone -> "intro"
                     showCloudRestore -> "cloud-restore"
+                    showPartnerSync -> "partner-sync"
+                    showGuide -> "guide"
                     !s.onboardingDone -> "onboarding"
                     showSettings && showLicenses -> "licenses"
                     showSettings -> "settings"
                     else -> "home"
                 }
-                // Im Juni (Pride Month) ist die App ein bisschen bunter
-                CompositionLocalProvider(LocalPrideMonth provides isPrideMonth(today)) {
                 Box(
                     Modifier
                         .fillMaxSize()
@@ -283,6 +299,14 @@ class MainActivity : ComponentActivity() {
                             },
                             label = "screen",
                         ) { target ->
+                            // Das Intro hängt von nichts ab — es läuft ab dem ersten Frame,
+                            // auch während die Einstellungen noch laden. Vorher hat das
+                            // s==null hier einen leeren Bildschirm gezeigt und das Intro erst
+                            // verspätet (manchmal schon fertig) erscheinen lassen.
+                            if (target == "intro") {
+                                IntroScreen(onContinue = { introDone = true })
+                                return@AnimatedContent
+                            }
                             if (s == null) return@AnimatedContent
                             when (target) {
                                 "licenses" -> LicensesScreen(onBack = { showLicenses = false })
@@ -311,11 +335,27 @@ class MainActivity : ComponentActivity() {
                                         vm.setPhotoFrame(x, y, z)
                                         editingPhoto = false
                                     },
+                                    photoPath = s.photoFor(if (s.showAll) null else s.relationship.id),
                                 )
-                                "intro" -> IntroScreen(onContinue = { introDone = true })
                                 "cloud-restore" -> CloudRestoreScreen(
                                     onBack = { showCloudRestore = false },
                                     onRestored = { showCloudRestore = false },
+                                )
+                                "guide" -> GuideScreen(onBack = { showGuide = false })
+                                "partner-sync" -> PartnerSyncPage(
+                                    settings = s,
+                                    pairings = pairings,
+                                    actions = SyncActions(
+                                        onCreate = vm::createPairing,
+                                        onScan = { me, _ -> scanPairing(me) },
+                                        onMe = vm::setMe,
+                                        onUnpair = vm::unpair,
+                                        onOpen = { syncOpener.launch(arrayOf("*/*")) },
+                                    ),
+                                    onContinue = {
+                                        vm.setOnboardingDone(true)
+                                        showPartnerSync = false
+                                    },
                                 )
                                 "onboarding" -> OnboardingScreen(
                                     settings = s,
@@ -336,18 +376,22 @@ class MainActivity : ComponentActivity() {
                                     onStep = { onboardingStep = it },
                                     onRestoreBackup = ::loadBackup,
                                     onRestoreFromDrive = { showCloudRestore = true },
+                                    onSyncWithPartner = { showPartnerSync = true },
                                 )
                                 "settings" -> SettingsScreen(
                                     settings = s,
                                     notificationsAllowed = allowed,
                                     onBack = { showSettings = false },
                                     onPickPhoto = ::pickPhoto,
+                                    onPickPhotoFor = ::pickPhoto,
+                                    onRemovePhoto = vm::removePhoto,
                                     onPreset = vm::setPreset,
                                     onResetPhoto = vm::resetPhoto,
                                     onNotifications = ::setNotifications,
                                     onNotifyTime = vm::setNotifyTime,
                                     onRemindBefore = vm::setRemindBefore,
                                 onFont = vm::setFont,
+                                    onTheme = vm::setTheme,
                                     onTestNotification = {
                                         if (allowed) vm.sendTestNotification() else askPermission()
                                     },
@@ -372,8 +416,8 @@ class MainActivity : ComponentActivity() {
                                     onOpenUpdate = vm::installUpdate,
                                     updateProgress = updateProgress,
                                     onOpenLicenses = { showLicenses = true },
-                                    onAddSlides = ::pickSlides,
-                                    onRemoveSlide = vm::removeSlide,
+                                    onAddSlidesFor = ::pickSlides,
+                                    onRemoveSlideFor = { relationshipId, path -> vm.removeSlide(path, relationshipId) },
                                     onExportBackup = ::saveBackup,
                                     onImportBackup = ::loadBackup,
                                     autoBackup = autoBackup,
@@ -396,15 +440,15 @@ class MainActivity : ComponentActivity() {
                                     onDiscreet = vm::setDiscreet,
                                     appLock = lockOn,
                                     onAppLock = ::setAppLock,
-                                    pairing = pairing,
+                                    pairings = pairings,
                                     sync = SyncActions(
                                         onCreate = vm::createPairing,
-                                        onScan = ::scanPairing,
+                                        onScan = { me, _ -> scanPairing(me) },
                                         onMe = vm::setMe,
                                         onUnpair = vm::unpair,
-                                        onSend = { vm.shareSync() },
+                                        onSend = vm::shareSync,
                                         onOpen = { syncOpener.launch(arrayOf("*/*")) },
-                                        onSharePairing = { vm.sharePairingFile() },
+                                        onGuide = { showGuide = true },
                                     ),
                                 )
                                 else -> HomeScreen(
@@ -446,7 +490,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
-                }
                 }
             }
         }

@@ -32,8 +32,12 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -45,7 +49,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -66,9 +69,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -79,7 +80,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -121,10 +121,11 @@ fun HomeScreen(
     jumpTo: String? = null,
     onJumped: () -> Unit = {},
 ) {
-    // Live und Momente lassen sich in den Einstellungen ausblenden
+    // Momente lassen sich in den Einstellungen ausblenden, Spaß ist immer da
     val pages = listOfNotNull(
         HomePage.Overview,
         HomePage.Live.takeIf { settings.showLive },
+        HomePage.Fun,
         HomePage.Moments.takeIf { settings.showMoments },
     )
     val pageCount = pages.size
@@ -152,6 +153,7 @@ fun HomeScreen(
                     Overview(settings, today, onSelect)
                 }
                 HomePage.Live -> LiveScreen(settings, active = pager.currentPage == page)
+                HomePage.Fun -> FunScreen(settings)
                 HomePage.Moments -> MomentsScreen(
                     settings,
                     today,
@@ -232,10 +234,11 @@ private fun celebrateOn(settings: LoveSettings, today: LocalDate): Boolean {
 private enum class HomePage(@androidx.annotation.StringRes val label: Int) {
     Overview(R.string.tab_overview),
     Live(R.string.tab_live),
+    Fun(R.string.tab_fun),
     Moments(R.string.tab_moments),
 }
 
-private val BarItemHeight = 40.dp
+private val BarItemHeight = 36.dp
 private val BarPadding = 4.dp
 
 @Composable
@@ -250,12 +253,12 @@ private fun ModeSwitch(selected: Int, pages: List<HomePage>, onSelect: (Int) -> 
                     .clip(CircleShape)
                     .background(if (active) Color.White else Color.Transparent)
                     .selectable(selected = active, role = Role.Tab) { onSelect(i) }
-                    .padding(horizontal = 18.dp),
+                    .padding(horizontal = 10.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     label,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     color = if (active) Wine else Color.White,
                 )
             }
@@ -299,6 +302,8 @@ private fun Overview(settings: LoveSettings, today: LocalDate, onSelect: (String
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Verbindung wechseln: direkt unter dem Titelbild, damit man ihn nicht übersieht
+            if (settings.relationships.size > 1) RelationshipSwitch(settings, onSelect)
             if (together.totalDays == 0L) {
                 CounterCard(
                     stringResource(R.string.together_for),
@@ -322,8 +327,6 @@ private fun Overview(settings: LoveSettings, today: LocalDate, onSelect: (String
             if (settings.relationship.distance) DistanceCard(settings.relationship, today)
 
             review?.let { YearReviewCard(it) { ShareCard.shareYear(context, settings, it) } }
-
-            if (LocalPrideMonth.current) RainbowCard(stringResource(R.string.pride_title), stringResource(R.string.all_couples_text))
 
             if (!future) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -358,14 +361,18 @@ internal fun Hero(settings: LoveSettings, onSelect: (String) -> Unit) {
             .fillMaxWidth()
             .height(heroHeight()),
     ) {
-        HeroPhoto(settings, Modifier.fillMaxSize())
+        HeroPhoto(
+            settings,
+            Modifier.fillMaxSize(),
+            photoPath = settings.photoFor(if (settings.showAll) null else settings.relationship.id),
+            slides = settings.slidesFor(if (settings.showAll) null else settings.relationship.id),
+        )
         Box(
             Modifier
                 .fillMaxSize()
                 .background(PhotoScrim),
         )
-        NamesOverlay(settings, Modifier.align(Alignment.BottomStart))
-        if (settings.relationships.size > 1) RelationshipSwitch(settings, onSelect)
+        NamesOverlay(settings, Modifier.align(Alignment.BottomCenter))
     }
 }
 
@@ -380,14 +387,71 @@ fun NamesOverlay(settings: LoveSettings, modifier: Modifier = Modifier) {
     )
 }
 
-/** Namen mit schlagendem Herz dazwischen; bei mehr als zwei Menschen mit Zeilenumbruch */
+/** Namen mit schlagendem Herz dazwischen, mittig. Zwei Namen stehen in einer Zeile oder
+ *  untereinander — Name, Herz, Name. Ab vier Namen liegen sie in Reihen zu dritt,
+ *  kleiner gesetzt, damit sie das Titelbild nicht verdecken:
+ *  A ❤ B ❤ C ❤ / D ❤ E ❤ F — das Herz am Reihenende verbindet zur nächsten Reihe. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun NamesRow(names: List<String>, style: TextStyle, heart: Dp, modifier: Modifier = Modifier) {
-    FlowRow(modifier, itemVerticalAlignment = Alignment.CenterVertically) {
-        names.forEachIndexed { i, name ->
-            if (i > 0) BeatingHeart(Modifier.padding(horizontal = heart * 0.4f), size = heart)
-            Text(name, style = style, color = Color.White, maxLines = 1)
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val density = LocalDensity.current
+        val measurer = rememberTextMeasurer()
+        val availablePx = with(density) { maxWidth.toPx() }
+        val heartPx = with(density) { (heart * 1.8f).toPx() }
+        val oneLinePx = remember(names, style, heart) {
+            names.sumOf { measurer.measure(AnnotatedString(it), style).size.width.toDouble() } +
+                (names.size - 1).coerceAtLeast(0) * heartPx
+        }
+        // Breiteste Reihe im Raster (Namen + Herzen dazwischen und am Reihenende)
+        val rows = if (names.size >= 4) names.chunked(3) else emptyList()
+        val gridRowPx = remember(names, style, heart) {
+            rows.mapIndexed { ri, row ->
+                row.sumOf { measurer.measure(AnnotatedString(it), style).size.width.toDouble() } +
+                    (row.size - 1 + if (ri < rows.size - 1) 1 else 0) * heartPx
+            }.maxOrNull() ?: 0.0
+        }
+        if (names.size >= 4) {
+            // 0,97 lässt Luft für kleine Unterschiede zwischen Messen und Zeichnen;
+            // die Untergrenze 0,35 reicht auch für drei lange Namen in einer Reihe
+            val scale = (availablePx * 0.97f / gridRowPx.toFloat()).coerceIn(0.35f, 1f)
+            val rowStyle = style.copy(fontSize = style.fontSize * scale)
+            val rowHeart = heart * scale
+            Column(
+                Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                rows.forEachIndexed { ri, row ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        row.forEachIndexed { i, name ->
+                            if (i > 0) BeatingHeart(Modifier.padding(horizontal = rowHeart * 0.4f), size = rowHeart)
+                            Text(name, style = rowStyle, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        if (ri < rows.size - 1) BeatingHeart(Modifier.padding(horizontal = rowHeart * 0.4f), size = rowHeart)
+                    }
+                }
+            }
+        } else if (oneLinePx > availablePx) {
+            Column(
+                Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                names.forEachIndexed { i, name ->
+                    if (i > 0) BeatingHeart(Modifier.padding(vertical = 2.dp), size = heart)
+                    Text(name, style = style, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        } else {
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                names.forEachIndexed { i, name ->
+                    if (i > 0) BeatingHeart(Modifier.padding(horizontal = heart * 0.4f), size = heart)
+                    Text(name, style = style, color = Color.White, maxLines = 1)
+                }
+            }
         }
     }
 }
@@ -400,46 +464,14 @@ fun BeatingHeart(modifier: Modifier = Modifier, size: Dp = 30.dp) {
         animationSpec = infiniteRepeatable(tween(650), RepeatMode.Reverse),
         label = "beat",
     )
-    val pride = LocalPrideMonth.current
     Icon(
         Icons.Rounded.Favorite,
         contentDescription = null,
-        tint = if (pride) Color.White else Color(0xFFFF5C77),
+        tint = Color(0xFFFF5C77),
         modifier = modifier
             .size(size)
-            .scale(beat)
-            .then(if (pride) Modifier.rainbow() else Modifier),
+            .scale(beat),
     )
-}
-
-/** Karte mit Regenbogenstreifen: Pride-Gruß auf der Startseite, "Für jede Liebe" in den Einstellungen */
-@Composable
-internal fun RainbowCard(title: String, text: String) {
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .background(Brush.horizontalGradient(PrideColors)),
-        )
-        Column(Modifier.padding(20.dp)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-    }
 }
 
 @Composable

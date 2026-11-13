@@ -86,14 +86,14 @@ import java.io.File
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-/** Vorschläge im leeren Zustand, in der Reihenfolge einer typischen Beziehung */
+/** Vorschläge im leeren Zustand: positiv und für jede Beziehung passend — Paar, Eltern, Geschwister, Freunde */
 val MomentSuggestions = listOf(
     R.string.suggest_met,
-    R.string.suggest_first_date,
-    R.string.suggest_first_kiss,
-    R.string.suggest_i_love_you,
+    R.string.suggest_married,
     R.string.suggest_first_trip,
-    R.string.suggest_moved_in,
+    R.string.suggest_first_eid,
+    R.string.suggest_umrah,
+    R.string.suggest_birthday,
 )
 
 /** Eintrag der Zeitleiste: ein gespeicherter Moment oder euer Starttag */

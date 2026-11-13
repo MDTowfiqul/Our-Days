@@ -18,10 +18,8 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsBottomHeight
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -81,15 +79,14 @@ private fun colorOf(index: Int) = RelationshipColors[index % RelationshipColors.
 /** Name einer Beziehung für Auswahl und Listen: die eigene Bezeichnung oder die Namen */
 internal fun LoveSettings.titleOf(r: Relationship): String = r.label.ifBlank { namesOf(r) }
 
-/** Auswahl oben im Titelbild, wenn es mehrere Beziehungen gibt */
+/** Auswahl unter dem Titelbild, wenn es mehrere Beziehungen gibt */
 @Composable
 internal fun RelationshipSwitch(settings: LoveSettings, onSelect: (String) -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.statusBars)
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         SwitchChip(stringResource(R.string.poly_all), settings.showAll, showIcon = true) { onSelect(ALL_RELATIONSHIPS) }
@@ -105,7 +102,10 @@ private fun SwitchChip(label: String, active: Boolean, showIcon: Boolean = false
         Modifier
             .height(36.dp)
             .clip(CircleShape)
-            .background(if (active) Color.White else Color.Black.copy(alpha = 0.35f))
+            .background(
+                if (active) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceContainerHigh,
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -114,7 +114,7 @@ private fun SwitchChip(label: String, active: Boolean, showIcon: Boolean = false
             Icon(
                 Icons.Rounded.Groups,
                 contentDescription = null,
-                tint = if (active) Wine else Color.White,
+                tint = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .padding(end = 6.dp)
                     .size(18.dp),
@@ -123,7 +123,7 @@ private fun SwitchChip(label: String, active: Boolean, showIcon: Boolean = false
         Text(
             label,
             style = MaterialTheme.typography.labelLarge,
-            color = if (active) Wine else Color.White,
+            color = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
         )
     }
@@ -162,11 +162,10 @@ internal fun PolyOverview(settings: LoveSettings, today: LocalDate, onSelect: (S
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // Verbindung wechseln: direkt unter dem Titelbild, damit man ihn nicht übersieht
+            if (settings.relationships.size > 1) RelationshipSwitch(settings, onSelect)
             PolyculeCard(settings)
             if (todays.isNotEmpty()) TodayBanner(todays)
-            if (LocalPrideMonth.current) {
-                RainbowCard(stringResource(R.string.pride_title), stringResource(R.string.all_couples_text))
-            }
             settings.relationships.forEachIndexed { i, r ->
                 RelationshipCard(settings, r, colorOf(i), today) { onSelect(r.id) }
             }

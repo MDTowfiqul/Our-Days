@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Crop
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Collections
@@ -176,6 +177,10 @@ fun SettingsScreen(
     notificationsAllowed: Boolean,
     onBack: () -> Unit = {},
     onPickPhoto: () -> Unit = {},
+    /** Foto für eine bestimmte Beziehung wählen (null = für alle zusammen) */
+    onPickPhotoFor: (String?) -> Unit = {},
+    /** Eigenes Foto einer Beziehung entfernen (danach gilt wieder das gemeinsame Foto) */
+    onRemovePhoto: (String) -> Unit = {},
     onPreset: (Int) -> Unit = {},
     onResetPhoto: () -> Unit = {},
     onNotifications: (Boolean) -> Unit = {},
@@ -196,8 +201,10 @@ fun SettingsScreen(
     /** Download-Fortschritt eines Updates in Prozent (-1 = unbekannt), null = kein Download */
     updateProgress: Int? = null,
     onOpenLicenses: () -> Unit = {},
-    onAddSlides: () -> Unit = {},
-    onRemoveSlide: (String) -> Unit = {},
+    /** Diashow-Fotos für eine Beziehung hinzufügen (null = gemeinsame Diashow) */
+    onAddSlidesFor: (String?) -> Unit = {},
+    /** Ein Diashow-Foto entfernen (null = gemeinsame Diashow) */
+    onRemoveSlideFor: (String?, String) -> Unit = { _, _ -> },
     onExportBackup: () -> Unit = {},
     onImportBackup: () -> Unit = {},
     /** Automatische Sicherung, null = aus */
@@ -216,16 +223,19 @@ fun SettingsScreen(
     onWidgetRelationship: (String) -> Unit = {},
     onDiscreet: (Boolean) -> Unit = {},
     onFont: (String) -> Unit = {},
+    onTheme: (String) -> Unit = {},
     /** App-Sperre mit Fingerabdruck, Gesicht oder PIN */
     appLock: Boolean = false,
     onAppLock: (Boolean) -> Unit = {},
-    /** Kopplung für den Abgleich, null = nicht gekoppelt */
-    pairing: Pairing? = null,
+    /** Kopplungen für den Abgleich, Beziehungs-ID → Kopplung, leer = nicht gekoppelt */
+    pairings: Map<String, Pairing> = emptyMap(),
     sync: SyncActions = SyncActions(),
     /** Geöffnete Unterseite beim Start (für Tests), null = Übersicht */
     initialPage: SettingsPage? = null,
 ) {
     var dialog by remember { mutableStateOf<String?>(null) }
+    /** Beziehung, deren Diashow gerade bearbeitet wird (null = gemeinsame Diashow) */
+    var slidesFor by remember { mutableStateOf<String?>(null) }
     var page by rememberSaveable { mutableStateOf(initialPage) }
     BackHandler(enabled = page != null) { page = null }
     val context = LocalContext.current
@@ -260,7 +270,7 @@ fun SettingsScreen(
                     null -> Overview(
                         settings,
                         notificationsAllowed,
-                        pairing,
+                        pairings,
                         appLock = appLock,
                         languageLabel = languageLabel(language),
                         onLanguage = { dialog = "language" },
@@ -319,27 +329,19 @@ fun SettingsScreen(
                         }
                     }
                     SettingsPage.Photo -> Section(null) {
-                        Row(Icons.Rounded.AddPhotoAlternate, stringResource(R.string.pick_own_photo), null, onClick = onPickPhoto)
+                        Row(Icons.Rounded.AddPhotoAlternate, stringResource(R.string.pick_own_photo), null) { dialog = "photo_for" }
                         Divider()
-                        if (settings.photoPath != null) {
+                        if (settings.photoPath != null || settings.photos.isNotEmpty()) {
                             Row(Icons.Rounded.Crop, stringResource(R.string.adjust_crop), null, onClick = onAdjustPhoto)
                             Divider()
                         }
                         Row(Icons.Rounded.Collections, stringResource(R.string.pick_preset), null) { dialog = "presets" }
                         Divider()
-                        Row(
-                            Icons.Rounded.Slideshow,
-                            stringResource(R.string.slideshow),
-                            if (settings.slides.isEmpty()) {
-                                stringResource(R.string.slideshow_off)
-                            } else {
-                                pluralStringResource(R.plurals.slideshow_count, settings.slides.size, settings.slides.size.toString())
-                            },
-                        ) { dialog = "slides" }
-                        Divider()
                         Row(Icons.Rounded.RestartAlt, stringResource(R.string.reset_photo), null, onClick = onResetPhoto)
                         Divider()
                         Row(Icons.Rounded.TextFields, stringResource(R.string.font_title), AppFonts.find(settings.font).label()) { dialog = "font" }
+                        Divider()
+                        Row(Icons.Rounded.Palette, stringResource(R.string.theme_title), stringResource(AppThemes.find(settings.theme).label)) { dialog = "theme" }
                     }
                     SettingsPage.Privacy -> Section(null) {
                         ListItem(
@@ -435,7 +437,7 @@ fun SettingsScreen(
                         Divider()
                         Row(Icons.Rounded.Widgets, stringResource(R.string.add_widget), null, onClick = onAddWidget)
                     }
-                    SettingsPage.Sync -> SyncPage(settings, pairing, sync)
+                    SettingsPage.Sync -> SyncPage(settings, pairings, sync)
                     SettingsPage.Cloud -> CloudBackupScreen()
                     SettingsPage.Backup -> Section(null) {
                         ListItem(
@@ -582,7 +584,6 @@ fun SettingsScreen(
                 }
                 if (page == null) {
                     Spacer(Modifier.height(8.dp))
-                    RainbowCard(stringResource(R.string.all_couples), stringResource(R.string.all_couples_text))
                     Credit()
                 }
                 Spacer(Modifier.height(24.dp))
@@ -686,14 +687,70 @@ fun SettingsScreen(
             onLanguage(it)
         }
         "font" -> FontDialog(settings.font, onSelect = onFont, onDismiss = { dialog = null })
+        "theme" -> ThemeDialog(settings.theme, onSelect = onTheme, onDismiss = { dialog = null })
         "presets" -> PresetDialog(settings.presetIndex, onDismiss = { dialog = null }) {
             onPreset(it)
             dialog = null
         }
+        // Foto wählen: für alle zusammen oder für eine einzelne Beziehung
+        "photo_for" -> AlertDialog(
+            onDismissRequest = { dialog = null },
+            icon = { Icon(Icons.Rounded.AddPhotoAlternate, null) },
+            title = { Text(stringResource(R.string.photo_for_title)) },
+            text = {
+                Column {
+                    PhotoForRow(
+                        name = stringResource(R.string.photo_for_all),
+                        subtitle = stringResource(R.string.photo_for_shared),
+                        hasOwnPhoto = false,
+                        onPick = {
+                            dialog = null
+                            onPickPhotoFor(null)
+                        },
+                        onRemove = null,
+                        onSlides = {
+                            slidesFor = null
+                            dialog = "slides"
+                        },
+                    )
+                    Divider()
+                    settings.relationships.forEach { r ->
+                        val own = settings.photos.containsKey(r.id)
+                        PhotoForRow(
+                            name = settings.namesOf(r),
+                            subtitle = stringResource(
+                                if (own) R.string.photo_for_own else R.string.photo_for_shared,
+                            ),
+                            hasOwnPhoto = own,
+                            onPick = {
+                                dialog = null
+                                onPickPhotoFor(r.id)
+                            },
+                            onRemove = if (own) {
+                                {
+                                    onRemovePhoto(r.id)
+                                    dialog = null
+                                }
+                            } else {
+                                null
+                            },
+                            onSlides = {
+                                slidesFor = r.id
+                                dialog = "slides"
+                            },
+                        )
+                        Divider()
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { dialog = null }) { Text(stringResource(R.string.close)) } },
+        )
         "slides" -> SlidesDialog(
-            slides = settings.slides,
-            onAdd = onAddSlides,
-            onRemove = onRemoveSlide,
+            slides = if (slidesFor == null) settings.slides else settings.slidesByRelationship[slidesFor].orEmpty(),
+            subtitle = slidesFor?.let { id -> settings.relationships.firstOrNull { it.id == id }?.let { settings.namesOf(it) } },
+            emptyText = if (slidesFor == null) R.string.slideshow_empty else R.string.slideshow_empty_own,
+            onAdd = { onAddSlidesFor(slidesFor) },
+            onRemove = { onRemoveSlideFor(slidesFor, it) },
             onDismiss = { dialog = null },
         )
         "import" -> AlertDialog(
@@ -740,11 +797,10 @@ private fun Credit() {
         Icon(
             Icons.Rounded.Favorite,
             contentDescription = stringResource(R.string.credit_heart),
-            tint = if (LocalPrideMonth.current) Color.White else Color(0xFFFF5C77),
+            tint = Color(0xFFFF5C77),
             modifier = Modifier
                 .padding(horizontal = 4.dp)
-                .size(14.dp)
-                .then(if (LocalPrideMonth.current) Modifier.rainbow() else Modifier),
+                .size(14.dp),
         )
         Text(stringResource(R.string.credit_after), style = style, color = color)
     }
@@ -774,7 +830,7 @@ enum class SettingsPage(
 private fun Overview(
     settings: LoveSettings,
     notificationsAllowed: Boolean,
-    pairing: Pairing?,
+    pairings: Map<String, Pairing> = emptyMap(),
     appLock: Boolean,
     languageLabel: String,
     onLanguage: () -> Unit,
@@ -802,7 +858,7 @@ private fun Overview(
         } else {
             "${settings.names}, ${Texts.mediumDate(settings.startDate)}"
         },
-        SettingsPage.Photo to photo + ", " + AppFonts.find(settings.font).label(),
+        SettingsPage.Photo to photo + ", " + AppFonts.find(settings.font).label() + ", " + stringResource(AppThemes.find(settings.theme).label),
         SettingsPage.Privacy to listOfNotNull(
             stringResource(if (appLock) R.string.app_lock_on else R.string.app_lock_off),
             if (settings.discreet) stringResource(R.string.discreet) else null,
@@ -818,7 +874,7 @@ private fun Overview(
         SettingsPage.Home to stringResource(R.string.settings_home_summary),
         SettingsPage.Backup to stringResource(R.string.settings_backup_summary),
         SettingsPage.Cloud to cloudBackupSummary(),
-        SettingsPage.Sync to stringResource(if (pairing != null) R.string.sync_paired else R.string.sync_summary),
+        SettingsPage.Sync to stringResource(if (pairings.isNotEmpty()) R.string.sync_paired else R.string.sync_summary),
         SettingsPage.Reset to stringResource(R.string.reset_summary),
         SettingsPage.About to if (updateReady) {
             stringResource(R.string.update_available, settings.updateVersion.orEmpty())
@@ -895,6 +951,38 @@ private fun Row(icon: ImageVector, title: String, value: String?, onClick: () ->
         leadingContent = { Icon(icon, null) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(onClick = onClick),
+    )
+}
+
+/** Zeile im „Foto für“-Dialog: tippen wählt ein Foto, das Kreuz entfernt ein eigenes Foto,
+ *  das Diashow-Symbol öffnet die Diashow dieser Beziehung */
+@Composable
+private fun PhotoForRow(
+    name: String,
+    subtitle: String,
+    hasOwnPhoto: Boolean,
+    onPick: () -> Unit,
+    onRemove: (() -> Unit)?,
+    onSlides: () -> Unit,
+) {
+    ListItem(
+        headlineContent = { Text(name) },
+        supportingContent = { Text(subtitle, color = MaterialTheme.colorScheme.primary) },
+        leadingContent = { Icon(Icons.Rounded.AddPhotoAlternate, null) },
+        trailingContent = {
+            Row {
+                IconButton(onClick = onSlides) {
+                    Icon(Icons.Rounded.Slideshow, contentDescription = stringResource(R.string.slideshow))
+                }
+                if (hasOwnPhoto && onRemove != null) {
+                    IconButton(onClick = onRemove) {
+                        Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.remove))
+                    }
+                }
+            }
+        },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier.clickable(onClick = onPick),
     )
 }
 
@@ -1435,14 +1523,22 @@ internal fun PresetDialog(selected: Int, onDismiss: () -> Unit, onPick: (Int) ->
 
 /** Weitere Fotos für die Diashow im Titelbild: ansehen, hinzufügen, entfernen */
 @Composable
-private fun SlidesDialog(slides: List<String>, onAdd: () -> Unit, onRemove: (String) -> Unit, onDismiss: () -> Unit) {
+private fun SlidesDialog(
+    slides: List<String>,
+    subtitle: String? = null,
+    emptyText: Int = R.string.slideshow_empty,
+    onAdd: () -> Unit,
+    onRemove: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.Slideshow, null) },
         title = { Text(stringResource(R.string.slideshow)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(if (slides.isEmpty()) R.string.slideshow_empty else R.string.slideshow_hint))
+                if (subtitle != null) Text(subtitle, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(if (slides.isEmpty()) emptyText else R.string.slideshow_hint))
                 if (slides.isNotEmpty()) {
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(3),

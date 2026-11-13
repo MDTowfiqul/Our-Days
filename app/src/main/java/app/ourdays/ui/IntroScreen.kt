@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -23,8 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,7 +50,7 @@ fun IntroScreen(onContinue: () -> Unit) {
         started = true
         delay(1000)
         met = true
-        // Kurz stehen lassen, dann von selbst weiter — der Knopf ist nur zum Überspringen
+        // Kurz stehen lassen, dann von selbst weiter — kein Knopf nötig, es geht automatisch weiter
         delay(1200)
         onContinue()
     }
@@ -168,29 +165,6 @@ fun IntroScreen(onContinue: () -> Unit) {
                     fontSize = 18.sp,
                     textAlign = TextAlign.Center
                 )
-            }
-            Spacer(modifier = Modifier.height(56.dp))
-            AnimatedVisibility(
-                visible = met,
-                enter = fadeIn(animationSpec = tween(700, delayMillis = 650))
-            ) {
-                Button(
-                    onClick = onContinue,
-                    modifier = Modifier
-                        .fillMaxWidth(0.75f)
-                        .height(54.dp),
-                    shape = RoundedCornerShape(27.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFF5A78),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(
-                        text = "Continue to App",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
             }
         }
         AnimatedVisibility(

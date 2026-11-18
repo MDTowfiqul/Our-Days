@@ -350,7 +350,7 @@ private fun MissYouCard(settings: LoveSettings, relId: String, actions: FunActio
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
-        if (kissBurst > 0) ConfettiBurst(kissBurst)
+        if (kissBurst > 0) ConfettiBurst(kissBurst, modifier = Modifier.matchParentSize())
     }
     if (showDatePicker) {
         FunDatePickerDialog(
@@ -770,9 +770,7 @@ private fun SurpriseReveal(surprise: Surprise, settings: LoveSettings, onKeep: (
                         }
                     }
                 }
-                if (burst > 0) {
-                    Box(Modifier.matchParentSize()) { ConfettiBurst(burst) }
-                }
+                if (burst > 0) ConfettiBurst(burst, modifier = Modifier.matchParentSize())
             }
         }
     }

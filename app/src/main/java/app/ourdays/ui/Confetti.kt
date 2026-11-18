@@ -55,7 +55,11 @@ private class Piece(
  * [originFraction] ist der Startpunkt im Bild (Anteil von Breite und Höhe).
  */
 @Composable
-internal fun ConfettiBurst(key: Int, originFraction: Offset = Offset(0.5f, 0.8f)) {
+internal fun ConfettiBurst(
+    key: Int,
+    originFraction: Offset = Offset(0.5f, 0.8f),
+    modifier: Modifier = Modifier.fillMaxSize(),
+) {
     val context = LocalContext.current
     val animationsOff = remember {
         Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
@@ -85,7 +89,7 @@ internal fun ConfettiBurst(key: Int, originFraction: Offset = Offset(0.5f, 0.8f)
         }
     }
     if (time >= duration) return
-    Canvas(Modifier.matchParentSize()) {
+    Canvas(modifier) {
         val origin = Offset(size.width * originFraction.x, size.height * originFraction.y)
         val fade = if (time > duration * 0.7f) 1f - (time - duration * 0.7f) / (duration * 0.3f) else 1f
         val gravity = size.height * 0.75f

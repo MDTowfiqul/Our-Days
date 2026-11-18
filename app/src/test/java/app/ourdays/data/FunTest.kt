@@ -8,6 +8,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 // Robolectric wegen org.json
 @RunWith(RobolectricTestRunner::class)
@@ -59,6 +60,48 @@ class FunTest {
     fun missSpanNeverNegative() {
         val span = missSpan(LocalDate.of(2026, 11, 20), LocalDateTime.of(2026, 11, 18, 0, 0, 0))
         assertEquals(MissSpan(0, 0, 0, 0), span)
+    }
+
+    @Test
+    fun planLinkDateEncodesAllParams() {
+        val link = buildPlanLink(
+            kind = "date",
+            names = "Towfiqul & Ainon",
+            date = LocalDate.of(2026, 11, 21),
+            time = LocalTime.of(19, 30),
+            menu = "Kacchi Biryani, Falooda",
+            destination = null,
+        )
+        assertTrue(link.startsWith("$PLAN_PAGE_BASE_URL?"))
+        assertTrue(link.contains("kind=date"))
+        assertTrue(link.contains("names=Towfiqul+%26+Ainon"))
+        assertTrue(link.contains("date=2026-11-21"))
+        assertTrue(link.contains("time=19%3A30"))
+        assertTrue(link.contains("menu=Kacchi+Biryani%2C+Falooda"))
+        assertTrue(!link.contains("dest="))
+    }
+
+    @Test
+    fun planLinkTripOmitsEmptyMenuAndTime() {
+        val link = buildPlanLink(
+            kind = "trip",
+            names = "Towfiqul & Ainon",
+            date = LocalDate.of(2026, 12, 25),
+            time = null,
+            menu = null,
+            destination = "Cox's Bazar",
+        )
+        assertTrue(link.contains("kind=trip"))
+        assertTrue(link.contains("dest=Cox%27s+Bazar"))
+        assertTrue(!link.contains("menu="))
+        assertTrue(!link.contains("time="))
+    }
+
+    @Test
+    fun planLinkOmitsBlankNames() {
+        val link = buildPlanLink("date", "   ", LocalDate.of(2026, 11, 21), null, "Falooda", null)
+        assertTrue(!link.contains("names="))
+        assertTrue(link.contains("menu=Falooda"))
     }
 
     @Test

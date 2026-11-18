@@ -252,13 +252,13 @@ private fun MissYouCard(settings: LoveSettings, relId: String, actions: FunActio
         CouplePhoto(
             settings,
             Modifier
-                .fillMaxSize()
+                .matchParentSize()
                 .blur(28.dp)
                 .alpha(0.5f),
             photoPath = settings.photoFor(relId),
         )
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
-        FloatingHearts()
+        Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.35f)))
+        Box(Modifier.matchParentSize()) { FloatingHearts() }
         Column(
             Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -770,7 +770,9 @@ private fun SurpriseReveal(surprise: Surprise, settings: LoveSettings, onKeep: (
                         }
                     }
                 }
-                if (burst > 0) ConfettiBurst(burst)
+                if (burst > 0) {
+                    Box(Modifier.matchParentSize()) { ConfettiBurst(burst) }
+                }
             }
         }
     }

@@ -85,7 +85,7 @@ internal fun ConfettiBurst(key: Int, originFraction: Offset = Offset(0.5f, 0.8f)
         }
     }
     if (time >= duration) return
-    Canvas(Modifier.fillMaxSize()) {
+    Canvas(Modifier.matchParentSize()) {
         val origin = Offset(size.width * originFraction.x, size.height * originFraction.y)
         val fade = if (time > duration * 0.7f) 1f - (time - duration * 0.7f) / (duration * 0.3f) else 1f
         val gravity = size.height * 0.75f

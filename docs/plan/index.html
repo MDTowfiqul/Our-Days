@@ -148,14 +148,20 @@
   var noCount = 0;
   var noBtn = document.getElementById("noBtn");
   var plea = document.getElementById("plea");
+  function dodge() {
+    var x = Math.floor(Math.random() * 201) - 100;
+    var y = Math.floor(Math.random() * 57) - 28;
+    noBtn.style.transform = "translate(" + x + "px, " + y + "px)";
+  }
   noBtn.addEventListener("click", function () {
     noCount++;
     plea.textContent = pleading[Math.min(noCount - 1, pleading.length - 1)];
-    if (noCount >= 3) {
-      var x = Math.floor(Math.random() * 201) - 100;
-      var y = Math.floor(Math.random() * 57) - 28;
-      noBtn.style.transform = "translate(" + x + "px, " + y + "px)";
-    }
+    if (noCount >= 3) dodge();
+  });
+  // On a computer the button also slips away when the mouse reaches for it —
+  // but only after two pleading lines, so the teasing still shows first.
+  noBtn.addEventListener("mouseover", function () {
+    if (noCount >= 2) dodge();
   });
 
   function row(label, value) {

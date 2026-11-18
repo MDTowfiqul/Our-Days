@@ -66,7 +66,9 @@ object SurpriseCodec {
                 relationshipId = relationshipId,
                 occasion = occasion,
                 message = message,
-                from = o.optString("from").ifBlank { null },
+                // „from“:null steht in der Datei — optString liefert dafür je nach org.json
+                // den Text "null" statt "", also erst isNull prüfen
+                from = if (o.isNull("from")) null else o.optString("from").ifBlank { null },
                 createdAt = o.optLong("createdAt"),
                 revealed = o.optBoolean("revealed", false),
             )

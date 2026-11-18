@@ -276,6 +276,8 @@ data class SyncData(
     val deletedRelationships: Map<String, Long> = emptyMap(),
     /** Ob die Datei Momente enthält (false = nur Namen und Datum) */
     val includeMoments: Boolean = true,
+    /** Überraschungen für diese Beziehung (nur wenn Momente enthalten sind) */
+    val surprises: List<Surprise> = emptyList(),
 )
 
 object SyncCodec {
@@ -307,6 +309,7 @@ object SyncCodec {
         .put("deletedPeople", JSONObject().apply { d.deletedPeople.forEach { (id, time) -> put(id, time) } })
         .put("deletedRelationships", JSONObject().apply { d.deletedRelationships.forEach { (id, time) -> put(id, time) } })
         .put("includeMoments", d.includeMoments)
+        .put("surprises", JSONArray(SurpriseCodec.encode(d.surprises)))
         .toString()
 
     fun decode(json: String): SyncData {
@@ -329,6 +332,7 @@ object SyncCodec {
             deletedPeople = markers("deletedPeople"),
             deletedRelationships = markers("deletedRelationships"),
             includeMoments = o.optBoolean("includeMoments", true),
+            surprises = SurpriseCodec.decode(o.optJSONArray("surprises")?.toString()),
         )
     }
 }
@@ -348,6 +352,8 @@ data class MergeResult(
     val deletedPeople: Map<String, Long> = emptyMap(),
     /** Gelöschte Beziehungen (vereinigt) */
     val deletedRelationships: Map<String, Long> = emptyMap(),
+    /** Überraschungen beider Handys, vereint nach ID */
+    val surprises: List<Surprise> = emptyList(),
 )
 
 object SyncMerge {
@@ -369,6 +375,7 @@ object SyncMerge {
         remote: SyncData,
         deletedPeople: Map<String, Long> = emptyMap(),
         deletedRelationships: Map<String, Long> = emptyMap(),
+        surprises: List<Surprise> = emptyList(),
     ): MergeResult {
         val allDeleted = (deleted.keys + remote.deleted.keys).associateWith { maxOf(deleted[it] ?: 0, remote.deleted[it] ?: 0) }
         val byId = moments.associateBy { it.id }.toMutableMap()
@@ -431,6 +438,11 @@ object SyncMerge {
             removed = removed,
             deletedPeople = allDeletedPeople.filterValues { it > System.currentTimeMillis() - YEAR_MS },
             deletedRelationships = allDeletedRelationships.filterValues { it > System.currentTimeMillis() - YEAR_MS },
+            // Überraschungen: vereint nach ID; geöffnet ist geöffnet, egal auf welchem Handy
+            surprises = (surprises + remote.surprises).groupBy { it.id }.values.map { group ->
+                val newest = group.maxByOrNull { it.createdAt } ?: group.first()
+                newest.copy(revealed = group.any { it.revealed })
+            }.sortedBy { it.createdAt },
         )
     }
 

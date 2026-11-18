@@ -104,6 +104,18 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
     fun addSlides(uris: List<Uri>, relationshipId: String? = null) = viewModelScope.launch { repo.addSlides(uris, relationshipId) }
     fun removeSlide(path: String, relationshipId: String? = null) = viewModelScope.launch { repo.removeSlide(path, relationshipId) }
 
+    fun setLastMet(date: LocalDate, relationshipId: String) = viewModelScope.launch { repo.setLastMet(date, relationshipId) }
+    fun sendKiss(relationshipId: String) = viewModelScope.launch { repo.sendKiss(relationshipId) }
+    fun setMissLevel(level: Int, relationshipId: String) = viewModelScope.launch { repo.setMissLevel(level, relationshipId) }
+    fun markSurpriseRevealed(id: String) = viewModelScope.launch { repo.markSurpriseRevealed(id) }
+    fun deleteSurprise(id: String) = viewModelScope.launch { repo.deleteSurprise(id) }
+
+    /** Überraschung speichern und gleich mit der Abgleich-Datei an das andere Handy schicken (falls gekoppelt) */
+    fun sendSurprise(surprise: app.ourdays.data.Surprise, relationshipId: String) = viewModelScope.launch {
+        repo.saveSurprise(surprise)
+        if (_pairings.value.containsKey(relationshipId)) shareSyncNow(relationshipId, includeMoments = true)
+    }
+
     /** Speichert alle Daten mit Fotos in die gewählte Datei. */
     fun exportBackup(uri: Uri) = viewModelScope.launch {
         val app = getApplication<Application>()
@@ -191,8 +203,12 @@ class LoveViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Abgleich-Datei für eine Beziehung erstellen und über das Teilen-Menü verschicken (z. B. per Messenger) */
     fun shareSync(relationshipId: String, includeMoments: Boolean = true) = viewModelScope.launch {
+        shareSyncNow(relationshipId, includeMoments)
+    }
+
+    private suspend fun shareSyncNow(relationshipId: String, includeMoments: Boolean) {
         val app = getApplication<Application>()
-        val p = _pairings.value[relationshipId] ?: return@launch
+        val p = _pairings.value[relationshipId] ?: return
         val title = settings.value?.let { s ->
             s.relationships.firstOrNull { it.id == relationshipId }?.let { s.titleOf(it) }
         }.orEmpty()

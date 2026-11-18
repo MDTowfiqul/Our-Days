@@ -92,6 +92,14 @@ data class LoveSettings(
     val slides: List<String> = emptyList(),
     /** Diashow je Beziehung (Beziehungs-ID → Pfade im App-Speicher); ohne Eintrag gilt die gemeinsame Diashow oben */
     val slidesByRelationship: Map<String, List<String>> = emptyMap(),
+    /** Letztes Treffen je Beziehung (Tageszahl seit 1970), für die „Ich vermisse dich“-Karte */
+    val lastMet: Map<String, Long> = emptyMap(),
+    /** Küsse je Beziehung, gezählt auf der „Ich vermisse dich“-Karte */
+    val kisses: Map<String, Int> = emptyMap(),
+    /** Zuletzt gewählte Vermissen-Stufe (1–5) je Beziehung */
+    val missLevels: Map<String, Int> = emptyMap(),
+    /** Überraschungen für die andere Person (auch empfangene) */
+    val surprises: List<Surprise> = emptyList(),
     /** Version (versionCode), deren Neuigkeiten schon gezeigt wurden, 0 = unbekannt */
     val changelogSeen: Int = 0,
     /** Nach einem Update zeigen, was neu ist */
@@ -127,6 +135,32 @@ data class LoveSettings(
     fun slidesFor(relationshipId: String?): List<String> {
         if (relationshipId == null || relationshipId == ALL_RELATIONSHIPS) return slides
         return slidesByRelationship[relationshipId]?.filter { File(it).exists() }?.takeIf { it.isNotEmpty() } ?: slides
+    }
+
+    /** Letztes Treffen einer Beziehung; null/„alle“ = die gezeigte Beziehung */
+    fun lastMetFor(relationshipId: String?): LocalDate? {
+        val id = if (relationshipId == null || relationshipId == ALL_RELATIONSHIPS) relationship.id else relationshipId
+        val day = lastMet[id] ?: return null
+        if (day < 0 || day > LocalDate.now().toEpochDay()) return null
+        return LocalDate.ofEpochDay(day)
+    }
+
+    /** Küsse einer Beziehung; null/„alle“ = die gezeigte Beziehung */
+    fun kissesFor(relationshipId: String?): Int {
+        val id = if (relationshipId == null || relationshipId == ALL_RELATIONSHIPS) relationship.id else relationshipId
+        return (kisses[id] ?: 0).coerceAtLeast(0)
+    }
+
+    /** Vermissen-Stufe einer Beziehung (1–5), null = noch keine gewählt */
+    fun missLevelFor(relationshipId: String?): Int? {
+        val id = if (relationshipId == null || relationshipId == ALL_RELATIONSHIPS) relationship.id else relationshipId
+        return missLevels[id]?.takeIf { it in 1..5 }
+    }
+
+    /** Überraschungen einer Beziehung; null/„alle“ = alle */
+    fun surprisesFor(relationshipId: String?): List<Surprise> {
+        if (relationshipId == null || relationshipId == ALL_RELATIONSHIPS) return surprises
+        return surprises.filter { it.relationshipId == relationshipId }
     }
 
     /** Namen für Widgets und Mitteilungen, im diskreten Modus nur Anfangsbuchstaben */
@@ -204,6 +238,10 @@ private object Keys {
     val celebrate = booleanPreferencesKey("celebrate")
     val slides = stringPreferencesKey("slides")
     val slidesByRelationship = stringPreferencesKey("slides_by_relationship")
+    val lastMet = stringPreferencesKey("last_met")
+    val kisses = stringPreferencesKey("kiss_counts")
+    val missLevels = stringPreferencesKey("miss_levels")
+    val surprises = stringPreferencesKey("surprises")
     val people = stringPreferencesKey("people")
     val relationships = stringPreferencesKey("relationships")
     val selected = stringPreferencesKey("selected_relationship")
@@ -297,6 +335,17 @@ class LoveRepository(private val context: Context) {
                 .filterKeys { id -> relationships.any { it.id == id } }
                 .mapValues { (_, paths) -> paths.filter { File(it).exists() } }
                 .filterValues { it.isNotEmpty() },
+            lastMet = LongMapCodec.decode(this[Keys.lastMet])
+                .filterKeys { id -> relationships.any { it.id == id } }
+                .filterValues { it in 0..LocalDate.now().toEpochDay() },
+            kisses = IntMapCodec.decode(this[Keys.kisses])
+                .filterKeys { id -> relationships.any { it.id == id } }
+                .mapValues { (_, v) -> v.coerceAtLeast(0) },
+            missLevels = IntMapCodec.decode(this[Keys.missLevels])
+                .filterKeys { id -> relationships.any { it.id == id } }
+                .filterValues { it in 1..5 },
+            surprises = SurpriseCodec.decode(this[Keys.surprises])
+                .filter { s -> relationships.any { it.id == s.relationshipId } },
             changelogSeen = this[Keys.changelogSeen] ?: d.changelogSeen,
             showChangelog = this[Keys.showChangelog] ?: d.showChangelog,
             newestFirst = this[Keys.newestFirst] ?: d.newestFirst,
@@ -427,6 +476,45 @@ class LoveRepository(private val context: Context) {
 
     suspend fun setCelebrate(on: Boolean) = context.dataStore.edit { it[Keys.celebrate] = on }
 
+    /** Letztes Treffen einer Beziehung (für die „Ich vermisse dich“-Karte) */
+    suspend fun setLastMet(date: LocalDate, relationshipId: String) = context.dataStore.edit { prefs ->
+        prefs[Keys.lastMet] = LongMapCodec.encode(
+            LongMapCodec.decode(prefs[Keys.lastMet]) + (relationshipId to date.toEpochDay()),
+        )
+    }
+
+    /** Ein Kuss mehr auf der „Ich vermisse dich“-Karte */
+    suspend fun sendKiss(relationshipId: String) = context.dataStore.edit { prefs ->
+        val counts = IntMapCodec.decode(prefs[Keys.kisses]).toMutableMap()
+        counts[relationshipId] = (counts[relationshipId] ?: 0) + 1
+        prefs[Keys.kisses] = IntMapCodec.encode(counts)
+    }
+
+    /** Vermissen-Stufe (1–5) einer Beziehung */
+    suspend fun setMissLevel(level: Int, relationshipId: String) = context.dataStore.edit { prefs ->
+        prefs[Keys.missLevels] = IntMapCodec.encode(
+            IntMapCodec.decode(prefs[Keys.missLevels]) + (relationshipId to level.coerceIn(1, 5)),
+        )
+    }
+
+    /** Neue Überraschung speichern (sie reist mit der nächsten Abgleich-Datei mit) */
+    suspend fun saveSurprise(surprise: Surprise) = context.dataStore.edit { prefs ->
+        val list = SurpriseCodec.decode(prefs[Keys.surprises]).filterNot { it.id == surprise.id } + surprise
+        prefs[Keys.surprises] = SurpriseCodec.encode(list)
+    }
+
+    suspend fun markSurpriseRevealed(id: String) = context.dataStore.edit { prefs ->
+        val list = SurpriseCodec.decode(prefs[Keys.surprises])
+            .map { if (it.id == id) it.copy(revealed = true) else it }
+        prefs[Keys.surprises] = SurpriseCodec.encode(list)
+    }
+
+    suspend fun deleteSurprise(id: String) = context.dataStore.edit { prefs ->
+        prefs[Keys.surprises] = SurpriseCodec.encode(
+            SurpriseCodec.decode(prefs[Keys.surprises]).filterNot { it.id == id },
+        )
+    }
+
     suspend fun deleteMoment(id: String) {
         val old = current().moments.firstOrNull { it.id == id } ?: return
         old.photoPaths.forEach { deleteFile(it) }
@@ -460,6 +548,7 @@ class LoveRepository(private val context: Context) {
             emptyList()
         }
         val deletedMoments = if (includeMoments) deleted else emptyMap()
+        val surprises = if (includeMoments) s.surprises.filter { it.relationshipId == relationship.id } else emptyList()
         withContext(Dispatchers.IO) {
             val zipFile = File(context.cacheDir, "sync-out.zip")
             try {
@@ -467,7 +556,7 @@ class LoveRepository(private val context: Context) {
                     zip.putNextEntry(ZipEntry(SyncCodec.JSON))
                     zip.write(
                         SyncCodec.encode(
-                            SyncData(people, listOf(relationship), moments, deletedMoments, pairing.me, relationship.id, deletedPeople, deletedRelationships, includeMoments),
+                            SyncData(people, listOf(relationship), moments, deletedMoments, pairing.me, relationship.id, deletedPeople, deletedRelationships, includeMoments, surprises),
                         ).toByteArray(Charsets.UTF_8),
                     )
                     zip.closeEntry()
@@ -528,6 +617,7 @@ class LoveRepository(private val context: Context) {
             remote,
             decodeDeleted(prefs0[Keys.deletedPeople]),
             decodeDeleted(prefs0[Keys.deletedRelationships]),
+            local.surprises,
         )
         // Fotos der übernommenen Momente in den App-Speicher holen, alte Fotos aufräumen
         val takenIds = result.taken.map { it.id }.toSet()
@@ -553,6 +643,7 @@ class LoveRepository(private val context: Context) {
             prefs[Keys.deleted] = encodeDeleted(result.deleted)
             prefs[Keys.deletedPeople] = encodeDeleted(result.deletedPeople)
             prefs[Keys.deletedRelationships] = encodeDeleted(result.deletedRelationships)
+            prefs[Keys.surprises] = SurpriseCodec.encode(result.surprises)
         }
         PairingStore.save(context, relationshipId, pairing.copy(lastSync = System.currentTimeMillis()))
         return result

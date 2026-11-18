@@ -91,6 +91,19 @@ object BackupCodec {
             "moments",
             JSONArray(MomentCodec.encode(s.moments.map { m -> m.copy(photoPaths = m.photoPaths.map { File(it).name }) })),
         )
+        .put(
+            "lastMet",
+            JSONObject().apply { s.lastMet.forEach { (id, day) -> put(id, day) } },
+        )
+        .put(
+            "kisses",
+            JSONObject().apply { s.kisses.forEach { (id, count) -> put(id, count) } },
+        )
+        .put(
+            "missLevels",
+            JSONObject().apply { s.missLevels.forEach { (id, level) -> put(id, level) } },
+        )
+        .put("surprises", JSONArray(SurpriseCodec.encode(s.surprises)))
         .toString(2)
 
     /** Liest eine Sicherung; wirft eine Exception, wenn es keine (passende) Sicherung von Since Us ist. */
@@ -142,6 +155,31 @@ object BackupCodec {
             }.toMap()
         }.orEmpty().filterKeys { id -> cleanRelationships.any { it.id == id } }
             .filterValues { it.isNotEmpty() }
+        fun longMap(key: String): Map<String, Long> {
+            val obj = o.optJSONObject(key) ?: return emptyMap()
+            return obj.keys().asSequence().mapNotNull { id ->
+                if (!obj.has(id)) return@mapNotNull null
+                id to obj.optLong(id)
+            }.toMap()
+        }
+        fun intMap(key: String): Map<String, Int> {
+            val obj = o.optJSONObject(key) ?: return emptyMap()
+            return obj.keys().asSequence().mapNotNull { id ->
+                if (!obj.has(id)) return@mapNotNull null
+                id to obj.optInt(id)
+            }.toMap()
+        }
+        val lastMet = longMap("lastMet")
+            .filterKeys { id -> cleanRelationships.any { it.id == id } }
+            .filterValues { it in 0..LocalDate.now().toEpochDay() }
+        val kisses = intMap("kisses")
+            .filterKeys { id -> cleanRelationships.any { it.id == id } }
+            .mapValues { (_, v) -> v.coerceAtLeast(0) }
+        val missLevels = intMap("missLevels")
+            .filterKeys { id -> cleanRelationships.any { it.id == id } }
+            .filterValues { it in 1..5 }
+        val surprises = SurpriseCodec.decode(o.optJSONArray("surprises")?.toString())
+            .filter { s -> cleanRelationships.any { it.id == s.relationshipId } }
         return LoveSettings(
             people = cleanPeople,
             relationships = cleanRelationships,
@@ -174,6 +212,10 @@ object BackupCodec {
                 .distinct()
                 .take(MAX_SLIDES),
             slidesByRelationship = slidesByRelationship,
+            lastMet = lastMet,
+            kisses = kisses,
+            missLevels = missLevels,
+            surprises = surprises,
         )
     }
 }
@@ -221,5 +263,35 @@ object PathListCodec {
         if (json.isNullOrBlank()) return emptyList()
         val array = runCatching { JSONArray(json) }.getOrNull() ?: return emptyList()
         return (0 until array.length()).mapNotNull { array.optString(it).ifBlank { null } }
+    }
+}
+
+/** Tageszahlen (seit 1970) je Beziehung als JSON-Text, für das letzte Treffen */
+object LongMapCodec {
+    fun encode(map: Map<String, Long>): String =
+        JSONObject().apply { map.forEach { (id, value) -> put(id, value) } }.toString()
+
+    fun decode(json: String?): Map<String, Long> {
+        if (json.isNullOrBlank()) return emptyMap()
+        val obj = runCatching { JSONObject(json) }.getOrNull() ?: return emptyMap()
+        return obj.keys().asSequence().mapNotNull { id ->
+            if (!obj.has(id)) return@mapNotNull null
+            id to obj.optLong(id)
+        }.toMap()
+    }
+}
+
+/** Zähler je Beziehung als JSON-Text, für Küsse und die Vermissen-Stufe */
+object IntMapCodec {
+    fun encode(map: Map<String, Int>): String =
+        JSONObject().apply { map.forEach { (id, value) -> put(id, value) } }.toString()
+
+    fun decode(json: String?): Map<String, Int> {
+        if (json.isNullOrBlank()) return emptyMap()
+        val obj = runCatching { JSONObject(json) }.getOrNull() ?: return emptyMap()
+        return obj.keys().asSequence().mapNotNull { id ->
+            if (!obj.has(id)) return@mapNotNull null
+            id to obj.optInt(id)
+        }.toMap()
     }
 }

@@ -25,16 +25,26 @@ class FunTest {
     }
 
     @Test
+    fun surpriseCodecKeepsCustomOccasion() {
+        val custom = Surprise(relationshipId = "main", occasion = "Graduation", message = "You did it!", from = "a")
+        val decoded = SurpriseCodec.decode(SurpriseCodec.encode(listOf(custom)))
+        assertEquals(1, decoded.size)
+        assertEquals("Graduation", decoded[0].occasion)
+        // und nach einem zweiten Durchlauf immer noch
+        assertEquals("Graduation", SurpriseCodec.decode(SurpriseCodec.encode(decoded))[0].occasion)
+    }
+
+    @Test
     fun surpriseCodecIgnoresGarbage() {
         assertTrue(SurpriseCodec.decode(null).isEmpty())
         assertTrue(SurpriseCodec.decode("kein json").isEmpty())
         assertTrue(SurpriseCodec.decode("[]").isEmpty())
         // ohne Nachricht oder ohne Beziehung fällt der Eintrag weg
         assertTrue(SurpriseCodec.decode("""[{"id":"x","relationship":"main","occasion":"birthday","message":"  "}]""").isEmpty())
-        // unbekannter Anlass wird zu „einfach so“
+        // ein eigener Anlass bleibt erhalten (kein fester Anlass mehr nötig)
         val one = SurpriseCodec.decode("""[{"id":"x","relationship":"main","occasion":"falsch","message":"Hi"}]""")
         assertEquals(1, one.size)
-        assertEquals(SurpriseOccasions.JUST_BECAUSE, one[0].occasion)
+        assertEquals("falsch", one[0].occasion)
     }
 
     @Test

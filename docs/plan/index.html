@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Our Days — a plan for us</title>
+<meta name="description" content="Someone made a plan for you with Our Days. Say yes?">
+<meta name="theme-color" content="#0F0C20">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: #0F0C20;
+    background-image:
+      radial-gradient(600px 300px at 85% -10%, rgba(255, 77, 141, .25), transparent 60%),
+      radial-gradient(700px 350px at -10% 110%, rgba(124, 93, 250, .30), transparent 60%);
+    color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    width: 100%; max-width: 480px;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 28px;
+    padding: 32px 24px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+  .for { color: #FFB2B9; font-size: 15px; margin: 0 0 8px; }
+  h1 { font-size: 30px; line-height: 1.25; margin: 0; }
+  .plea { color: #FFB2B9; min-height: 24px; margin: 14px 0 0; font-size: 17px; }
+  .buttons { display: flex; gap: 16px; justify-content: center; margin-top: 28px; position: relative; min-height: 52px; }
+  button {
+    font: inherit; font-size: 18px; font-weight: 600;
+    border: 0; border-radius: 999px; padding: 14px 32px; cursor: pointer;
+  }
+  .yes { background: #FF4D8D; color: #fff; box-shadow: 0 8px 24px rgba(255, 77, 141, .45); }
+  .no { background: #E5484D; color: #fff; position: relative; transition: transform .18s ease; }
+  .summary { text-align: left; margin-top: 20px; }
+  .summary h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .12em; color: #F5C86B; margin: 0 0 12px; text-align: center; }
+  .row { display: flex; gap: 12px; padding: 10px 4px; border-top: 1px solid rgba(255, 255, 255, .12); font-size: 17px; }
+  .row:first-of-type { border-top: 0; }
+  .row .k { color: rgba(255, 255, 255, .65); min-width: 96px; }
+  .row .v { font-weight: 600; }
+  .msg { margin-top: 16px; font-style: italic; color: rgba(255, 255, 255, .85); font-size: 17px; }
+  .hearts { font-size: 40px; margin-bottom: 8px; }
+  .foot { margin-top: 28px; font-size: 13px; color: rgba(255, 255, 255, .5); }
+  .foot a { color: #FFB2B9; }
+  .hidden { display: none; }
+  .heart { position: absolute; font-size: 22px; opacity: 0; animation: float 2.6s ease-out forwards; pointer-events: none; }
+  @keyframes float {
+    0% { opacity: 0; transform: translateY(0) scale(.6); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-120px) scale(1.2); }
+  }
+</style>
+</head>
+<body>
+<main class="card" id="card">
+  <div id="ask">
+    <div class="hearts">💗</div>
+    <p class="for" id="forLine"></p>
+    <h1 id="question"></h1>
+    <p class="plea" id="plea"></p>
+    <div class="buttons">
+      <button class="yes" id="yesBtn" type="button">Yes 💖</button>
+      <button class="no" id="noBtn" type="button">No</button>
+    </div>
+  </div>
+  <div id="plan" class="hidden">
+    <div class="hearts">🎉💗</div>
+    <h1 id="yay"></h1>
+    <div class="summary">
+      <h2>Our plan</h2>
+      <div id="rows"></div>
+      <p class="msg hidden" id="msgLine"></p>
+    </div>
+  </div>
+  <div id="oops" class="hidden">
+    <div class="hearts">🥺</div>
+    <h1>This plan link is incomplete</h1>
+    <p class="plea">It looks like part of the plan is missing. Ask the person who sent it to share it again from the Our Days app.</p>
+  </div>
+  <p class="foot">Made with <a href="https://mdtowfiqul.github.io/Our-Days/">Our Days</a> ♥</p>
+</main>
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  function param(name) {
+    var v = params.get(name);
+    return v === null ? "" : v.trim();
+  }
+  var kind = param("kind");
+  var names = param("names");
+  var dateRaw = param("date");
+  var timeRaw = param("time");
+  var menu = param("menu");
+  var dest = param("dest");
+  var msg = param("msg");
+
+  var ask = document.getElementById("ask");
+  var plan = document.getElementById("plan");
+  var oops = document.getElementById("oops");
+
+  function show(el) { el.classList.remove("hidden"); }
+  function hide(el) { el.classList.add("hidden"); }
+
+  // A plan needs at least a kind, who it is for, and a date.
+  if ((kind !== "date" && kind !== "trip") || !names || !dateRaw) {
+    hide(ask); hide(plan); show(oops);
+    return;
+  }
+
+  var date = new Date(dateRaw + "T00:00:00");
+  if (isNaN(date.getTime())) {
+    hide(ask); hide(plan); show(oops);
+    return;
+  }
+  var dateText = date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  var timeText = "";
+  if (timeRaw) {
+    var parts = timeRaw.split(":");
+    var h = parseInt(parts[0], 10), m = parseInt(parts[1] || "0", 10);
+    if (!isNaN(h)) {
+      var ampm = h >= 12 ? "PM" : "AM";
+      var h12 = h % 12; if (h12 === 0) h12 = 12;
+      timeText = h12 + ":" + String(m).padStart(2, "0") + " " + ampm;
+    }
+  }
+
+  document.getElementById("forLine").textContent = "A plan for " + names;
+  document.getElementById("question").textContent =
+    kind === "date" ? "Will you go on a date with me? \u{1F339}" : "Will you pack your bags and go on a trip with me? \u{1F5FA}\uFE0F";
+
+  var pleading = [
+    "Did you tap No by mistake? \u{1F914}",
+    "Are you sure sure?? \u{1F97A}",
+    "Please? \u{1F97A}\u{1F62D}",
+    "If you say no I will be very sad \u{1F622}",
+    "Maybe read the question one last time?"
+  ];
+  var noCount = 0;
+  var noBtn = document.getElementById("noBtn");
+  var plea = document.getElementById("plea");
+  noBtn.addEventListener("click", function () {
+    noCount++;
+    plea.textContent = pleading[Math.min(noCount - 1, pleading.length - 1)];
+    if (noCount >= 3) {
+      var x = Math.floor(Math.random() * 201) - 100;
+      var y = Math.floor(Math.random() * 57) - 28;
+      noBtn.style.transform = "translate(" + x + "px, " + y + "px)";
+    }
+  });
+
+  function row(label, value) {
+    var r = document.createElement("div");
+    r.className = "row";
+    var k = document.createElement("span");
+    k.className = "k"; k.textContent = label;
+    var v = document.createElement("span");
+    v.className = "v"; v.textContent = value;
+    r.appendChild(k); r.appendChild(v);
+    return r;
+  }
+
+  document.getElementById("yesBtn").addEventListener("click", function () {
+    hide(ask); show(plan);
+    document.getElementById("yay").textContent =
+      kind === "date" ? "Yay! It's a date! \u{1F339}" : "Yay! Pack your bags! \u{1F5FA}\uFE0F";
+    var rows = document.getElementById("rows");
+    rows.appendChild(row("With", names));
+    rows.appendChild(row("Date", dateText));
+    if (timeText) rows.appendChild(row("Time", timeText));
+    if (kind === "date" && menu) rows.appendChild(row("Menu", menu));
+    if (kind === "trip" && dest) rows.appendChild(row("Where", dest));
+    if (msg) {
+      var m = document.getElementById("msgLine");
+      m.textContent = "\u201C" + msg + "\u201D";
+      m.classList.remove("hidden");
+    }
+    var card = document.getElementById("card");
+    ["\u{1F495}", "\u{1F49E}", "\u{1F970}", "\u2728", "\u{1F339}"].forEach(function (ch, i) {
+      var s = document.createElement("span");
+      s.className = "heart"; s.textContent = ch;
+      s.style.left = (12 + i * 18) + "%";
+      s.style.top = "70%";
+      s.style.animationDelay = (i * 0.25) + "s";
+      card.appendChild(s);
+    });
+  });
+})();
+</script>
+</body>
+</html>

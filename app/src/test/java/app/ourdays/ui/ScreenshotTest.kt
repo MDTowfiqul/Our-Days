@@ -332,6 +332,20 @@ class ScreenshotTest {
     ) { MomentsScreen(withMoments, today.withDayOfMonth(20).minusMonths(5), {}, {}) }
 
     @Test
+    fun momentsPhotos() = shot(
+        "moments_photos",
+        lang = "bn",
+        before = { compose.onNodeWithText("ছবি").performClick() },
+    ) { MomentsScreen(withMoments, today, {}, {}) }
+
+    @Test
+    fun momentsCards() = shot(
+        "moments_cards",
+        lang = "bn",
+        before = { compose.onNodeWithText("কার্ড").performClick() },
+    ) { MomentsScreen(withMoments, today, {}, {}) }
+
+    @Test
     fun momentsEnglish() = shot("moments") {
         MomentsScreen(
             settings.copy(

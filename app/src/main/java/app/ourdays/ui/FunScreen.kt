@@ -49,7 +49,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -73,6 +75,7 @@ import androidx.compose.ui.window.Dialog
 import app.ourdays.data.LoveSettings
 import app.ourdays.data.Surprise
 import app.ourdays.data.SurpriseOccasions
+import app.ourdays.data.buildPlanLink
 import app.ourdays.data.missSpan
 import kotlinx.coroutines.delay
 import ourdays.app.R
@@ -177,9 +180,9 @@ fun FunScreen(
         }
         Spacer(Modifier.height(72.dp))
     }
-    if (showDateWizard) DateWizard(relId) { showDateWizard = false }
-    if (showTripWizard) TripWizard(relId) { showTripWizard = false }
-    if (showSurprise) SurpriseComposer(relId, pairedIds.contains(relId), actions) { showSurprise = false }
+    if (showDateWizard) DateWizard(settings) { showDateWizard = false }
+    if (showTripWizard) TripWizard(settings) { showTripWizard = false }
+    if (showSurprise) SurpriseComposer(settings, pairedIds, actions) { showSurprise = false }
     reveal?.let { s ->
         SurpriseReveal(
             surprise = s,
@@ -191,15 +194,16 @@ fun FunScreen(
 }
 
 @Composable
-private fun occasionTitle(occasion: String): String = stringResource(
-    when (occasion) {
-        SurpriseOccasions.PROPOSAL -> R.string.fun_occasion_proposal
-        SurpriseOccasions.BIRTHDAY -> R.string.fun_occasion_birthday
-        SurpriseOccasions.EID -> R.string.fun_occasion_eid
-        SurpriseOccasions.ANNIVERSARY -> R.string.fun_occasion_anniversary
-        else -> R.string.fun_occasion_just_because
-    },
-)
+private fun occasionTitle(occasion: String): String = when (occasion) {
+    SurpriseOccasions.PROPOSAL -> stringResource(R.string.fun_occasion_proposal)
+    SurpriseOccasions.BIRTHDAY -> stringResource(R.string.fun_occasion_birthday)
+    SurpriseOccasions.EID -> stringResource(R.string.fun_occasion_eid)
+    SurpriseOccasions.ANNIVERSARY -> stringResource(R.string.fun_occasion_anniversary)
+    SurpriseOccasions.CUSTOM -> stringResource(R.string.fun_occasion_custom)
+    SurpriseOccasions.JUST_BECAUSE -> stringResource(R.string.fun_occasion_just_because)
+    // Eigener Anlass: der getippte Name steht so da
+    else -> occasion
+}
 
 @Composable
 private fun FunActionCard(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
@@ -419,7 +423,7 @@ private fun AskStep(
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         Text(
             stringResource(question),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
         )
         if (noCount > 0) {
@@ -451,7 +455,7 @@ private fun AskStep(
 private fun WizardDialog(@StringRes title: Int, onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp)) {
-            Column(Modifier.padding(24.dp)) {
+            Column(Modifier.padding(28.dp)) {
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -487,22 +491,98 @@ private val foodOptions = listOf(
     "falooda" to R.string.fun_food_falooda,
 )
 
-private val timeSlots = listOf(
-    LocalTime.of(12, 0), LocalTime.of(15, 0), LocalTime.of(18, 30),
-    LocalTime.of(19, 30), LocalTime.of(20, 30), LocalTime.of(21, 0),
+private val whoForOptions = listOf(
+    "partner" to R.string.fun_who_partner,
+    "family" to R.string.fun_who_family,
+    "friends" to R.string.fun_who_friends,
+    "others" to R.string.fun_who_others,
 )
 
-/** Date planen: fragen → Datum und Uhrzeit → Essen → Zusammenfassung und teilen */
+/** Namen der gewählten Beziehung für die Plan-Seite und die Überraschung */
+private fun namesOf(settings: LoveSettings, relationshipId: String): String {
+    val r = settings.relationships.firstOrNull { it.id == relationshipId } ?: settings.relationship
+    return settings.namesOf(r)
+}
+
+/** Erster Schritt aller Spaß-Abläufe: für wen ist das — dann welche Beziehung */
 @Composable
-private fun DateWizard(relId: String, onDismiss: () -> Unit) {
-    var stage by remember { mutableStateOf(0) }
+private fun WhoForStep(
+    settings: LoveSettings,
+    category: String?,
+    onCategory: (String) -> Unit,
+    relationshipId: String,
+    onRelationship: (String) -> Unit,
+) {
+    Text(stringResource(R.string.fun_who_title), style = MaterialTheme.typography.titleMedium)
+    FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        whoForOptions.forEach { (id, label) ->
+            FilterChip(
+                selected = category == id,
+                onClick = { onCategory(id) },
+                label = { Text(stringResource(label)) },
+            )
+        }
+    }
+    if (settings.relationships.size > 1) {
+        Text(
+            stringResource(R.string.fun_who_pick),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 20.dp),
+        )
+        FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            settings.relationships.forEach { r ->
+                FilterChip(
+                    selected = relationshipId == r.id,
+                    onClick = { onRelationship(r.id) },
+                    label = { Text(settings.namesOf(r)) },
+                )
+            }
+        }
+    }
+}
+
+/** Uhrzeit frei wählen (Material3 TimePicker im Dialog) */
+@Composable
+private fun TimePickerDialog(initial: LocalTime?, onDismiss: () -> Unit, onSave: (LocalTime) -> Unit) {
+    val state = rememberTimePickerState(
+        initialHour = initial?.hour ?: 19,
+        initialMinute = initial?.minute ?: 30,
+        is24Hour = false,
+    )
+    Dialog(onDismissRequest = onDismiss) {
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp)) {
+            Column(Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(stringResource(R.string.fun_wizard_pick_time), style = MaterialTheme.typography.titleLarge)
+                TimePicker(state = state, modifier = Modifier.padding(top = 16.dp))
+                Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+                    Button(onClick = { onSave(LocalTime.of(state.hour, state.minute)) }) {
+                        Text(stringResource(R.string.save))
+                    }
+                }
+            }
+        }
+    }
+}
+/** Date planen: für wen → fragen → Datum und Uhrzeit → Essen → Link teilen */
+@Composable
+private fun DateWizard(settings: LoveSettings, onDismiss: () -> Unit) {
+    var stage by remember { mutableStateOf(-1) }
+    var category by remember { mutableStateOf<String?>(null) }
+    var forRelId by remember { mutableStateOf(settings.relationship.id) }
     var date by remember { mutableStateOf<LocalDate?>(null) }
     var time by remember { mutableStateOf<LocalTime?>(null) }
     var foods by remember { mutableStateOf(setOf<String>()) }
+    var customMenu by remember { mutableStateOf("") }
     var showPicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
     val context = LocalContext.current
     WizardDialog(R.string.fun_plan_date, onDismiss) {
         when (stage) {
+            -1 -> {
+                WhoForStep(settings, category, { category = it }, forRelId, { forRelId = it })
+                WizardNav(canNext = category != null, onBack = onDismiss, onNext = { stage = 0 })
+            }
             0 -> AskStep(R.string.fun_wizard_date_q, pleadingLines) { stage = 1 }
             1 -> {
                 Text(stringResource(R.string.fun_wizard_when), style = MaterialTheme.typography.titleMedium)
@@ -517,16 +597,13 @@ private fun DateWizard(relId: String, onDismiss: () -> Unit) {
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 16.dp),
                 )
-                FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    timeSlots.forEach { slot ->
-                        FilterChip(
-                            selected = time == slot,
-                            onClick = { time = slot },
-                            label = { Text(formatTime(slot)) },
-                        )
-                    }
+                OutlinedButton(
+                    onClick = { showTimePicker = true },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                ) {
+                    Text(time?.let { formatTime(it) } ?: stringResource(R.string.fun_wizard_pick_time))
                 }
-                WizardNav(canNext = date != null && time != null, onBack = onDismiss, onNext = { stage = 2 })
+                WizardNav(canNext = date != null && time != null, onBack = { stage = 0 }, onNext = { stage = 2 })
             }
             2 -> {
                 Text(stringResource(R.string.fun_wizard_food), style = MaterialTheme.typography.titleMedium)
@@ -539,23 +616,41 @@ private fun DateWizard(relId: String, onDismiss: () -> Unit) {
                         )
                     }
                 }
-                WizardNav(canNext = foods.isNotEmpty(), onBack = { stage = 1 }, onNext = { stage = 3 })
+                OutlinedTextField(
+                    value = customMenu,
+                    onValueChange = { customMenu = it },
+                    label = { Text(stringResource(R.string.fun_wizard_custom_menu)) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    singleLine = true,
+                )
+                WizardNav(canNext = foods.isNotEmpty() || customMenu.isNotBlank(), onBack = { stage = 1 }, onNext = { stage = 3 })
             }
             else -> {
-                val menu = foods.map { id -> context.getString(foodOptions.first { it.first == id }.second) }.joinToString(", ")
-                val shareMessage = context.getString(
+                val menu = (
+                    foods.map { id -> context.getString(foodOptions.first { it.first == id }.second) } +
+                        listOfNotNull(customMenu.trim().takeIf { it.isNotBlank() })
+                    ).joinToString(", ")
+                val link = buildPlanLink("date", namesOf(settings, forRelId), date, time, menu, null)
+                val summary = context.getString(
                     R.string.fun_date_share,
                     date?.let { formatDate(it) }.orEmpty(),
                     time?.let { formatTime(it) }.orEmpty(),
                     menu,
                 )
+                val shareMessage = context.getString(R.string.fun_date_share_link, link)
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Text(stringResource(R.string.fun_wizard_summary), style = MaterialTheme.typography.titleMedium)
-                        Text(shareMessage, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
+                        Text(summary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
+                        Text(
+                            link,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
                     }
                 }
                 Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -576,6 +671,13 @@ private fun DateWizard(relId: String, onDismiss: () -> Unit) {
             onSave = { date = it; showPicker = false },
         )
     }
+    if (showTimePicker) {
+        TimePickerDialog(
+            initial = time,
+            onDismiss = { showTimePicker = false },
+            onSave = { time = it; showTimePicker = false },
+        )
+    }
 }
 
 private val destinationOptions = listOf(
@@ -583,12 +685,20 @@ private val destinationOptions = listOf(
     "switzerland" to R.string.fun_dest_switzerland,
     "bali" to R.string.fun_dest_bali,
     "paris" to R.string.fun_dest_paris,
+    "coxs" to R.string.fun_dest_coxs,
+    "sajek" to R.string.fun_dest_sajek,
+    "bandarban" to R.string.fun_dest_bandarbans,
+    "sylhet" to R.string.fun_dest_sylhet,
+    "saintmartin" to R.string.fun_dest_saintmartin,
+    "sundarbans" to R.string.fun_dest_sundarbans,
 )
 
-/** Reise planen: fragen → Ziel → Datum → Zusammenfassung und teilen */
+/** Reise planen: für wen → fragen → Ziel → Datum → Link teilen */
 @Composable
-private fun TripWizard(relId: String, onDismiss: () -> Unit) {
-    var stage by remember { mutableStateOf(0) }
+private fun TripWizard(settings: LoveSettings, onDismiss: () -> Unit) {
+    var stage by remember { mutableStateOf(-1) }
+    var category by remember { mutableStateOf<String?>(null) }
+    var forRelId by remember { mutableStateOf(settings.relationship.id) }
     var destination by remember { mutableStateOf<String?>(null) }
     var localSpot by remember { mutableStateOf("") }
     var date by remember { mutableStateOf<LocalDate?>(null) }
@@ -596,6 +706,10 @@ private fun TripWizard(relId: String, onDismiss: () -> Unit) {
     val context = LocalContext.current
     WizardDialog(R.string.fun_plan_trip, onDismiss) {
         when (stage) {
+            -1 -> {
+                WhoForStep(settings, category, { category = it }, forRelId, { forRelId = it })
+                WizardNav(canNext = category != null, onBack = onDismiss, onNext = { stage = 0 })
+            }
             0 -> AskStep(R.string.fun_wizard_trip_q, pleadingLines) { stage = 1 }
             1 -> {
                 Text(stringResource(R.string.fun_wizard_where), style = MaterialTheme.typography.titleMedium)
@@ -608,26 +722,16 @@ private fun TripWizard(relId: String, onDismiss: () -> Unit) {
                         )
                     }
                 }
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                ) {
-                    Text(
-                        stringResource(R.string.fun_wizard_budget_note),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(12.dp),
-                    )
-                }
                 OutlinedTextField(
                     value = localSpot,
                     onValueChange = { localSpot = it },
-                    label = { Text(stringResource(R.string.fun_wizard_local)) },
+                    label = { Text(stringResource(R.string.fun_wizard_anywhere)) },
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     singleLine = true,
                 )
                 WizardNav(
                     canNext = destination != null || localSpot.isNotBlank(),
-                    onBack = onDismiss,
+                    onBack = { stage = 0 },
                     onNext = { stage = 2 },
                 )
             }
@@ -644,18 +748,26 @@ private fun TripWizard(relId: String, onDismiss: () -> Unit) {
             else -> {
                 val where = destination?.let { id -> context.getString(destinationOptions.first { it.first == id }.second) }
                     ?: localSpot.trim()
-                val shareMessage = context.getString(
+                val link = buildPlanLink("trip", namesOf(settings, forRelId), date, null, null, where)
+                val summary = context.getString(
                     R.string.fun_trip_share,
                     where,
                     date?.let { formatDate(it) }.orEmpty(),
                 )
+                val shareMessage = context.getString(R.string.fun_trip_share_link, link)
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Text(stringResource(R.string.fun_wizard_summary), style = MaterialTheme.typography.titleMedium)
-                        Text(shareMessage, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
+                        Text(summary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
+                        Text(
+                            link,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
                     }
                 }
                 Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -678,49 +790,76 @@ private fun TripWizard(relId: String, onDismiss: () -> Unit) {
     }
 }
 
-/** Überraschung schreiben: Anlass wählen, Nachricht schreiben, an das andere Handy schicken */
+/** Überraschung schreiben: für wen → Anlass wählen, Nachricht schreiben, an das andere Handy schicken */
 @Composable
-private fun SurpriseComposer(relId: String, isPaired: Boolean, actions: FunActions, onDismiss: () -> Unit) {
+private fun SurpriseComposer(settings: LoveSettings, pairedIds: Set<String>, actions: FunActions, onDismiss: () -> Unit) {
+    var stage by remember { mutableStateOf(-1) }
+    var category by remember { mutableStateOf<String?>(null) }
+    var forRelId by remember { mutableStateOf(settings.relationship.id) }
     var occasion by remember { mutableStateOf(SurpriseOccasions.JUST_BECAUSE) }
+    var customOccasion by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
+    val isPaired = pairedIds.contains(forRelId)
     WizardDialog(R.string.fun_surprise_send, onDismiss) {
-        Text(stringResource(R.string.fun_surprise_occasion), style = MaterialTheme.typography.titleMedium)
-        FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SurpriseOccasions.ALL.forEach { occ ->
-                FilterChip(
-                    selected = occasion == occ,
-                    onClick = { occasion = occ },
-                    label = { Text(occasionTitle(occ)) },
+        when (stage) {
+            -1 -> {
+                WhoForStep(settings, category, { category = it }, forRelId, { forRelId = it })
+                WizardNav(canNext = category != null, onBack = onDismiss, onNext = { stage = 0 })
+            }
+            else -> {
+                Text(stringResource(R.string.fun_surprise_occasion), style = MaterialTheme.typography.titleMedium)
+                FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (SurpriseOccasions.ALL + SurpriseOccasions.CUSTOM).forEach { occ ->
+                        FilterChip(
+                            selected = occasion == occ,
+                            onClick = { occasion = occ },
+                            label = { Text(occasionTitle(occ)) },
+                        )
+                    }
+                }
+                if (occasion == SurpriseOccasions.CUSTOM) {
+                    OutlinedTextField(
+                        value = customOccasion,
+                        onValueChange = { if (it.length <= 40) customOccasion = it },
+                        label = { Text(stringResource(R.string.fun_surprise_custom_occasion)) },
+                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        singleLine = true,
+                    )
+                }
+                OutlinedTextField(
+                    value = message,
+                    onValueChange = { if (it.length <= 500) message = it },
+                    label = { Text(stringResource(R.string.fun_surprise_message)) },
+                    placeholder = { Text(stringResource(R.string.fun_surprise_message_hint)) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    minLines = 3,
                 )
+                if (!isPaired) {
+                    Text(
+                        stringResource(R.string.fun_surprise_not_paired),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+                Button(
+                    onClick = {
+                        val finalOccasion = if (occasion == SurpriseOccasions.CUSTOM) {
+                            customOccasion.trim().take(40).ifBlank { SurpriseOccasions.JUST_BECAUSE }
+                        } else {
+                            occasion
+                        }
+                        actions.onSendSurprise(
+                            Surprise(relationshipId = forRelId, occasion = finalOccasion, message = message.trim(), from = null),
+                            forRelId,
+                        )
+                        onDismiss()
+                    },
+                    enabled = message.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                ) { Text(stringResource(R.string.fun_surprise_send_button)) }
             }
         }
-        OutlinedTextField(
-            value = message,
-            onValueChange = { if (it.length <= 500) message = it },
-            label = { Text(stringResource(R.string.fun_surprise_message)) },
-            placeholder = { Text(stringResource(R.string.fun_surprise_message_hint)) },
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-            minLines = 3,
-        )
-        if (!isPaired) {
-            Text(
-                stringResource(R.string.fun_surprise_not_paired),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
-        Button(
-            onClick = {
-                actions.onSendSurprise(
-                    Surprise(relationshipId = relId, occasion = occasion, message = message.trim(), from = null),
-                    relId,
-                )
-                onDismiss()
-            },
-            enabled = message.isNotBlank(),
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-        ) { Text(stringResource(R.string.fun_surprise_send_button)) }
     }
 }
 

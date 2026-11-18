@@ -2,10 +2,49 @@ package app.ourdays.data
 
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.URLEncoder
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+
+/** Hosted plan page (GitHub Pages, Our-Days repo docs/plan/): the app shares a link there */
+const val PLAN_PAGE_BASE_URL = "https://mdtowfiqul.github.io/Our-Days/plan/"
+
+/**
+ * Link to the hosted plan page. Params: kind=date|trip, names, date (ISO),
+ * time (HH:mm), menu (date) or dest (trip), msg optional. Blank values are
+ * left out; every value is URL-encoded so Bengali names and "&" survive.
+ */
+fun buildPlanLink(
+    kind: String,
+    names: String,
+    date: LocalDate?,
+    time: LocalTime?,
+    menu: String?,
+    destination: String?,
+    message: String? = null,
+): String {
+    val params = listOfNotNull(
+        "kind" to kind,
+        "names" to names,
+        "date" to date?.toString(),
+        "time" to time?.toString(),
+        "menu" to menu,
+        "dest" to destination,
+        "msg" to message,
+    ).filter { it.second?.isNotBlank() == true }
+    return buildString {
+        append(PLAN_PAGE_BASE_URL)
+        append("?")
+        append(
+            params.joinToString("&") { (k, v) ->
+                "$k=${URLEncoder.encode(v, Charsets.UTF_8)}"
+            },
+        )
+    }
+}
 
 /**
  * Überraschung für die andere Person: Sie reist in der Abgleich-Datei mit und
@@ -31,6 +70,8 @@ object SurpriseOccasions {
     const val EID = "eid"
     const val ANNIVERSARY = "anniversary"
     const val JUST_BECAUSE = "just_because"
+    /** Eigener Anlass: steht nur in der Auswahl, gespeichert wird der getippte Name */
+    const val CUSTOM = "custom"
     val ALL = listOf(PROPOSAL, BIRTHDAY, EID, ANNIVERSARY, JUST_BECAUSE)
 }
 
@@ -58,8 +99,8 @@ object SurpriseCodec {
             val o = arr.optJSONObject(i) ?: return@mapNotNull null
             val id = o.optString("id").ifBlank { null } ?: return@mapNotNull null
             val relationshipId = o.optString("relationship").ifBlank { null } ?: return@mapNotNull null
-            val occasion = o.optString("occasion").ifBlank { null }
-                ?.takeIf { it in SurpriseOccasions.ALL } ?: SurpriseOccasions.JUST_BECAUSE
+            val occasion = o.optString("occasion").trim().take(40).ifBlank { null }
+                ?: SurpriseOccasions.JUST_BECAUSE
             val message = o.optString("message").trim().take(500).ifBlank { null } ?: return@mapNotNull null
             Surprise(
                 id = id,

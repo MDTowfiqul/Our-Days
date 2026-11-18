@@ -51,6 +51,7 @@ import app.ourdays.notify.Notifier
 import app.ourdays.share.ShareCard
 import app.ourdays.ui.CloudRestoreScreen
 import app.ourdays.ui.GuideScreen
+import app.ourdays.ui.FunActions
 import app.ourdays.ui.HomeScreen
 import app.ourdays.ui.LicensesScreen
 import app.ourdays.ui.LockScreen
@@ -466,6 +467,15 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onNewestFirst = vm::setNewestFirst,
                                     onSelect = vm::setSelected,
+                                    funActions = FunActions(
+                                        onSetLastMet = vm::setLastMet,
+                                        onSendKiss = vm::sendKiss,
+                                        onSetMissLevel = vm::setMissLevel,
+                                        onSendSurprise = vm::sendSurprise,
+                                        onMarkSurpriseRevealed = vm::markSurpriseRevealed,
+                                        onDeleteSurprise = vm::deleteSurprise,
+                                    ),
+                                    pairedIds = pairings.keys,
                                     jumpTo = homeJump,
                                     onJumped = { homeJump = null },
                                 )

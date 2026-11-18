@@ -321,18 +321,21 @@ object SyncCodec {
             return m.keys().asSequence().associateWith { m.optLong(it) }
         }
         val deleted = o.optJSONObject("deleted")
+        val from = if (o.isNull("from")) null else o.optString("from").ifBlank { null }
         return SyncData(
             people = PeopleCodec.decodePeople(o.optJSONArray("people")?.toString()).orEmpty(),
             relationships = PeopleCodec.decodeRelationships(o.optJSONArray("relationships")?.toString()).orEmpty(),
             moments = MomentCodec.decode(o.optJSONArray("moments")?.toString())
                 .map { m -> m.copy(photoPaths = m.photoPaths.mapNotNull { it.takeIf { name -> Backup.isSafeName(name) } }) },
             deleted = deleted?.keys()?.asSequence()?.associateWith { deleted.optLong(it) }.orEmpty(),
-            from = if (o.isNull("from")) null else o.optString("from").ifBlank { null },
+            from = from,
             relationshipId = if (o.isNull("relationship")) null else o.optString("relationship").ifBlank { null },
             deletedPeople = markers("deletedPeople"),
             deletedRelationships = markers("deletedRelationships"),
             includeMoments = o.optBoolean("includeMoments", true),
-            surprises = SurpriseCodec.decode(o.optJSONArray("surprises")?.toString()),
+            // Wer die Überraschung geschickt hat, steht in der Datei — der Absender selbst schreibt sie nicht dazu
+            surprises = SurpriseCodec.decode(o.optJSONArray("surprises")?.toString())
+                .map { if (it.from == null) it.copy(from = from) else it },
         )
     }
 }
@@ -438,10 +441,14 @@ object SyncMerge {
             removed = removed,
             deletedPeople = allDeletedPeople.filterValues { it > System.currentTimeMillis() - YEAR_MS },
             deletedRelationships = allDeletedRelationships.filterValues { it > System.currentTimeMillis() - YEAR_MS },
-            // Überraschungen: vereint nach ID; geöffnet ist geöffnet, egal auf welchem Handy
+            // Überraschungen: vereint nach ID; geöffnet ist geöffnet, egal auf welchem Handy;
+            // der Absender steht in der Kopie, die ihn kennt
             surprises = (surprises + remote.surprises).groupBy { it.id }.values.map { group ->
                 val newest = group.maxByOrNull { it.createdAt } ?: group.first()
-                newest.copy(revealed = group.any { it.revealed })
+                newest.copy(
+                    from = group.firstNotNullOfOrNull { it.from } ?: newest.from,
+                    revealed = group.any { it.revealed },
+                )
             }.sortedBy { it.createdAt },
         )
     }

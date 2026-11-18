@@ -71,6 +71,11 @@ class FunTest {
         // alte Datei ohne Überraschungen
         val old = SyncCodec.decode("""{"app":"app.ourdays","format":1,"people":[],"relationships":[],"moments":[],"deleted":{}}""")
         assertTrue(old.surprises.isEmpty())
+        // der Absender steht in der Datei und füllt leere „from“ bei Überraschungen
+        val withFrom = SyncCodec.decode(
+            """{"app":"app.ourdays","format":1,"from":"a","people":[],"relationships":[],"moments":[],"deleted":{},"surprises":[{"id":"s1","relationship":"main","occasion":"birthday","message":"Happy!","from":null}]}""",
+        )
+        assertEquals("a", withFrom.surprises.firstOrNull()?.from)
     }
 
     @Test

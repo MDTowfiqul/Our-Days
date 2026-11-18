@@ -117,6 +117,10 @@ fun HomeScreen(
     onNewestFirst: (Boolean) -> Unit = {},
     /** Andere Beziehung zeigen (Poly-Modus), [app.ourdays.data.ALL_RELATIONSHIPS] = alle */
     onSelect: (String) -> Unit = {},
+    /** Aktionen der Spaß-Seite (ViewModel) */
+    funActions: FunActions = FunActions(),
+    /** Gekoppelte Beziehungen (für die Überraschungen) */
+    pairedIds: Set<String> = emptySet(),
     /** Von einer App-Abkürzung: "live" springt zum Live-Zähler */
     jumpTo: String? = null,
     onJumped: () -> Unit = {},
@@ -153,7 +157,7 @@ fun HomeScreen(
                     Overview(settings, today, onSelect)
                 }
                 HomePage.Live -> LiveScreen(settings, active = pager.currentPage == page)
-                HomePage.Fun -> FunScreen(settings)
+                HomePage.Fun -> FunScreen(settings, funActions, pairedIds)
                 HomePage.Moments -> MomentsScreen(
                     settings,
                     today,

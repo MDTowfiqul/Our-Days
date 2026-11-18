@@ -16,6 +16,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.core.view.drawToBitmap
 import app.ourdays.data.LoveSettings
+import app.ourdays.data.Surprise
+import app.ourdays.data.SurpriseOccasions
 import ourdays.app.R
 import org.junit.Rule
 import org.junit.Test
@@ -27,6 +29,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * Rendert die Screens als PNG nach app/build/screenshots, um das Design ohne
@@ -364,6 +367,27 @@ class ScreenshotTest {
             settings, false, {}, {}, {}, {}, {}, {}, { _, _ -> }, {}, {},
             step = 3, onStep = {},
         )
+    }
+
+    // Spaß-Seite mit gesetztem letztem Treffen, Küssen und je einer offenen und einer geöffneten Überraschung
+    private val funSettings = settings.copy(
+        lastMet = mapOf("main" to LocalDate.of(2025, 8, 12).toEpochDay()),
+        kisses = mapOf("main" to 7),
+        missLevels = mapOf("main" to 4),
+        surprises = listOf(
+            Surprise(relationshipId = "main", occasion = SurpriseOccasions.BIRTHDAY, message = "Happy birthday, my love!", from = "b", createdAt = 1000L),
+            Surprise(relationshipId = "main", occasion = SurpriseOccasions.EID, message = "Eid Mubarak!", from = "b", createdAt = 2000L, revealed = true),
+        ),
+    )
+
+    @Test
+    fun funTab() = shot("fun_tab") {
+        FunScreen(funSettings, now = LocalDateTime.of(2025, 8, 15, 10, 30, 45))
+    }
+
+    @Test
+    fun funTabBengali() = shot("fun_tab", lang = "bn") {
+        FunScreen(funSettings, now = LocalDateTime.of(2025, 8, 15, 10, 30, 45))
     }
 
     private fun onboarding(step: Int) = shot("onboarding_$step") {

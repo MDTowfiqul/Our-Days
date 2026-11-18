@@ -40,7 +40,8 @@ fun buildPlanLink(
         append("?")
         append(
             params.joinToString("&") { (k, v) ->
-                "$k=${URLEncoder.encode(v, Charsets.UTF_8)}"
+                // String-Überladung statt Charset: die gibt es seit API 1 (minSdk 26)
+                "$k=${URLEncoder.encode(v, "UTF-8")}"
             },
         )
     }

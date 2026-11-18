@@ -143,11 +143,11 @@
     <string name="fun_dest_switzerland">🇨🇭 Switzerland</string>
     <string name="fun_dest_bali">🇮🇩 Bali</string>
     <string name="fun_dest_paris">🇫🇷 Paris</string>
-    <string name="fun_dest_coxs">🏖️ Cox's Bazar</string>
+    <string name="fun_dest_coxs">🏖️ Cox\'s Bazar</string>
     <string name="fun_dest_sajek">⛰️ Sajek</string>
     <string name="fun_dest_bandarbans">🌿 Bandarban</string>
     <string name="fun_dest_sylhet">🍃 Sylhet</string>
-    <string name="fun_dest_saintmartin">🏝️ Saint Martin's</string>
+    <string name="fun_dest_saintmartin">🏝️ Saint Martin\'s</string>
     <string name="fun_dest_sundarbans">🐅 Sundarbans</string>
     <string name="together_since_title">Together since</string>
     <string name="notify_time_title">Notification time</string>

@@ -464,7 +464,9 @@ private fun WizardDialog(@StringRes title: Int, onDismiss: () -> Unit, content: 
                     Text(stringResource(title), style = MaterialTheme.typography.titleLarge)
                     IconButton(onClick = onDismiss) { Icon(Icons.Rounded.Close, stringResource(R.string.cancel)) }
                 }
-                content()
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    content()
+                }
             }
         }
     }

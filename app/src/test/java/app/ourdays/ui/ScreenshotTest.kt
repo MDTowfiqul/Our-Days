@@ -18,6 +18,7 @@ import androidx.core.view.drawToBitmap
 import app.ourdays.data.LoveSettings
 import app.ourdays.data.Surprise
 import app.ourdays.data.SurpriseOccasions
+import org.junit.Assert.assertEquals
 import ourdays.app.R
 import org.junit.Rule
 import org.junit.Test
@@ -344,6 +345,44 @@ class ScreenshotTest {
         lang = "bn",
         before = { compose.onNodeWithText("কার্ড").performClick() },
     ) { MomentsScreen(withMoments, today, {}, {}) }
+
+    @Test
+    fun momentsPhotosNoPhotoDayOpensMoment() {
+        // Tag ohne Foto muss tippbar sein (Review: PhotoCalendarView, Fallback-Box)
+        var opened: app.ourdays.data.Moment? = null
+        val single = settings.copy(
+            moments = listOf(
+                app.ourdays.data.Moment("3", "Erster Urlaub", LocalDate.of(2025, 7, 5), "Eine Woche an der Ostsee"),
+            ),
+        )
+        shot("moments_photos_tap", lang = "bn", before = {
+            compose.onNodeWithText("ছবি").performClick()
+            compose.onNodeWithText("5", substring = false).performClick()
+        }) { MomentsScreen(single, today, {}, { opened = it }) }
+        assertEquals("Erster Urlaub", opened?.title)
+    }
+
+    @Test
+    fun momentsPhotosPhotoDayShowsNumber() {
+        // Tag mit Foto zeigt die Tagesnummer als Chip + Wochentag-Kopfzeile (Review)
+        val withPhoto = settings.copy(
+            moments = listOf(
+                app.ourdays.data.Moment(
+                    "3", "Erster Urlaub", LocalDate.of(2025, 7, 5), "Eine Woche an der Ostsee",
+                    photoPaths = listOf("/tmp/does-not-exist.jpg"),
+                ),
+            ),
+        )
+        shot("moments_photos_day_number", lang = "bn", before = {
+            compose.onNodeWithText("ছবি").performClick()
+            compose.onNodeWithText("5", substring = false).assertIsDisplayed()
+            val firstDay = java.time.temporal.WeekFields.of(java.util.Locale.getDefault()).firstDayOfWeek
+            compose.onNodeWithText(
+                firstDay.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault()),
+                substring = false,
+            ).assertExists()
+        }) { MomentsScreen(withPhoto, today, {}, {}) }
+    }
 
     @Test
     fun momentsEnglish() = shot("moments") {

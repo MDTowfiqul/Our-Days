@@ -35,6 +35,16 @@ class FunTest {
     }
 
     @Test
+    fun surpriseCodecDecodeNullOccasionFallsBack() {
+        // "occasion":null in der Datei darf nicht als Text "null" angezeigt werden
+        val decoded = SurpriseCodec.decode(
+            """[{"id":"x","relationship":"main","occasion":null,"message":"Hi"}]""",
+        )
+        assertEquals(1, decoded.size)
+        assertEquals(SurpriseOccasions.JUST_BECAUSE, decoded[0].occasion)
+    }
+
+    @Test
     fun surpriseCodecIgnoresGarbage() {
         assertTrue(SurpriseCodec.decode(null).isEmpty())
         assertTrue(SurpriseCodec.decode("kein json").isEmpty())

@@ -100,7 +100,9 @@ object SurpriseCodec {
             val o = arr.optJSONObject(i) ?: return@mapNotNull null
             val id = o.optString("id").ifBlank { null } ?: return@mapNotNull null
             val relationshipId = o.optString("relationship").ifBlank { null } ?: return@mapNotNull null
-            val occasion = o.optString("occasion").trim().take(40).ifBlank { null }
+            // „occasion“:null steht in der Datei — optString liefert dafür je nach org.json
+            // den Text "null" statt "", also erst isNull prüfen (wie bei „from“ unten)
+            val occasion = if (o.isNull("occasion")) null else o.optString("occasion").trim().take(40).ifBlank { null }
                 ?: SurpriseOccasions.JUST_BECAUSE
             val message = o.optString("message").trim().take(500).ifBlank { null } ?: return@mapNotNull null
             Surprise(

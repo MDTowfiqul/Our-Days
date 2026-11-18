@@ -25,8 +25,10 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.ui.platform.LocalConfiguration
+import java.time.DayOfWeek
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -570,6 +572,18 @@ private fun PhotoCalendarView(entries: List<TimelineEntry>, today: LocalDate, on
             modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
         )
         val firstDay = WeekFields.of(locale).firstDayOfWeek
+        Row(Modifier.padding(top = 4.dp)) {
+            (0..6).forEach { i ->
+                val dow = DayOfWeek.of(((firstDay.value - 1 + i) % 7) + 1)
+                Text(
+                    dow.getDisplayName(TextStyle.SHORT, locale),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f).padding(2.dp),
+                )
+            }
+        }
         val offset = (month.atDay(1).dayOfWeek.value - firstDay.value + 7) % 7
         val cells: List<LocalDate?> = List(offset) { null } +
             (1..month.lengthOfMonth()).map { month.atDay(it) }
@@ -589,18 +603,33 @@ private fun PhotoCalendarView(entries: List<TimelineEntry>, today: LocalDate, on
                                 ?: saved.firstOrNull()
                             val photo = withPhoto?.moment?.photoPaths?.firstOrNull()
                             if (photo != null && withPhoto != null) {
-                                AsyncImage(
-                                    model = File(photo),
-                                    contentDescription = withPhoto.moment.title,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
+                                Box(
+                                    Modifier
                                         .fillMaxSize()
                                         .clip(RoundedCornerShape(8.dp))
                                         .then(
                                             if (day == today) Modifier.border(2.dp, colors.primary, RoundedCornerShape(8.dp)) else Modifier,
                                         )
                                         .clickable { onOpen(withPhoto.moment) },
-                                )
+                                ) {
+                                    AsyncImage(
+                                        model = File(photo),
+                                        contentDescription = withPhoto.moment.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                    Text(
+                                        day.dayOfMonth.toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.onSurface,
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .padding(4.dp)
+                                            .background(colors.surface.copy(alpha = 0.75f), RoundedCornerShape(6.dp))
+                                            .padding(horizontal = 5.dp, vertical = 2.dp),
+                                    )
+                                }
                             } else {
                                 Box(
                                     Modifier
@@ -609,7 +638,8 @@ private fun PhotoCalendarView(entries: List<TimelineEntry>, today: LocalDate, on
                                         .background(if (saved.isNotEmpty()) colors.primaryContainer else Color.Transparent)
                                         .then(
                                             if (day == today) Modifier.border(2.dp, colors.primary, RoundedCornerShape(8.dp)) else Modifier,
-                                        ),
+                                        )
+                                        .then(if (withPhoto != null) Modifier.clickable { withPhoto?.let { onOpen(it.moment) } } else Modifier),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(

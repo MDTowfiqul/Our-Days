@@ -444,6 +444,16 @@ class ScreenshotTest {
         FunScreen(funSettings, now = LocalDateTime.of(2025, 8, 15, 10, 30, 45))
     }
 
+    @Test
+    fun funHub() = shot("fun_hub", before = {
+        compose.onNodeWithText("Fun by relationship").assertIsDisplayed()
+        compose.onNodeWithText("Our games").assertIsDisplayed()
+        compose.onNodeWithText("Focus together").assertIsDisplayed()
+        compose.onNodeWithText("Watch together").assertIsDisplayed()
+    }) {
+        FunHub(settings) {}
+    }
+
     private fun onboarding(step: Int) = shot("onboarding_$step") {
         OnboardingScreen(
             settings, false, {}, {}, {}, {}, {}, {}, { _, _ -> }, {}, {},

@@ -158,6 +158,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation("androidx.glance:glance-appwidget:1.1.1")
     implementation("io.coil-kt.coil3:coil-compose:3.4.0")
+    implementation("com.airbnb.android:lottie-compose:6.5.2")
     // QR-Code für die Kopplung zum Abgleich (erzeugen und scannen, Apache 2.0)
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("com.google.zxing:core:3.5.3")

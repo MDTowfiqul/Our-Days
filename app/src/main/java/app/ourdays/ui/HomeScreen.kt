@@ -157,7 +157,7 @@ fun HomeScreen(
                     Overview(settings, today, onSelect)
                 }
                 HomePage.Live -> LiveScreen(settings, active = pager.currentPage == page)
-                HomePage.Fun -> FunScreen(settings, funActions, pairedIds)
+                HomePage.Fun -> FunTab(settings, funActions, pairedIds)
                 HomePage.Moments -> MomentsScreen(
                     settings,
                     today,

@@ -47,6 +47,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -121,6 +122,7 @@ fun FunScreen(
     actions: FunActions = FunActions(),
     pairedIds: Set<String> = emptySet(),
     now: LocalDateTime? = null,
+    funType: FunType = FunType.COUPLE,
 ) {
     val relId = settings.relationship.id
     var showDateWizard by remember { mutableStateOf(false) }
@@ -136,13 +138,13 @@ fun FunScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 16.dp),
     ) {
-        MissYouCard(settings, relId, actions, now)
+        MissYouCard(settings, relId, actions, now, funType)
         Text(
             stringResource(R.string.fun_plan_title),
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
         )
-        FunActionCard(Icons.Rounded.CalendarMonth, stringResource(R.string.fun_plan_date), stringResource(R.string.fun_plan_date_sub)) { showDateWizard = true }
+        FunActionCard(Icons.Rounded.CalendarMonth, stringResource(funType.planDate), stringResource(R.string.fun_plan_date_sub)) { showDateWizard = true }
         FunActionCard(Icons.Rounded.FlightTakeoff, stringResource(R.string.fun_plan_trip), stringResource(R.string.fun_plan_trip_sub)) { showTripWizard = true }
         FunActionCard(Icons.Rounded.CardGiftcard, stringResource(R.string.fun_surprise_send), stringResource(R.string.fun_surprise_send_sub)) { showSurprise = true }
         if (unrevealed.isNotEmpty()) {
@@ -224,7 +226,7 @@ private fun FunActionCard(icon: ImageVector, title: String, subtitle: String, on
 
 /** Dunkle Karte im Stil der „Ich vermisse dich“-Seite: Foto, Zähler, Schieberegler, Küsse, Notizen */
 @Composable
-private fun MissYouCard(settings: LoveSettings, relId: String, actions: FunActions, now: LocalDateTime? = null) {
+private fun MissYouCard(settings: LoveSettings, relId: String, actions: FunActions, now: LocalDateTime? = null, funType: FunType = FunType.COUPLE) {
     val lastMet = settings.lastMetFor(relId)
     val kisses = settings.kissesFor(relId)
     val savedLevel = settings.missLevelFor(relId) ?: 3
@@ -240,10 +242,7 @@ private fun MissYouCard(settings: LoveSettings, relId: String, actions: FunActio
     var noteIndex by remember { mutableStateOf(0) }
     var kissBurst by remember { mutableStateOf(0) }
     var showDatePicker by remember { mutableStateOf(false) }
-    val notes = listOf(
-        R.string.fun_note_1, R.string.fun_note_2, R.string.fun_note_3, R.string.fun_note_4,
-        R.string.fun_note_5, R.string.fun_note_6, R.string.fun_note_7, R.string.fun_note_8,
-    )
+    val notes = funType.notes
     val missTexts = listOf(
         R.string.fun_miss_1, R.string.fun_miss_2, R.string.fun_miss_3, R.string.fun_miss_4, R.string.fun_miss_5,
     )
@@ -268,13 +267,13 @@ private fun MissYouCard(settings: LoveSettings, relId: String, actions: FunActio
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                stringResource(R.string.fun_miss_title),
+                stringResource(funType.missTitle),
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
                 textAlign = TextAlign.Center,
             )
             Text(
-                stringResource(R.string.fun_miss_subtitle),
+                stringResource(funType.missSubtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
@@ -316,24 +315,25 @@ private fun MissYouCard(settings: LoveSettings, relId: String, actions: FunActio
                 onValueChangeFinished = { actions.onSetMissLevel(sliderLevel, relId) },
                 valueRange = 1f..5f,
                 steps = 3,
+                colors = SliderDefaults.colors(thumbColor = funType.accent, activeTrackColor = funType.accent),
                 modifier = Modifier.padding(horizontal = 8.dp),
             )
             Text(
                 stringResource(missTexts[(sliderLevel - 1).coerceIn(0, 4)]),
-                color = Color(0xFFFFB2B9),
+                color = funType.accent,
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
             )
             Button(
                 onClick = { actions.onSendKiss(relId); kissBurst++ },
                 modifier = Modifier.padding(top = 16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4D8D)),
+                colors = ButtonDefaults.buttonColors(containerColor = funType.accent),
             ) {
                 Icon(Icons.Rounded.Favorite, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                Text(stringResource(R.string.fun_kiss), color = Color.White, modifier = Modifier.padding(start = 8.dp))
+                Text(stringResource(funType.sendLabel), color = Color.White, modifier = Modifier.padding(start = 8.dp))
             }
             Text(
-                pluralStringResource(R.plurals.fun_kisses, kisses, kisses),
+                pluralStringResource(if (funType.sendIsKiss) R.plurals.fun_kisses else R.plurals.fun_loves, kisses, kisses),
                 color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp),

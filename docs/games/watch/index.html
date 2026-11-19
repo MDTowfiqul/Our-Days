@@ -199,6 +199,7 @@ function openVideo(videoId) {
   currentVideo = videoId;
   showPlayer();
   set(roomRef(room, "watch"), { videoId: videoId, state: "paused", positionSec: 0, updatedAt: serverTimestamp(), by: uid });
+  createPlayer();
   if (playerReady) player.loadVideoById(videoId, 0);
 }
 
@@ -230,34 +231,46 @@ el("langBtn").addEventListener("click", function () {
 });
 
 // --- YouTube player ---
-window.onYouTubeIframeAPIReady = function () {
-  player = new YT.Player("player", {
-    height: "100%",
-    width: "100%",
-    videoId: currentVideo || undefined,
-    playerVars: { rel: 0, playsinline: 1 },
-    events: {
-      onReady: function () { playerReady = true; if (currentVideo) player.loadVideoById(currentVideo, 0); },
-      onStateChange: function (e) {
-        if (applyingRemote || !uid) return;
-        // Only play/pause transitions are written; buffering/seek noise is not.
-        if (e.data === YT.PlayerState.PLAYING || e.data === YT.PlayerState.PAUSED) {
-          update(roomRef(room, "watch"), {
-            state: e.data === YT.PlayerState.PLAYING ? "playing" : "paused",
-            positionSec: Math.floor(player.getCurrentTime()),
-            updatedAt: serverTimestamp(),
-            by: uid,
-          });
-        }
+// The player is created LAZILY, only once a video is chosen and its box is
+// visible. Creating it eagerly at load (when the box is hidden) throws in
+// some browsers and kills the whole page script before the paste box shows.
+var ytReady = false;
+function createPlayer() {
+  if (player) return true;
+  if (!window.YT || !window.YT.Player) return false;
+  try {
+    player = new YT.Player("player", {
+      height: "100%",
+      width: "100%",
+      videoId: currentVideo || undefined,
+      playerVars: { rel: 0, playsinline: 1 },
+      events: {
+        onReady: function () { playerReady = true; if (currentVideo) player.loadVideoById(currentVideo, 0); },
+        onStateChange: function (e) {
+          if (applyingRemote || !uid) return;
+          // Only play/pause transitions are written; buffering/seek noise is not.
+          if (e.data === YT.PlayerState.PLAYING || e.data === YT.PlayerState.PAUSED) {
+            update(roomRef(room, "watch"), {
+              state: e.data === YT.PlayerState.PLAYING ? "playing" : "paused",
+              positionSec: Math.floor(player.getCurrentTime()),
+              updatedAt: serverTimestamp(),
+              by: uid,
+            });
+          }
+        },
+        onError: function () { el("playErr").classList.remove("hidden"); },
       },
-      onError: function () { el("playErr").classList.remove("hidden"); },
-    },
-  });
-};
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 
-// The API script can load before this module runs — then the callback
-// already fired, so start the player directly.
-if (window.YT && window.YT.Player) window.onYouTubeIframeAPIReady();
+window.onYouTubeIframeAPIReady = function () {
+  ytReady = true;
+  if (currentVideo) createPlayer();
+};
 setInterval(function () {
   if (!playerReady || !player || !uid || applyingRemote) return;
   if (player.getPlayerState() === YT.PlayerState.PLAYING) {
@@ -274,6 +287,7 @@ function applyRemote(watch) {
   if (watch.videoId !== currentVideo) {
     currentVideo = watch.videoId;
     showPlayer();
+    createPlayer();
     if (playerReady) {
       applyingRemote = true;
       player.loadVideoById(watch.videoId, watch.positionSec || 0);

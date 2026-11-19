@@ -35,6 +35,11 @@ export function onRoomValue(roomCode, path, cb) {
   return onValue(roomRef(roomCode, path), (snap) => cb(snap.val()));
 }
 
+/** Listen to the RTDB server-time offset (server ms minus local ms). */
+export function onServerOffset(cb) {
+  return onValue(ref(db, ".info/serverTimeOffset"), (snap) => cb(snap.val() || 0));
+}
+
 /**
  * Join a room as a player. The RTDB rules cannot count children, so the
  * 2-player cap is enforced here: a third UID is refused with "full".

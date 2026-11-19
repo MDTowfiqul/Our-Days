@@ -123,7 +123,7 @@
   });
 </script>
 <script type="module">
-import { roomCodeFromUrl, waitForAuth, joinRoom, roomRef, onServerOffset } from "../shared.js";
+import { roomCodeFromUrl, waitForAuth, joinRoom, roomRef, onServerOffset } from "../shared.js?v=2";
 import { set, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 var room = roomCodeFromUrl();

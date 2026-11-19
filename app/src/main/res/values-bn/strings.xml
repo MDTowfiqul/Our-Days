@@ -124,6 +124,10 @@
     <string name="fun_hub_watch">একসাথে দেখা</string>
     <string name="fun_hub_watch_sub">ইউটিউব একসাথে, ফুল এইচডিতে</string>
     <string name="fun_hub_soon">এই বিভাগটি তৈরি হলেই এখানে খুলবে — এটা একই আপডেটের অংশ।</string>
+    <string name="game_offline_title">ইন্টারনেট সংযোগ নেই</string>
+    <string name="game_offline_text">দুই ফোন একসাথে খেলতে ইন্টারনেট লাগবে। সংযোগ দেখে আবার চেষ্টা করো।</string>
+    <string name="game_retry">আবার চেষ্টা করো</string>
+    <string name="game_not_paired">আগে সঙ্গীর সাথে যুক্ত হও — রুম কোড আসে তোমাদের সংযোগ থেকে।</string>
     <string name="fun_miss_title_family">পরিবারকে মিস করছি</string>
     <string name="fun_miss_subtitle_family">শেষ দেখা হওয়ার পর থেকে — পরিবার যেখানে, ঘর সেখানে</string>
     <string name="fun_miss_title_friends">বন্ধুদের মিস করছি</string>

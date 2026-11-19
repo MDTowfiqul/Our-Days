@@ -121,6 +121,8 @@ fun HomeScreen(
     funActions: FunActions = FunActions(),
     /** Gekoppelte Beziehungen (für die Überraschungen) */
     pairedIds: Set<String> = emptySet(),
+    /** Kopplungen je Beziehung (für den Raum-Code der Spiele) */
+    pairings: Map<String, app.ourdays.data.Pairing> = emptyMap(),
     /** Von einer App-Abkürzung: "live" springt zum Live-Zähler */
     jumpTo: String? = null,
     onJumped: () -> Unit = {},
@@ -157,7 +159,7 @@ fun HomeScreen(
                     Overview(settings, today, onSelect)
                 }
                 HomePage.Live -> LiveScreen(settings, active = pager.currentPage == page)
-                HomePage.Fun -> FunTab(settings, funActions, pairedIds)
+                HomePage.Fun -> FunTab(settings, funActions, pairedIds, pairings)
                 HomePage.Moments -> MomentsScreen(
                     settings,
                     today,

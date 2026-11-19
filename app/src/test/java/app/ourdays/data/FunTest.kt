@@ -165,4 +165,25 @@ class FunTest {
         assertTrue(result.surprises.first { it.id == local.id }.revealed)
         assertEquals(listOf(local.id, other.id), result.surprises.map { it.id })
     }
+
+    @Test
+    fun roomCodeIsStable() {
+        // Derselbe Schlüssel gibt immer denselben 6-stelligen Code (beide Handys)
+        assertEquals(roomCodeFor("test-key-123"), roomCodeFor("test-key-123"))
+        assertEquals(6, roomCodeFor("test-key-123").length)
+        assertTrue(roomCodeFor("test-key-123").all { it in '0'..'9' || it in 'a'..'f' })
+    }
+
+    @Test
+    fun roomCodeDiffersPerKey() {
+        assertTrue(roomCodeFor("key-one") != roomCodeFor("key-two"))
+    }
+
+    @Test
+    fun gameUrlHasRoomAndVersion() {
+        assertEquals(
+            "https://mdtowfiqul.github.io/Our-Days/games/would-you-rather/?room=abc123&v=1",
+            gameUrl("would-you-rather", "abc123"),
+        )
+    }
 }

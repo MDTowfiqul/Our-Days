@@ -29,8 +29,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.ourdays.data.LoveSettings
+import app.ourdays.data.Pairing
+import app.ourdays.data.gamesIndexUrl
+import app.ourdays.data.roomCodeForPairing
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -92,7 +96,12 @@ enum class FunType(
 
 /** Spaß-Tab: erst die vier Bereiche, dann der gewählte Bereich */
 @Composable
-fun FunTab(settings: LoveSettings, funActions: FunActions, pairedIds: Set<String>) {
+fun FunTab(
+    settings: LoveSettings,
+    funActions: FunActions,
+    pairedIds: Set<String>,
+    pairings: Map<String, Pairing> = emptyMap(),
+) {
     var section by remember { mutableStateOf<FunSection?>(null) }
     var type by remember { mutableStateOf<FunType?>(null) }
     BackHandler(enabled = type != null) { type = null }
@@ -103,8 +112,16 @@ fun FunTab(settings: LoveSettings, funActions: FunActions, pairedIds: Set<String
             val t = type
             if (t == null) FunTypePicker { type = it } else FunScreen(settings, funActions, pairedIds, funType = t)
         }
-        // Spiele, Fokus und Watch bekommen ihre Bildschirme in den nächsten Aufgaben
-        FunSection.GAMES, FunSection.FOCUS, FunSection.WATCH -> FunSectionSoon(s)
+        FunSection.GAMES -> {
+            val pairing = pairings[settings.relationship.id]
+            if (pairing == null) {
+                FunNotPaired()
+            } else {
+                GameWebView(gamesIndexUrl(roomCodeForPairing(pairing))) { section = null }
+            }
+        }
+        // Fokus und Watch bekommen ihre Bildschirme in den nächsten Aufgaben
+        FunSection.FOCUS, FunSection.WATCH -> FunSectionSoon(s)
     }
 }
 
@@ -180,6 +197,25 @@ private fun FunTypePicker(onPick: (FunType) -> Unit) {
             }
         }
         Spacer(Modifier.height(72.dp))
+    }
+}
+
+/** Ohne Kopplung gibt es keinen Raum-Code — erst koppeln, dann spielen */
+@Composable
+private fun FunNotPaired() {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 32.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.height(96.dp))
+        Text(
+            stringResource(R.string.game_not_paired),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

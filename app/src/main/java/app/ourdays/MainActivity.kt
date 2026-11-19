@@ -481,6 +481,7 @@ class MainActivity : ComponentActivity() {
                                         onDeleteSurprise = vm::deleteSurprise,
                                     ),
                                     pairedIds = pairings.keys,
+                                    pairings = pairings,
                                     jumpTo = homeJump,
                                     onJumped = { homeJump = null },
                                 )

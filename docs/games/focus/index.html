@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Our Days — Focus together</title>
+<meta name="description" content="Plant a tree together and focus until it grows. If anyone gives up, the tree dies.">
+<meta name="theme-color" content="#0F0C20">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: #0F0C20;
+    background-image:
+      radial-gradient(600px 300px at 85% -10%, rgba(255, 77, 141, .25), transparent 60%),
+      radial-gradient(700px 350px at -10% 110%, rgba(124, 93, 250, .30), transparent 60%);
+    color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    width: 100%; max-width: 480px;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 28px;
+    padding: 32px 24px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .top { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: rgba(255, 255, 255, .65); }
+  .top button {
+    font: inherit; font-size: 14px; font-weight: 600;
+    background: rgba(255, 255, 255, .10); color: #fff;
+    border: 1px solid rgba(255, 255, 255, .18); border-radius: 999px;
+    padding: 6px 14px; cursor: pointer;
+  }
+  h1 { font-size: 26px; line-height: 1.3; margin: 20px 0 0; }
+  .sub { color: #FFB2B9; font-size: 16px; margin: 10px 0 0; line-height: 1.5; }
+  .tree { font-size: 96px; line-height: 1.2; margin-top: 16px; }
+  .timer { font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 8px; }
+  .bar { height: 10px; border-radius: 999px; background: rgba(255, 255, 255, .14); margin-top: 16px; overflow: hidden; }
+  .bar > div { height: 100%; background: #FFB703; border-radius: 999px; transition: width 1s linear; }
+  .durations { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; }
+  .dur {
+    font: inherit; font-size: 16px; font-weight: 600;
+    background: rgba(255, 255, 255, .07); color: #fff;
+    border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px;
+    padding: 10px 18px; cursor: pointer;
+  }
+  .dur.sel { border-color: #FF4D8D; background: rgba(255, 77, 141, .22); }
+  .start, .again {
+    font: inherit; font-size: 18px; font-weight: 600;
+    background: #FF4D8D; color: #fff; border: 0; border-radius: 999px;
+    padding: 14px 32px; cursor: pointer; margin-top: 24px;
+    box-shadow: 0 8px 24px rgba(255, 77, 141, .45);
+  }
+  .giveup {
+    font: inherit; font-size: 16px; font-weight: 600;
+    background: transparent; color: #FF8A8A;
+    border: 1px solid rgba(255, 138, 138, .5); border-radius: 999px;
+    padding: 12px 28px; cursor: pointer; margin-top: 24px;
+  }
+  .wait { color: #FFB2B9; margin-top: 20px; font-size: 16px; }
+  .done { font-size: 22px; margin-top: 16px; }
+  .foot { margin-top: 28px; font-size: 13px; color: rgba(255, 255, 255, .5); }
+  .foot a { color: #FFB2B9; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="top"><span id="stateLabel"></span><button id="langBtn" type="button">বাংলা</button></div>
+  <div id="loading">
+    <h1>🌱</h1>
+    <p class="wait" id="loadingText">Joining your room…</p>
+  </div>
+  <div id="noRoom" class="hidden">
+    <h1>🥺</h1>
+    <p class="wait">Open this page from the Our Days app to focus together — the room code comes from your pairing.</p>
+  </div>
+  <div id="full" class="hidden">
+    <h1>👥</h1>
+    <p class="wait">This room already has two players. Open the page from your own pairing to focus together.</p>
+  </div>
+  <div id="idle" class="hidden">
+    <h1>🌱</h1>
+    <p class="sub" id="idleText">Plant a tree together and focus until it grows. If anyone gives up, the tree dies.</p>
+    <div class="durations" id="durations"></div>
+    <button class="start" id="startBtn" type="button">Plant &amp; focus</button>
+  </div>
+  <div id="running" class="hidden">
+    <div class="tree" id="tree">🌱</div>
+    <div class="timer" id="timer">25:00</div>
+    <div class="bar"><div id="barFill" style="width: 0%"></div></div>
+    <p class="sub" id="runningText">Stay focused — your tree is growing.</p>
+    <button class="giveup" id="giveUpBtn" type="button">Give up</button>
+  </div>
+  <div id="done" class="hidden">
+    <div class="tree">🌳</div>
+    <p class="done" id="doneText">Your tree grew! You focused together.</p>
+    <button class="again" id="againBtn" type="button">Plant another</button>
+  </div>
+  <div id="dead" class="hidden">
+    <div class="tree">🥀</div>
+    <p class="done" id="deadText">The tree died — someone gave up.</p>
+    <button class="again" id="againBtn2" type="button">Plant another</button>
+  </div>
+  <p class="foot">Made with <a href="https://mdtowfiqul.github.io/Our-Days/">Our Days</a> ♥</p>
+</main>
+<script type="module">
+import { roomCodeFromUrl, waitForAuth, joinRoom, roomRef, onServerOffset } from "../shared.js";
+import { set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+var DURATIONS = [10, 15, 25, 45, 60, 90, 120];
+var room = roomCodeFromUrl();
+var lang = localStorage.getItem("focus-lang") || "en";
+var uid = null;
+var minutes = 25;
+var focus = null; // { start, minutes, dead } — start is a server timestamp
+var serverOffset = 0; // server ms minus local ms (from .info/serverTimeOffset)
+
+var el = function (id) { return document.getElementById(id); };
+function show(id) { ["loading", "noRoom", "full", "idle", "running", "done", "dead"].forEach(function (x) { el(x).classList.toggle("hidden", x !== id); }); }
+function t(en, bn) { return lang === "bn" ? bn : en; }
+// Server time, never the local clock: the offset corrects local skew.
+function serverNow() { return Date.now() + serverOffset; }
+
+function renderLang() {
+  el("langBtn").textContent = lang === "bn" ? "English" : "বাংলা";
+  el("loadingText").textContent = t("Joining your room…", "রুমে যোগ দিচ্ছি…");
+  el("idleText").textContent = t("Plant a tree together and focus until it grows. If anyone gives up, the tree dies.", "একসাথে গাছ লাগাও আর মনোযোগ দিয়ে বড় হতে দাও। কেউ হাল ছাড়লে গাছ মরে যাবে।");
+  el("startBtn").textContent = t("Plant & focus", "গাছ লাগাও");
+  el("runningText").textContent = t("Stay focused — your tree is growing.", "মনোযোগ ধরে রাখো — তোমাদের গাছ বড় হচ্ছে।");
+  el("giveUpBtn").textContent = t("Give up", "হাল ছেড়ে দাও");
+  el("doneText").textContent = t("Your tree grew! You focused together.", "তোমাদের গাছ বড় হয়েছে! একসাথে মনোযোগ দিয়েছ।");
+  el("deadText").textContent = t("The tree died — someone gave up.", "গাছটি মরে গেছে — কেউ হাল ছেড়ে দিয়েছে।");
+  el("againBtn").textContent = t("Plant another", "আরেকটি লাগাও");
+  el("againBtn2").textContent = t("Plant another", "আরেকটি লাগাও");
+  renderDurations();
+  renderState();
+}
+
+function renderDurations() {
+  var box = el("durations");
+  box.innerHTML = "";
+  DURATIONS.forEach(function (m) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "dur" + (m === minutes ? " sel" : "");
+    b.textContent = m + t(" min", " মিনিট");
+    b.addEventListener("click", function () { minutes = m; renderDurations(); });
+    box.appendChild(b);
+  });
+}
+
+function treeFor(progress) {
+  if (progress < 0.25) return "🌱";
+  if (progress < 0.5) return "🌿";
+  if (progress < 0.75) return "🌲";
+  return "🌳";
+}
+
+function renderState() {
+  if (!focus || !focus.start) {
+    el("stateLabel").textContent = "";
+    show("idle");
+    return;
+  }
+  var total = (focus.minutes || 25) * 60000;
+  var end = focus.start + total;
+  var remaining = end - serverNow();
+  if (focus.dead) {
+    el("stateLabel").textContent = t("Tree died", "গাছ মরে গেছে");
+    show("dead");
+    return;
+  }
+  if (remaining <= 0) {
+    el("stateLabel").textContent = t("Grown!", "বড় হয়েছে!");
+    show("done");
+    return;
+  }
+  var progress = 1 - remaining / total;
+  el("stateLabel").textContent = t("Focusing…", "মনোযোগ চলছে…");
+  el("tree").textContent = treeFor(progress);
+  var mins = Math.floor(remaining / 60000);
+  var secs = Math.floor((remaining % 60000) / 1000);
+  el("timer").textContent = mins + ":" + String(secs).padStart(2, "0");
+  el("barFill").style.width = Math.round(progress * 100) + "%";
+  show("running");
+}
+
+el("langBtn").addEventListener("click", function () {
+  lang = lang === "bn" ? "en" : "bn";
+  localStorage.setItem("focus-lang", lang);
+  renderLang();
+});
+
+el("startBtn").addEventListener("click", function () {
+  if (!uid || (focus && focus.start)) return;
+  // start is a server timestamp; end is derived from start + minutes.
+  set(roomRef(room, "focus"), { start: serverTimestamp(), minutes: minutes, dead: false });
+});
+
+el("giveUpBtn").addEventListener("click", function () {
+  if (!uid || !focus || !focus.start || focus.dead) return;
+  set(roomRef(room, "focus/dead"), true);
+});
+
+function plantAgain() {
+  set(roomRef(room, "focus"), null);
+}
+el("againBtn").addEventListener("click", plantAgain);
+el("againBtn2").addEventListener("click", plantAgain);
+
+setInterval(renderState, 1000);
+
+if (!room) {
+  renderLang();
+  show("noRoom");
+} else {
+  onServerOffset(function (offset) { serverOffset = offset; renderState(); });
+  waitForAuth().then(function (u) {
+    uid = u;
+    return joinRoom(room, uid);
+  }).then(function (res) {
+    if (res === "full") { show("full"); return; }
+    onValue(roomRef(room, "focus"), function (snap) {
+      focus = snap.val();
+      renderState();
+    });
+    renderLang();
+  }).catch(function () {
+    el("loadingText").textContent = t("Could not join the room — check your connection and reload.", "রুমে যোগ দেওয়া যায়নি — সংযোগ দেখে আবার লোড করো।");
+  });
+}
+</script>
+</body>
+</html>

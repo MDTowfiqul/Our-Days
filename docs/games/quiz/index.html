@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Our Days — How well do you know me?</title>
+<meta name="description" content="Answer about each other, score together. Play live with your partner.">
+<meta name="theme-color" content="#0F0C20">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: #0F0C20;
+    background-image:
+      radial-gradient(600px 300px at 85% -10%, rgba(255, 77, 141, .25), transparent 60%),
+      radial-gradient(700px 350px at -10% 110%, rgba(124, 93, 250, .30), transparent 60%);
+    color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    width: 100%; max-width: 480px;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 28px;
+    padding: 32px 24px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .top { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: rgba(255, 255, 255, .65); }
+  .top button {
+    font: inherit; font-size: 14px; font-weight: 600;
+    background: rgba(255, 255, 255, .10); color: #fff;
+    border: 1px solid rgba(255, 255, 255, .18); border-radius: 999px;
+    padding: 6px 14px; cursor: pointer;
+  }
+  h1 { font-size: 26px; line-height: 1.3; margin: 20px 0 0; }
+  .about { color: #F5C86B; font-size: 15px; margin: 10px 0 0; font-weight: 600; }
+  .q { font-size: 20px; line-height: 1.4; margin: 14px 0 0; font-weight: 600; }
+  .opts { margin-top: 24px; display: grid; gap: 12px; }
+  .opt {
+    font: inherit; font-size: 17px; font-weight: 600; text-align: left;
+    background: rgba(255, 255, 255, .07);
+    border: 1px solid rgba(255, 255, 255, .16);
+    color: #fff; border-radius: 18px; padding: 16px 18px;
+    cursor: pointer; width: 100%;
+  }
+  .opt:active { background: rgba(255, 255, 255, .13); }
+  .opt:disabled { opacity: .45; cursor: default; }
+  .opt.mine { border-color: #FF4D8D; background: rgba(255, 77, 141, .22); }
+  .opt.theirs { border-color: #FFB703; background: rgba(255, 183, 3, .18); }
+  .opt.right { border-color: #4CAF50; background: rgba(76, 175, 80, .22); }
+  .wait { color: #FFB2B9; margin-top: 20px; font-size: 16px; }
+  .result { font-size: 22px; margin-top: 20px; }
+  .names { margin-top: 8px; font-size: 15px; color: rgba(255, 255, 255, .75); line-height: 1.7; }
+  .names b { color: #fff; }
+  .next, .again {
+    font: inherit; font-size: 18px; font-weight: 600;
+    background: #FF4D8D; color: #fff; border: 0; border-radius: 999px;
+    padding: 14px 32px; cursor: pointer; margin-top: 24px;
+    box-shadow: 0 8px 24px rgba(255, 77, 141, .45);
+  }
+  .score { font-size: 18px; margin-top: 16px; color: #F5C86B; line-height: 1.7; }
+  .foot { margin-top: 28px; font-size: 13px; color: rgba(255, 255, 255, .5); }
+  .foot a { color: #FFB2B9; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="top"><span id="roundLabel"></span><button id="langBtn" type="button">বাংলা</button></div>
+  <div id="loading">
+    <h1>🧠</h1>
+    <p class="wait" id="loadingText">Joining your room…</p>
+  </div>
+  <div id="noRoom" class="hidden">
+    <h1>🥺</h1>
+    <p class="wait">Open this game from the Our Days app to play together — the room code comes from your pairing.</p>
+  </div>
+  <div id="full" class="hidden">
+    <h1>👥</h1>
+    <p class="wait">This room already has two players. Open the game from your own pairing to play together.</p>
+  </div>
+  <div id="waiting" class="hidden">
+    <h1>⏳</h1>
+    <p class="wait" id="waitingPartnerText">Waiting for your partner to join…</p>
+  </div>
+  <div id="play" class="hidden">
+    <p class="about" id="aboutLabel"></p>
+    <p class="q" id="question"></p>
+    <div class="opts" id="opts"></div>
+    <p class="wait hidden" id="waitingText">Waiting for the other answer…</p>
+    <div id="reveal" class="hidden">
+      <p class="result" id="resultText"></p>
+      <p class="names" id="namesText"></p>
+      <button class="next hidden" id="nextBtn" type="button">Next →</button>
+    </div>
+  </div>
+  <div id="done" class="hidden">
+    <h1>🎉</h1>
+    <p class="score" id="scoreText"></p>
+    <button class="again" id="againBtn" type="button">Play again</button>
+  </div>
+  <p class="foot">Made with <a href="https://mdtowfiqul.github.io/Our-Days/">Our Days</a> ♥</p>
+</main>
+<script type="module">
+import { roomCodeFromUrl, waitForAuth, joinRoom, roomRef } from "../shared.js";
+import { set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+var ROUNDS = 10;
+var room = roomCodeFromUrl();
+var questions = [];
+var lang = localStorage.getItem("quiz-lang") || "en";
+var uid = null;
+var players = []; // sorted UIDs; round r is about players[(r - 1) % 2]
+var round = 1;
+var answer = null; // option index the about-person picked (the right answer)
+var guess = null;  // option index the partner guessed
+
+var el = function (id) { return document.getElementById(id); };
+function show(id) { ["loading", "noRoom", "full", "waiting", "play", "done"].forEach(function (x) { el(x).classList.toggle("hidden", x !== id); }); }
+function t(en, bn) { return lang === "bn" ? bn : en; }
+function aboutUid() { return players.length === 2 ? players[(round - 1) % 2] : null; }
+function iAmAbout() { return aboutUid() === uid; }
+
+function renderLang() {
+  el("langBtn").textContent = lang === "bn" ? "English" : "বাংলা";
+  el("roundLabel").textContent = questions.length ? t("Round ", "রাউন্ড ") + round + " / " + ROUNDS : "";
+  el("loadingText").textContent = t("Joining your room…", "রুমে যোগ দিচ্ছি…");
+  el("waitingPartnerText").textContent = t("Waiting for your partner to join…", "সঙ্গীর যোগ দেওয়ার অপেক্ষায়…");
+  el("waitingText").textContent = t("Waiting for the other answer…", "অন্য উত্তরের অপেক্ষায়…");
+  el("nextBtn").textContent = t("Next →", "পরেরটি →");
+  el("againBtn").textContent = t("Play again", "আবার খেলো");
+  renderQuestion();
+}
+
+function renderQuestion() {
+  var q = questions[round - 1];
+  if (!q || players.length !== 2) return;
+  var data = q[lang] || q.en;
+  el("aboutLabel").textContent = iAmAbout()
+    ? t("This one is about you — tap your true answer.", "এটা তোমার সম্পর্কে — তোমার আসল উত্তরটি চাপো।")
+    : t("This one is about your partner — guess their answer.", "এটা তোমার সঙ্গীর সম্পর্কে — তাদের উত্তর অনুমান করো।");
+  el("question").textContent = data.q;
+  var optsBox = el("opts");
+  optsBox.innerHTML = "";
+  var myPick = iAmAbout() ? answer : guess;
+  data.options.forEach(function (opt, i) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "opt";
+    b.textContent = opt;
+    b.disabled = !uid || myPick !== null;
+    if (myPick === i) b.classList.add("mine");
+    // After the reveal, mark the right answer green and the wrong guess amber.
+    if (answer !== null && guess !== null) {
+      if (i === answer) b.classList.add("right");
+      else if (guess === i) b.classList.add("theirs");
+    }
+    b.addEventListener("click", function () { pick(i); });
+    optsBox.appendChild(b);
+  });
+  var revealed = answer !== null && guess !== null;
+  el("waitingText").classList.toggle("hidden", !(myPick !== null && !revealed));
+  el("reveal").classList.toggle("hidden", !revealed);
+  if (revealed) {
+    var correct = answer === guess;
+    el("resultText").textContent = correct
+      ? t("✅ Correct! +1 point", "✅ ঠিক! +১ পয়েন্ট")
+      : t("Not quite this time!", "এবার হয়নি!");
+    el("namesText").innerHTML = "";
+    var a = document.createElement("div");
+    var aLabel = document.createElement("b");
+    aLabel.textContent = iAmAbout() ? t("Your answer: ", "তোমার উত্তর: ") : t("Partner's answer: ", "সঙ্গীর উত্তর: ");
+    a.appendChild(aLabel);
+    a.appendChild(document.createTextNode(data.options[answer]));
+    var g = document.createElement("div");
+    var gLabel = document.createElement("b");
+    gLabel.textContent = iAmAbout() ? t("Partner guessed: ", "সঙ্গী অনুমান করেছে: ") : t("You guessed: ", "তুমি অনুমান করেছ: ");
+    g.appendChild(gLabel);
+    g.appendChild(document.createTextNode(data.options[guess]));
+    el("namesText").appendChild(a);
+    el("namesText").appendChild(g);
+    el("nextBtn").classList.remove("hidden");
+  } else {
+    el("nextBtn").classList.add("hidden");
+  }
+}
+
+function scores(quiz) {
+  var pts = {};
+  Object.keys(quiz || {}).forEach(function (k) {
+    if (k === "round") return;
+    var node = quiz[k] || {};
+    if (node.answer === undefined || node.answer === null || node.guess === undefined || node.guess === null) return;
+    var r = parseInt(k, 10);
+    var about = players[(r - 1) % 2];
+    var guesser = players.find(function (u) { return u !== about; });
+    if (guesser && node.answer === node.guess) pts[guesser] = (pts[guesser] || 0) + 1;
+  });
+  return pts;
+}
+
+function pick(i) {
+  if (!uid) return;
+  if (iAmAbout()) {
+    if (answer !== null) return;
+    answer = i;
+    set(roomRef(room, "quiz/" + round + "/answer"), i);
+  } else {
+    if (guess !== null) return;
+    guess = i;
+    set(roomRef(room, "quiz/" + round + "/guess"), i);
+  }
+  renderQuestion();
+}
+
+el("langBtn").addEventListener("click", function () {
+  lang = lang === "bn" ? "en" : "bn";
+  localStorage.setItem("quiz-lang", lang);
+  renderLang();
+});
+
+el("nextBtn").addEventListener("click", function () {
+  // Idempotent: both phones writing round+1 lands on the same value.
+  set(roomRef(room, "quiz/round"), round + 1);
+});
+
+el("againBtn").addEventListener("click", function () {
+  set(roomRef(room, "quiz"), { round: 1 });
+});
+
+fetch("./questions.json").then(function (r) { return r.json(); }).then(function (qs) {
+  questions = qs;
+  renderLang();
+  if (!room) { show("noRoom"); return; }
+  waitForAuth().then(function (u) {
+    uid = u;
+    return joinRoom(room, uid);
+  }).then(function (res) {
+    if (res === "full") { show("full"); return; }
+    // The players list decides who each round is about.
+    onValue(roomRef(room, "players"), function (snap) {
+      players = Object.keys(snap.val() || {}).sort();
+      if (players.length < 2) { show("waiting"); return; }
+      show("play");
+    });
+    onValue(roomRef(room, "quiz"), function (snap) {
+      var quiz = snap.val() || {};
+      var nextRound = quiz.round || 1;
+      if (nextRound > ROUNDS) {
+        var pts = scores(quiz);
+        var mine = pts[uid] || 0;
+        var other = players.find(function (u) { return u !== uid; });
+        var theirs = (other && pts[other]) || 0;
+        var winner = mine === theirs
+          ? t("It's a tie! 🤝", "ড্র হয়েছে! 🤝")
+          : (mine > theirs ? t("You win! 🏆", "তুমি জিতেছ! 🏆") : t("Your partner wins! 🏆", "তোমার সঙ্গী জিতেছে! 🏆"));
+        el("scoreText").innerHTML = "";
+        var line1 = document.createElement("div");
+        line1.textContent = t("You: " + mine + "  ·  Partner: " + theirs, "তুমি: " + mine + "  ·  সঙ্গী: " + theirs);
+        var line2 = document.createElement("div");
+        line2.textContent = winner;
+        el("scoreText").appendChild(line1);
+        el("scoreText").appendChild(line2);
+        show("done");
+        return;
+      }
+      round = nextRound;
+      var node = quiz[round] || {};
+      answer = (node.answer === undefined || node.answer === null) ? null : node.answer;
+      guess = (node.guess === undefined || node.guess === null) ? null : node.guess;
+      if (players.length === 2) { show("play"); renderLang(); }
+    });
+  }).catch(function () {
+    el("loadingText").textContent = t("Could not join the room — check your connection and reload.", "রুমে যোগ দেওয়া যায়নি — সংযোগ দেখে আবার লোড করো।");
+  });
+});
+</script>
+</body>
+</html>

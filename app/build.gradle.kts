@@ -89,6 +89,12 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        // The test executor talks to Gradle over loopback; localhost
+        // resolves to ::1 first here, and the executor only listens on
+        // IPv4 — without this the worker never connects (120 s timeout).
+        unitTests.all {
+            it.systemProperty("java.net.preferIPv4Stack", "true")
+        }
         // Optional: Robolectric-Laufzeit aus lokalem Ordner statt Download
         System.getenv("ROBOLECTRIC_DEPS_DIR")?.let { dir ->
             unitTests.all {
@@ -145,17 +151,14 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     // Die Icon-Bibliothek wird nicht mehr weiterentwickelt, 1.7.8 ist die letzte Version
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
     implementation("androidx.datastore:datastore-preferences:1.2.1")
     implementation("androidx.glance:glance-appwidget:1.1.1")
-    implementation("androidx.glance:glance-material3:1.1.1")
     implementation("io.coil-kt.coil3:coil-compose:3.4.0")
+    implementation("com.airbnb.android:lottie-compose:6.5.2")
     // QR-Code für die Kopplung zum Abgleich (erzeugen und scannen, Apache 2.0)
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("com.google.zxing:core:3.5.3")

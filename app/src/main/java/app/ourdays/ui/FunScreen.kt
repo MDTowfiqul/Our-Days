@@ -1,0 +1,918 @@
+@file:OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+
+package app.ourdays.ui
+
+import android.content.Context
+import android.content.Intent
+import androidx.annotation.StringRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.CardGiftcard
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FlightTakeoff
+import androidx.compose.material.icons.rounded.Mail
+import androidx.compose.material.icons.rounded.Send
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import app.ourdays.data.LoveSettings
+import app.ourdays.data.Surprise
+import app.ourdays.data.SurpriseOccasions
+import app.ourdays.data.buildPlanLink
+import app.ourdays.data.missSpan
+import kotlinx.coroutines.delay
+import ourdays.app.R
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import kotlin.math.roundToInt
+
+/** Aktionen der Spaß-Seite, kommen aus dem ViewModel (in Tests leer) */
+data class FunActions(
+    val onSetLastMet: (LocalDate, String) -> Unit = { _, _ -> },
+    val onSendKiss: (String) -> Unit = {},
+    val onSetMissLevel: (Int, String) -> Unit = { _, _ -> },
+    val onSendSurprise: (Surprise, String) -> Unit = { _, _ -> },
+    val onMarkSurpriseRevealed: (String) -> Unit = {},
+    val onDeleteSurprise: (String) -> Unit = {},
+)
+
+/** Text über das Teilen-Menü verschicken (z. B. per Messenger) */
+private fun shareText(context: Context, text: String) {
+    val send = Intent(Intent.ACTION_SEND)
+        .setType("text/plain")
+        .putExtra(Intent.EXTRA_TEXT, text)
+    context.startActivity(
+        Intent.createChooser(send, context.getString(R.string.share)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
+}
+
+private fun formatDate(date: LocalDate): String =
+    DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).format(date)
+
+private fun formatTime(time: LocalTime): String =
+    DateTimeFormatter.ofPattern("h:mm a").format(time)
+
+/** Spaß-Seite: „Ich vermisse dich“-Karte, Pläne und Überraschungen */
+@Composable
+fun FunScreen(
+    settings: LoveSettings,
+    actions: FunActions = FunActions(),
+    pairedIds: Set<String> = emptySet(),
+    now: LocalDateTime? = null,
+    funType: FunType = FunType.COUPLE,
+) {
+    val relId = settings.relationship.id
+    var showDateWizard by remember { mutableStateOf(false) }
+    var showTripWizard by remember { mutableStateOf(false) }
+    var showSurprise by remember { mutableStateOf(false) }
+    var reveal by remember { mutableStateOf<Surprise?>(null) }
+    val surprises = settings.surprisesFor(relId)
+    val unrevealed = surprises.filter { !it.revealed }
+    val revealed = surprises.filter { it.revealed }
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+    ) {
+        MissYouCard(settings, relId, actions, now, funType)
+        Text(
+            stringResource(R.string.fun_plan_title),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+        )
+        FunActionCard(Icons.Rounded.CalendarMonth, stringResource(funType.planDate), stringResource(R.string.fun_plan_date_sub)) { showDateWizard = true }
+        FunActionCard(Icons.Rounded.FlightTakeoff, stringResource(R.string.fun_plan_trip), stringResource(R.string.fun_plan_trip_sub)) { showTripWizard = true }
+        FunActionCard(Icons.Rounded.CardGiftcard, stringResource(R.string.fun_surprise_send), stringResource(R.string.fun_surprise_send_sub)) { showSurprise = true }
+        if (unrevealed.isNotEmpty()) {
+            Text(
+                stringResource(R.string.fun_surprise_for_you),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+            )
+            unrevealed.forEach { s ->
+                FunActionCard(Icons.Rounded.Mail, stringResource(R.string.fun_reveal_title), occasionTitle(s.occasion)) { reveal = s }
+            }
+        }
+        if (revealed.isNotEmpty()) {
+            Text(
+                stringResource(R.string.fun_surprise_keepsakes),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(top = 24.dp, bottom = 8.dp),
+            )
+            revealed.forEach { s ->
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(occasionTitle(s.occasion), style = MaterialTheme.typography.titleMedium)
+                            Text(s.message, style = MaterialTheme.typography.bodyMedium)
+                        }
+                        IconButton(onClick = { actions.onDeleteSurprise(s.id) }) {
+                            Icon(Icons.Rounded.Close, stringResource(R.string.delete))
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(72.dp))
+    }
+    if (showDateWizard) DateWizard(settings) { showDateWizard = false }
+    if (showTripWizard) TripWizard(settings) { showTripWizard = false }
+    if (showSurprise) SurpriseComposer(settings, pairedIds, actions) { showSurprise = false }
+    reveal?.let { s ->
+        SurpriseReveal(
+            surprise = s,
+            settings = settings,
+            onKeep = { actions.onMarkSurpriseRevealed(s.id); reveal = null },
+            onDismiss = { reveal = null },
+        )
+    }
+}
+
+@Composable
+private fun occasionTitle(occasion: String): String = when (occasion) {
+    SurpriseOccasions.PROPOSAL -> stringResource(R.string.fun_occasion_proposal)
+    SurpriseOccasions.BIRTHDAY -> stringResource(R.string.fun_occasion_birthday)
+    SurpriseOccasions.EID -> stringResource(R.string.fun_occasion_eid)
+    SurpriseOccasions.ANNIVERSARY -> stringResource(R.string.fun_occasion_anniversary)
+    SurpriseOccasions.CUSTOM -> stringResource(R.string.fun_occasion_custom)
+    SurpriseOccasions.JUST_BECAUSE -> stringResource(R.string.fun_occasion_just_because)
+    // Eigener Anlass: der getippte Name steht so da
+    else -> occasion
+}
+
+@Composable
+private fun FunActionCard(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+            Column(Modifier.padding(start = 16.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+/** Dunkle Karte im Stil der „Ich vermisse dich“-Seite: Foto, Zähler, Schieberegler, Küsse, Notizen */
+@Composable
+private fun MissYouCard(settings: LoveSettings, relId: String, actions: FunActions, now: LocalDateTime? = null, funType: FunType = FunType.COUPLE) {
+    val lastMet = settings.lastMetFor(relId)
+    val kisses = settings.kissesFor(relId)
+    val savedLevel = settings.missLevelFor(relId) ?: 3
+    var current by remember { mutableStateOf(now ?: LocalDateTime.now()) }
+    LaunchedEffect(lastMet, now) {
+        if (lastMet == null || now != null) return@LaunchedEffect
+        while (true) {
+            current = LocalDateTime.now()
+            delay(1000 - System.currentTimeMillis() % 1000)
+        }
+    }
+    var sliderLevel by remember(savedLevel) { mutableStateOf(savedLevel) }
+    var noteIndex by remember { mutableStateOf(0) }
+    var kissBurst by remember { mutableStateOf(0) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val notes = funType.notes
+    val missTexts = listOf(
+        R.string.fun_miss_1, R.string.fun_miss_2, R.string.fun_miss_3, R.string.fun_miss_4, R.string.fun_miss_5,
+    )
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(28.dp))
+            .background(Color(0xFF0F0C20)),
+    ) {
+        CouplePhoto(
+            settings,
+            Modifier
+                .matchParentSize()
+                .blur(28.dp)
+                .alpha(0.5f),
+            photoPath = settings.photoFor(relId),
+        )
+        Box(Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.35f)))
+        Box(Modifier.matchParentSize()) { FloatingHearts() }
+        Column(
+            Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                stringResource(funType.missTitle),
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                stringResource(funType.missSubtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            if (lastMet == null) {
+                OutlinedButton(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.padding(top = 20.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.4f)),
+                ) {
+                    Text(stringResource(R.string.fun_miss_set_date), color = Color.White)
+                }
+            } else {
+                val span = missSpan(lastMet, current)
+                Row(Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TimerBox(span.days.toString(), R.string.fun_miss_days)
+                    TimerBox(span.hours.toString().padStart(2, '0'), R.string.fun_miss_hours)
+                    TimerBox(span.minutes.toString().padStart(2, '0'), R.string.fun_miss_mins)
+                    TimerBox(span.seconds.toString().padStart(2, '0'), R.string.fun_miss_secs)
+                }
+                TextButton(onClick = { showDatePicker = true }) {
+                    Text(
+                        stringResource(R.string.fun_miss_last_met, formatDate(lastMet)),
+                        color = Color.White.copy(alpha = 0.7f),
+                    )
+                }
+            }
+            Text(
+                stringResource(R.string.fun_miss_how_much),
+                color = Color.White,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 20.dp),
+            )
+            Slider(
+                value = sliderLevel.toFloat(),
+                onValueChange = { sliderLevel = it.roundToInt().coerceIn(1, 5) },
+                onValueChangeFinished = { actions.onSetMissLevel(sliderLevel, relId) },
+                valueRange = 1f..5f,
+                steps = 3,
+                colors = SliderDefaults.colors(thumbColor = funType.accent, activeTrackColor = funType.accent),
+                modifier = Modifier.padding(horizontal = 8.dp),
+            )
+            Text(
+                stringResource(missTexts[(sliderLevel - 1).coerceIn(0, 4)]),
+                color = funType.accent,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+            )
+            Button(
+                onClick = { actions.onSendKiss(relId); kissBurst++ },
+                modifier = Modifier.padding(top = 16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = funType.accent),
+            ) {
+                Icon(Icons.Rounded.Favorite, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                Text(stringResource(funType.sendLabel), color = Color.White, modifier = Modifier.padding(start = 8.dp))
+            }
+            Text(
+                pluralStringResource(if (funType.sendIsKiss) R.plurals.fun_kisses else R.plurals.fun_loves, kisses, kisses),
+                color = Color.White.copy(alpha = 0.7f),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Text(
+                stringResource(notes[noteIndex % notes.size]),
+                color = Color.White.copy(alpha = 0.85f),
+                fontStyle = FontStyle.Italic,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .padding(top = 20.dp)
+                    .clickable { noteIndex = (noteIndex + 1) % notes.size },
+            )
+            Text(
+                stringResource(R.string.fun_note_hint),
+                color = Color.White.copy(alpha = 0.5f),
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        if (kissBurst > 0) ConfettiBurst(kissBurst, modifier = Modifier.matchParentSize())
+    }
+    if (showDatePicker) {
+        FunDatePickerDialog(
+            current = lastMet ?: LocalDate.now().minusDays(2),
+            title = R.string.fun_miss_set_date,
+            onDismiss = { showDatePicker = false },
+            onSave = { actions.onSetLastMet(it, relId); showDatePicker = false },
+        )
+    }
+}
+
+@Composable
+private fun TimerBox(value: String, @StringRes label: Int) {
+    Column(
+        Modifier
+            .background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
+            .padding(vertical = 12.dp, horizontal = 4.dp)
+            .width(64.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(value, style = MaterialTheme.typography.headlineMedium, color = Color.White)
+        Text(
+            stringResource(label).uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White.copy(alpha = 0.7f),
+        )
+    }
+}
+
+/** Datumsauswahl wie in den Einstellungen (der DatePicker rechnet in UTC-Millisekunden) */
+@Composable
+private fun FunDatePickerDialog(
+    current: LocalDate,
+    @StringRes title: Int,
+    onDismiss: () -> Unit,
+    onSave: (LocalDate) -> Unit,
+) {
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = current.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                state.selectedDateMillis?.let {
+                    onSave(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate())
+                }
+            }) { Text(stringResource(R.string.save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    ) {
+        DatePicker(state = state, title = { Text(stringResource(title), Modifier.padding(start = 24.dp, top = 16.dp)) })
+    }
+}
+
+/** Frage mit Ja und einem Nein-Knopf, der erst fleht und ab dem dritten Nein ausweicht */
+@Composable
+private fun AskStep(
+    @StringRes question: Int,
+    pleading: List<Int>,
+    onYes: () -> Unit,
+) {
+    var noCount by remember { mutableStateOf(0) }
+    var dodgeX by remember { mutableStateOf(0f) }
+    var dodgeY by remember { mutableStateOf(0f) }
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        Text(
+            stringResource(question),
+            style = MaterialTheme.typography.headlineMedium,
+            textAlign = TextAlign.Center,
+        )
+        if (noCount > 0) {
+            Text(
+                stringResource(pleading[(noCount - 1).coerceAtMost(pleading.size - 1)]),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+        }
+        Row(Modifier.padding(top = 24.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Button(onClick = onYes) { Text(stringResource(R.string.fun_wizard_yes)) }
+            Button(
+                onClick = {
+                    noCount++
+                    if (noCount >= 3) {
+                        dodgeX = (-100..100).random().toFloat()
+                        dodgeY = (-28..28).random().toFloat()
+                    }
+                },
+                modifier = Modifier.offset(x = dodgeX.dp, y = dodgeY.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+            ) { Text(stringResource(R.string.fun_wizard_no)) }
+        }
+    }
+}
+
+@Composable
+private fun WizardDialog(@StringRes title: Int, onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp)) {
+            Column(Modifier.padding(28.dp)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(title), style = MaterialTheme.typography.titleLarge)
+                    IconButton(onClick = onDismiss) { Icon(Icons.Rounded.Close, stringResource(R.string.cancel)) }
+                }
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WizardNav(canNext: Boolean, onBack: () -> Unit, onNext: () -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(top = 20.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        TextButton(onClick = onBack) { Text(stringResource(R.string.fun_wizard_back)) }
+        Button(onClick = onNext, enabled = canNext) { Text(stringResource(R.string.fun_wizard_next)) }
+    }
+}
+
+private val pleadingLines = listOf(
+    R.string.fun_no_1, R.string.fun_no_2, R.string.fun_no_3, R.string.fun_no_4, R.string.fun_no_5,
+)
+
+private val foodOptions = listOf(
+    "kacchi" to R.string.fun_food_kacchi,
+    "khichuri" to R.string.fun_food_khichuri,
+    "grilled" to R.string.fun_food_grilled,
+    "fuchka" to R.string.fun_food_fuchka,
+    "borhani" to R.string.fun_food_borhani,
+    "falooda" to R.string.fun_food_falooda,
+)
+
+private val whoForOptions = listOf(
+    "partner" to R.string.fun_who_partner,
+    "family" to R.string.fun_who_family,
+    "friends" to R.string.fun_who_friends,
+    "others" to R.string.fun_who_others,
+)
+
+/** Namen der gewählten Beziehung für die Plan-Seite und die Überraschung */
+private fun namesOf(settings: LoveSettings, relationshipId: String): String {
+    val r = settings.relationships.firstOrNull { it.id == relationshipId } ?: settings.relationship
+    return settings.namesOf(r)
+}
+
+/** Erster Schritt aller Spaß-Abläufe: für wen ist das — dann welche Beziehung */
+@Composable
+private fun WhoForStep(
+    settings: LoveSettings,
+    category: String?,
+    onCategory: (String) -> Unit,
+    relationshipId: String,
+    onRelationship: (String) -> Unit,
+) {
+    Text(stringResource(R.string.fun_who_title), style = MaterialTheme.typography.titleMedium)
+    FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        whoForOptions.forEach { (id, label) ->
+            FilterChip(
+                selected = category == id,
+                onClick = { onCategory(id) },
+                label = { Text(stringResource(label)) },
+            )
+        }
+    }
+    if (settings.relationships.size > 1) {
+        Text(
+            stringResource(R.string.fun_who_pick),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 20.dp),
+        )
+        FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            settings.relationships.forEach { r ->
+                FilterChip(
+                    selected = relationshipId == r.id,
+                    onClick = { onRelationship(r.id) },
+                    label = { Text(settings.namesOf(r)) },
+                )
+            }
+        }
+    }
+}
+
+/** Uhrzeit frei wählen (Material3 TimePicker im Dialog) */
+@Composable
+private fun TimePickerDialog(initial: LocalTime?, onDismiss: () -> Unit, onSave: (LocalTime) -> Unit) {
+    val state = rememberTimePickerState(
+        initialHour = initial?.hour ?: 19,
+        initialMinute = initial?.minute ?: 30,
+        is24Hour = false,
+    )
+    Dialog(onDismissRequest = onDismiss) {
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp)) {
+            Column(Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(stringResource(R.string.fun_wizard_pick_time), style = MaterialTheme.typography.titleLarge)
+                TimePicker(state = state, modifier = Modifier.padding(top = 16.dp))
+                Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+                    Button(onClick = { onSave(LocalTime.of(state.hour, state.minute)) }) {
+                        Text(stringResource(R.string.save))
+                    }
+                }
+            }
+        }
+    }
+}
+/** Date planen: für wen → fragen → Datum und Uhrzeit → Essen → Link teilen */
+@Composable
+private fun DateWizard(settings: LoveSettings, onDismiss: () -> Unit) {
+    var stage by remember { mutableStateOf(-1) }
+    var category by remember { mutableStateOf<String?>(null) }
+    var forRelId by remember { mutableStateOf(settings.relationship.id) }
+    var date by remember { mutableStateOf<LocalDate?>(null) }
+    var time by remember { mutableStateOf<LocalTime?>(null) }
+    var foods by remember { mutableStateOf(setOf<String>()) }
+    var customMenu by remember { mutableStateOf("") }
+    var showPicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    WizardDialog(R.string.fun_plan_date, onDismiss) {
+        when (stage) {
+            -1 -> {
+                WhoForStep(settings, category, { category = it }, forRelId, { forRelId = it })
+                WizardNav(canNext = category != null, onBack = onDismiss, onNext = { stage = 0 })
+            }
+            0 -> AskStep(R.string.fun_wizard_date_q, pleadingLines) { stage = 1 }
+            1 -> {
+                Text(stringResource(R.string.fun_wizard_when), style = MaterialTheme.typography.titleMedium)
+                OutlinedButton(
+                    onClick = { showPicker = true },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                ) {
+                    Text(date?.let { formatDate(it) } ?: stringResource(R.string.fun_wizard_date))
+                }
+                Text(
+                    stringResource(R.string.fun_wizard_time),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+                OutlinedButton(
+                    onClick = { showTimePicker = true },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                ) {
+                    Text(time?.let { formatTime(it) } ?: stringResource(R.string.fun_wizard_pick_time))
+                }
+                WizardNav(canNext = date != null && time != null, onBack = { stage = 0 }, onNext = { stage = 2 })
+            }
+            2 -> {
+                Text(stringResource(R.string.fun_wizard_food), style = MaterialTheme.typography.titleMedium)
+                FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    foodOptions.forEach { (id, label) ->
+                        FilterChip(
+                            selected = id in foods,
+                            onClick = { foods = if (id in foods) foods - id else foods + id },
+                            label = { Text(stringResource(label)) },
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    value = customMenu,
+                    onValueChange = { customMenu = it },
+                    label = { Text(stringResource(R.string.fun_wizard_custom_menu)) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    singleLine = true,
+                )
+                WizardNav(canNext = foods.isNotEmpty() || customMenu.isNotBlank(), onBack = { stage = 1 }, onNext = { stage = 3 })
+            }
+            else -> {
+                val menu = (
+                    foods.map { id -> context.getString(foodOptions.first { it.first == id }.second) } +
+                        listOfNotNull(customMenu.trim().takeIf { it.isNotBlank() })
+                    ).joinToString(", ")
+                val link = buildPlanLink("date", namesOf(settings, forRelId), date, time, menu, null)
+                val summary = context.getString(
+                    R.string.fun_date_share,
+                    date?.let { formatDate(it) }.orEmpty(),
+                    time?.let { formatTime(it) }.orEmpty(),
+                    menu,
+                )
+                val shareMessage = context.getString(R.string.fun_date_share_link, link)
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text(stringResource(R.string.fun_wizard_summary), style = MaterialTheme.typography.titleMedium)
+                        Text(summary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
+                        Text(
+                            link,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
+                    }
+                }
+                Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.fun_wizard_done)) }
+                    Button(onClick = { shareText(context, shareMessage) }, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Rounded.Send, null, modifier = Modifier.size(18.dp))
+                        Text(stringResource(R.string.fun_wizard_share), modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        }
+    }
+    if (showPicker) {
+        FunDatePickerDialog(
+            current = date ?: LocalDate.now(),
+            title = R.string.fun_wizard_date,
+            onDismiss = { showPicker = false },
+            onSave = { date = it; showPicker = false },
+        )
+    }
+    if (showTimePicker) {
+        TimePickerDialog(
+            initial = time,
+            onDismiss = { showTimePicker = false },
+            onSave = { time = it; showTimePicker = false },
+        )
+    }
+}
+
+private val destinationOptions = listOf(
+    "maldives" to R.string.fun_dest_maldives,
+    "switzerland" to R.string.fun_dest_switzerland,
+    "bali" to R.string.fun_dest_bali,
+    "paris" to R.string.fun_dest_paris,
+    "coxs" to R.string.fun_dest_coxs,
+    "sajek" to R.string.fun_dest_sajek,
+    "bandarban" to R.string.fun_dest_bandarbans,
+    "sylhet" to R.string.fun_dest_sylhet,
+    "saintmartin" to R.string.fun_dest_saintmartin,
+    "sundarbans" to R.string.fun_dest_sundarbans,
+)
+
+/** Reise planen: für wen → fragen → Ziel → Datum → Link teilen */
+@Composable
+private fun TripWizard(settings: LoveSettings, onDismiss: () -> Unit) {
+    var stage by remember { mutableStateOf(-1) }
+    var category by remember { mutableStateOf<String?>(null) }
+    var forRelId by remember { mutableStateOf(settings.relationship.id) }
+    var destination by remember { mutableStateOf<String?>(null) }
+    var localSpot by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf<LocalDate?>(null) }
+    var showPicker by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    WizardDialog(R.string.fun_plan_trip, onDismiss) {
+        when (stage) {
+            -1 -> {
+                WhoForStep(settings, category, { category = it }, forRelId, { forRelId = it })
+                WizardNav(canNext = category != null, onBack = onDismiss, onNext = { stage = 0 })
+            }
+            0 -> AskStep(R.string.fun_wizard_trip_q, pleadingLines) { stage = 1 }
+            1 -> {
+                Text(stringResource(R.string.fun_wizard_where), style = MaterialTheme.typography.titleMedium)
+                FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    destinationOptions.forEach { (id, label) ->
+                        FilterChip(
+                            selected = destination == id,
+                            onClick = { destination = id },
+                            label = { Text(stringResource(label)) },
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    value = localSpot,
+                    onValueChange = { localSpot = it },
+                    label = { Text(stringResource(R.string.fun_wizard_anywhere)) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    singleLine = true,
+                )
+                WizardNav(
+                    canNext = destination != null || localSpot.isNotBlank(),
+                    onBack = { stage = 0 },
+                    onNext = { stage = 2 },
+                )
+            }
+            2 -> {
+                Text(stringResource(R.string.fun_wizard_when), style = MaterialTheme.typography.titleMedium)
+                OutlinedButton(
+                    onClick = { showPicker = true },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                ) {
+                    Text(date?.let { formatDate(it) } ?: stringResource(R.string.fun_wizard_date))
+                }
+                WizardNav(canNext = date != null, onBack = { stage = 1 }, onNext = { stage = 3 })
+            }
+            else -> {
+                val where = destination?.let { id -> context.getString(destinationOptions.first { it.first == id }.second) }
+                    ?: localSpot.trim()
+                val link = buildPlanLink("trip", namesOf(settings, forRelId), date, null, null, where)
+                val summary = context.getString(
+                    R.string.fun_trip_share,
+                    where,
+                    date?.let { formatDate(it) }.orEmpty(),
+                )
+                val shareMessage = context.getString(R.string.fun_trip_share_link, link)
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text(stringResource(R.string.fun_wizard_summary), style = MaterialTheme.typography.titleMedium)
+                        Text(summary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 8.dp))
+                        Text(
+                            link,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
+                    }
+                }
+                Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.fun_wizard_done)) }
+                    Button(onClick = { shareText(context, shareMessage) }, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Rounded.Send, null, modifier = Modifier.size(18.dp))
+                        Text(stringResource(R.string.fun_wizard_share), modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
+        }
+    }
+    if (showPicker) {
+        FunDatePickerDialog(
+            current = date ?: LocalDate.now(),
+            title = R.string.fun_wizard_date,
+            onDismiss = { showPicker = false },
+            onSave = { date = it; showPicker = false },
+        )
+    }
+}
+
+/** Überraschung schreiben: für wen → Anlass wählen, Nachricht schreiben, an das andere Handy schicken */
+@Composable
+private fun SurpriseComposer(settings: LoveSettings, pairedIds: Set<String>, actions: FunActions, onDismiss: () -> Unit) {
+    var stage by remember { mutableStateOf(-1) }
+    var category by remember { mutableStateOf<String?>(null) }
+    var forRelId by remember { mutableStateOf(settings.relationship.id) }
+    var occasion by remember { mutableStateOf(SurpriseOccasions.JUST_BECAUSE) }
+    var customOccasion by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
+    val isPaired = pairedIds.contains(forRelId)
+    WizardDialog(R.string.fun_surprise_send, onDismiss) {
+        when (stage) {
+            -1 -> {
+                WhoForStep(settings, category, { category = it }, forRelId, { forRelId = it })
+                WizardNav(canNext = category != null, onBack = onDismiss, onNext = { stage = 0 })
+            }
+            else -> {
+                Text(stringResource(R.string.fun_surprise_occasion), style = MaterialTheme.typography.titleMedium)
+                FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (SurpriseOccasions.ALL + SurpriseOccasions.CUSTOM).forEach { occ ->
+                        FilterChip(
+                            selected = occasion == occ,
+                            onClick = { occasion = occ },
+                            label = { Text(occasionTitle(occ)) },
+                        )
+                    }
+                }
+                if (occasion == SurpriseOccasions.CUSTOM) {
+                    OutlinedTextField(
+                        value = customOccasion,
+                        onValueChange = { if (it.length <= 40) customOccasion = it },
+                        label = { Text(stringResource(R.string.fun_surprise_custom_occasion)) },
+                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        singleLine = true,
+                    )
+                }
+                OutlinedTextField(
+                    value = message,
+                    onValueChange = { if (it.length <= 500) message = it },
+                    label = { Text(stringResource(R.string.fun_surprise_message)) },
+                    placeholder = { Text(stringResource(R.string.fun_surprise_message_hint)) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    minLines = 3,
+                )
+                if (!isPaired) {
+                    Text(
+                        stringResource(R.string.fun_surprise_not_paired),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+                Button(
+                    onClick = {
+                        val finalOccasion = if (occasion == SurpriseOccasions.CUSTOM) {
+                            customOccasion.trim().take(40).ifBlank { SurpriseOccasions.JUST_BECAUSE }
+                        } else {
+                            occasion
+                        }
+                        actions.onSendSurprise(
+                            Surprise(relationshipId = forRelId, occasion = finalOccasion, message = message.trim(), from = null),
+                            forRelId,
+                        )
+                        onDismiss()
+                    },
+                    enabled = message.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                ) { Text(stringResource(R.string.fun_surprise_send_button)) }
+            }
+        }
+    }
+}
+
+/** Empfangene Überraschung öffnen: erst spielen, dann die Nachricht — mit Konfetti */
+@Composable
+private fun SurpriseReveal(surprise: Surprise, settings: LoveSettings, onKeep: () -> Unit, onDismiss: () -> Unit) {
+    var opened by remember { mutableStateOf(false) }
+    var burst by remember { mutableStateOf(0) }
+    val fromName = surprise.from?.let { settings.person(it)?.name }
+    Dialog(onDismissRequest = onDismiss) {
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp)) {
+            Box(Modifier.fillMaxWidth()) {
+                Column(
+                    Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text("🎁", style = MaterialTheme.typography.displayMedium)
+                    Text(
+                        stringResource(R.string.fun_reveal_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                    if (fromName != null) {
+                        Text(
+                            stringResource(R.string.fun_reveal_from, fromName),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                    if (!opened) {
+                        AskStep(R.string.fun_reveal_q, pleadingLines) { opened = true; burst++ }
+                    } else {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+                                Text(occasionTitle(surprise.occasion), style = MaterialTheme.typography.titleMedium)
+                                Text(surprise.message, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 8.dp))
+                            }
+                        }
+                        Button(onClick = onKeep, modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+                            Text(stringResource(R.string.fun_reveal_keep))
+                        }
+                    }
+                }
+                if (burst > 0) ConfettiBurst(burst, modifier = Modifier.matchParentSize())
+            }
+        }
+    }
+}

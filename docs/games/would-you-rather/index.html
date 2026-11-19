@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Our Days — Would You Rather</title>
+<meta name="description" content="Pick one — see if you match. Play live with your partner.">
+<meta name="theme-color" content="#0F0C20">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: #0F0C20;
+    background-image:
+      radial-gradient(600px 300px at 85% -10%, rgba(255, 77, 141, .25), transparent 60%),
+      radial-gradient(700px 350px at -10% 110%, rgba(124, 93, 250, .30), transparent 60%);
+    color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    width: 100%; max-width: 480px;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 28px;
+    padding: 32px 24px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .top { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: rgba(255, 255, 255, .65); }
+  .top button {
+    font: inherit; font-size: 14px; font-weight: 600;
+    background: rgba(255, 255, 255, .10); color: #fff;
+    border: 1px solid rgba(255, 255, 255, .18); border-radius: 999px;
+    padding: 6px 14px; cursor: pointer;
+  }
+  h1 { font-size: 26px; line-height: 1.3; margin: 20px 0 0; }
+  .opts { margin-top: 24px; display: grid; gap: 12px; }
+  .opt {
+    font: inherit; font-size: 17px; font-weight: 600; text-align: left;
+    background: rgba(255, 255, 255, .07);
+    border: 1px solid rgba(255, 255, 255, .16);
+    color: #fff; border-radius: 18px; padding: 18px;
+    cursor: pointer; width: 100%;
+  }
+  .opt:active { background: rgba(255, 255, 255, .13); }
+  .opt:disabled { opacity: .45; cursor: default; }
+  .opt.mine { border-color: #FF4D8D; background: rgba(255, 77, 141, .22); }
+  .opt.theirs { border-color: #FFB703; background: rgba(255, 183, 3, .18); }
+  .opt.both { border-color: #FF4D8D; background: rgba(255, 77, 141, .22); }
+  .or { color: rgba(255, 255, 255, .5); font-size: 14px; margin: 4px 0; text-transform: uppercase; letter-spacing: .15em; }
+  .wait { color: #FFB2B9; margin-top: 20px; font-size: 16px; }
+  .match { font-size: 22px; margin-top: 20px; }
+  .names { margin-top: 8px; font-size: 15px; color: rgba(255, 255, 255, .75); line-height: 1.7; }
+  .names b { color: #fff; }
+  .next, .again {
+    font: inherit; font-size: 18px; font-weight: 600;
+    background: #FF4D8D; color: #fff; border: 0; border-radius: 999px;
+    padding: 14px 32px; cursor: pointer; margin-top: 24px;
+    box-shadow: 0 8px 24px rgba(255, 77, 141, .45);
+  }
+  .score { font-size: 18px; margin-top: 16px; color: #F5C86B; }
+  .foot { margin-top: 28px; font-size: 13px; color: rgba(255, 255, 255, .5); }
+  .foot a { color: #FFB2B9; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="top"><span id="roundLabel"></span><button id="langBtn" type="button">বাংলা</button></div>
+  <div id="loading">
+    <h1>🤔</h1>
+    <p class="wait" id="loadingText">Joining your room…</p>
+  </div>
+  <div id="noRoom" class="hidden">
+    <h1>🥺</h1>
+    <p class="wait">Open this game from the Our Days app to play together — the room code comes from your pairing.</p>
+  </div>
+  <div id="full" class="hidden">
+    <h1>👥</h1>
+    <p class="wait">This room already has two players. Open the game from your own pairing to play together.</p>
+  </div>
+  <div id="play" class="hidden">
+    <h1 id="title">Would you rather…</h1>
+    <div class="opts">
+      <button class="opt" id="optA" type="button" disabled></button>
+      <div class="or">— or —</div>
+      <button class="opt" id="optB" type="button" disabled></button>
+    </div>
+    <p class="wait hidden" id="waitingText">Waiting for your partner…</p>
+    <div id="reveal" class="hidden">
+      <p class="match" id="matchText"></p>
+      <p class="names" id="namesText"></p>
+      <button class="next hidden" id="nextBtn" type="button">Next →</button>
+    </div>
+  </div>
+  <div id="done" class="hidden">
+    <h1>🎉</h1>
+    <p class="score" id="scoreText"></p>
+    <button class="again" id="againBtn" type="button">Play again</button>
+  </div>
+  <p class="foot">Made with <a href="https://mdtowfiqul.github.io/Our-Days/">Our Days</a> ♥</p>
+</main>
+<script>
+  // Report script-load errors INTO the page so they are visible without DevTools.
+  window.__gameError = null;
+  window.addEventListener("error", function (e) {
+    window.__gameError = String((e && e.message) || (e && e.error) || e);
+    var el = document.getElementById("loadingText");
+    if (el) el.textContent = "Start failed: " + window.__gameError;
+  });
+  window.addEventListener("unhandledrejection", function (e) {
+    var r = e && e.reason;
+    window.__gameError = String((r && r.message) || r);
+    var el = document.getElementById("loadingText");
+    if (el) el.textContent = "Start failed: " + window.__gameError;
+  });
+</script>
+<script type="module">
+import { roomCodeFromUrl, waitForAuth, joinRoom, roomRef } from "../shared.js";
+import { set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+var room = roomCodeFromUrl();
+var questions = [];
+var __memStore = {};
+function storeGet(k) { try { return localStorage.getItem(k); } catch (e) { return __memStore[k] || null; } }
+function storeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { __memStore[k] = v; } }
+var lang = storeGet("wyr-lang") || "en";
+var uid = null;
+var round = 1;
+var myAnswer = null;
+var theirAnswer = null;
+
+var el = function (id) { return document.getElementById(id); };
+function show(id) { ["loading", "noRoom", "full", "play", "done"].forEach(function (x) { el(x).classList.toggle("hidden", x !== id); }); }
+function t(en, bn) { return lang === "bn" ? bn : en; }
+
+function renderLang() {
+  window.__gameBooted = true;
+  el("langBtn").textContent = lang === "bn" ? "English" : "বাংলা";
+  el("title").textContent = t("Would you rather…", "তুমি কোনটা চাও…");
+  el("roundLabel").textContent = questions.length ? t("Question ", "প্রশ্ন ") + round + " / " + questions.length : "";
+  el("loadingText").textContent = t("Joining your room…", "রুমে যোগ দিচ্ছি…");
+  el("waitingText").textContent = t("Waiting for your partner…", "সঙ্গীর উত্তরের অপেক্ষায়…");
+  el("nextBtn").textContent = t("Next →", "পরেরটি →");
+  el("againBtn").textContent = t("Play again", "আবার খেলো");
+  renderQuestion();
+}
+
+function renderQuestion() {
+  var q = questions[round - 1];
+  if (!q) return;
+  var opts = q[lang] || q.en;
+  el("optA").textContent = opts.a;
+  el("optB").textContent = opts.b;
+  el("optA").disabled = !uid || myAnswer !== null;
+  el("optB").disabled = !uid || myAnswer !== null;
+  el("optA").className = "opt" + (myAnswer === "a" ? " mine" : "") + (theirAnswer === "a" ? " theirs" : "");
+  el("optB").className = "opt" + (myAnswer === "b" ? " mine" : "") + (theirAnswer === "b" ? " theirs" : "");
+  el("waitingText").classList.toggle("hidden", !(myAnswer && !theirAnswer));
+  var revealed = myAnswer && theirAnswer;
+  el("reveal").classList.toggle("hidden", !revealed);
+  if (revealed) {
+    var match = myAnswer === theirAnswer;
+    el("matchText").textContent = match ? t("💖 You match!", "💖 তোমরা মিলে গেলে!") : t("Different picks — fun!", "আলাদা পছন্দ — মজা!");
+    el("namesText").innerHTML = "";
+    var you = document.createElement("div");
+    var youLabel = document.createElement("b");
+    youLabel.textContent = t("You: ", "তুমি: ");
+    you.appendChild(youLabel);
+    you.appendChild(document.createTextNode(myAnswer === "a" ? opts.a : opts.b));
+    var them = document.createElement("div");
+    var themLabel = document.createElement("b");
+    themLabel.textContent = t("Partner: ", "সঙ্গী: ");
+    them.appendChild(themLabel);
+    them.appendChild(document.createTextNode(theirAnswer === "a" ? opts.a : opts.b));
+    el("namesText").appendChild(you);
+    el("namesText").appendChild(them);
+    el("nextBtn").classList.remove("hidden");
+  } else {
+    el("nextBtn").classList.add("hidden");
+  }
+}
+
+function countMatches(wyr) {
+  var matches = 0, played = 0;
+  Object.keys(wyr || {}).forEach(function (k) {
+    if (k === "round") return;
+    var answers = (wyr[k] && wyr[k].answers) || {};
+    var vals = Object.keys(answers).map(function (u) { return answers[u]; });
+    if (vals.length >= 2) { played++; if (vals[0] === vals[1]) matches++; }
+  });
+  return { matches: matches, played: played };
+}
+
+el("langBtn").addEventListener("click", function () {
+  lang = lang === "bn" ? "en" : "bn";
+  storeSet("wyr-lang", lang);
+  renderLang();
+});
+
+el("optA").addEventListener("click", function () { answer("a"); });
+el("optB").addEventListener("click", function () { answer("b"); });
+function answer(choice) {
+  if (!uid || myAnswer) return;
+  myAnswer = choice;
+  set(roomRef(room, "wyr/" + round + "/answers/" + uid), choice);
+  renderQuestion();
+}
+
+el("nextBtn").addEventListener("click", function () {
+  // Idempotent: both phones writing round+1 lands on the same value.
+  set(roomRef(room, "wyr/round"), round + 1);
+});
+
+el("againBtn").addEventListener("click", function () {
+  set(roomRef(room, "wyr"), { round: 1 });
+});
+
+fetch("./questions.json").then(function (r) { return r.json(); }).then(function (qs) {
+  questions = qs;
+  renderLang();
+  if (!room) { show("noRoom"); return; }
+  waitForAuth().then(function (u) {
+    uid = u;
+    return joinRoom(room, uid);
+  }).then(function (res) {
+    if (res === "full") { show("full"); return; }
+    show("play");
+    // The whole wyr node: round pointer + per-round answers.
+    onValue(roomRef(room, "wyr"), function (snap) {
+      var wyr = snap.val() || {};
+      var nextRound = wyr.round || 1;
+      if (nextRound > questions.length) {
+        var score = countMatches(wyr);
+        el("scoreText").textContent = t(
+          "You matched on " + score.matches + " of " + score.played + " questions!",
+          "তোমরা " + score.played + "টি প্রশ্নের মধ্যে " + score.matches + "টিতে মিলেছ!"
+        );
+        show("done");
+        return;
+      }
+      round = nextRound;
+      var answers = (wyr[round] && wyr[round].answers) || {};
+      myAnswer = answers[uid] || null;
+      theirAnswer = null;
+      Object.keys(answers).forEach(function (u) { if (u !== uid) theirAnswer = answers[u]; });
+      renderLang();
+    });
+  }).catch(function () {
+    el("loadingText").textContent = t("Could not join the room — check your connection and reload.", "রুমে যোগ দেওয়া যায়নি — সংযোগ দেখে আবার লোড করো।");
+  });
+}).catch(function () {
+  el("loadingText").textContent = t("Could not load the game — check your connection and reload.", "গেমটি লোড করা যায়নি — সংযোগ দেখে আবার লোড করো।");
+});
+</script>
+<script>
+  // If the game script never starts (e.g. this browser blocks storage),
+  // say so instead of spinning forever.
+  setTimeout(function () {
+    if (!window.__gameBooted && !window.__gameError) {
+      var el = document.getElementById("loadingText");
+      if (el) el.textContent = "This page could not start here — please reload or try another browser. / এই পেজটি এখানে চালু হয়নি — আবার লোড করো বা অন্য ব্রাউজার চেষ্টা করো।";
+    }
+  }, 8000);
+</script>
+</body>
+</html>

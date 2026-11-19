@@ -25,13 +25,16 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.ui.platform.LocalConfiguration
+import java.time.DayOfWeek
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -55,7 +58,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -86,14 +91,14 @@ import java.io.File
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-/** Vorschläge im leeren Zustand, in der Reihenfolge einer typischen Beziehung */
+/** Vorschläge im leeren Zustand: positiv und für jede Beziehung passend — Paar, Eltern, Geschwister, Freunde */
 val MomentSuggestions = listOf(
     R.string.suggest_met,
-    R.string.suggest_first_date,
-    R.string.suggest_first_kiss,
-    R.string.suggest_i_love_you,
+    R.string.suggest_married,
     R.string.suggest_first_trip,
-    R.string.suggest_moved_in,
+    R.string.suggest_first_eid,
+    R.string.suggest_umrah,
+    R.string.suggest_birthday,
 )
 
 /** Eintrag der Zeitleiste: ein gespeicherter Moment oder euer Starttag */
@@ -130,8 +135,8 @@ fun MomentsScreen(
     var year by rememberSaveable { mutableStateOf<Int?>(null) }
     var relationship by rememberSaveable { mutableStateOf<String?>(null) }
     val filterRelationships = multi && settings.showAll
-    // Ansicht: Zeitleiste oder Kalender
-    var calendar by rememberSaveable { mutableStateOf(false) }
+    // Ansicht: 0 Zeitleiste, 1 Kalender, 2 Fotokalender, 3 Karten
+    var view by rememberSaveable { mutableStateOf(0) }
     var monthIndex by rememberSaveable { mutableStateOf(today.year * 12 + today.monthValue - 1) }
     val filtering = searchable && (query.isNotBlank() || year != null || (filterRelationships && relationship != null))
     val shown = if (filtering) {
@@ -239,15 +244,21 @@ fun MomentsScreen(
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
             ) {
-                listOf(false to R.string.moments_view_list, true to R.string.moments_view_calendar).forEachIndexed { i, (value, label) ->
+                listOf(
+                    0 to (R.string.moments_view_list to Icons.AutoMirrored.Rounded.ViewList),
+                    1 to (R.string.moments_view_calendar to Icons.Rounded.CalendarMonth),
+                    2 to (R.string.moments_view_photos to Icons.Rounded.PhotoLibrary),
+                    3 to (R.string.moments_view_cards to Icons.Rounded.GridView),
+                ).forEachIndexed { i, (value, labelIcon) ->
+                    val (label, icon) = labelIcon
                     SegmentedButton(
-                        selected = calendar == value,
-                        onClick = { calendar = value },
-                        shape = SegmentedButtonDefaults.itemShape(i, 2),
+                        selected = view == value,
+                        onClick = { view = value },
+                        shape = SegmentedButtonDefaults.itemShape(i, 4),
                         icon = {
-                            SegmentedButtonDefaults.Icon(calendar == value) {
+                            SegmentedButtonDefaults.Icon(view == value) {
                                 Icon(
-                                    if (value) Icons.Rounded.CalendarMonth else Icons.AutoMirrored.Rounded.ViewList,
+                                    icon,
                                     null,
                                     modifier = Modifier.size(SegmentedButtonDefaults.IconSize),
                                 )
@@ -314,41 +325,36 @@ fun MomentsScreen(
             }
         }
 
-        if (calendar && moments.isNotEmpty()) {
-            val month = YearMonth.of(monthIndex / 12, monthIndex % 12 + 1)
-            CalendarView(
-                month = month,
-                today = today,
-                entries = entries,
-                anniversaries = MomentCalendar.anniversaries(shown, month),
-                onMonth = { monthIndex += it },
-                onToday = { monthIndex = today.year * 12 + today.monthValue - 1 },
-                onOpen = onOpen,
-            )
-        } else {
-            if (timeline.size > 1) {
-                TextButton(
-                    onClick = { onNewestFirst(!settings.newestFirst) },
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(bottom = 8.dp),
-                ) {
-                    Icon(Icons.Rounded.SwapVert, null, modifier = Modifier.size(18.dp))
-                    Text(
-                        stringResource(if (settings.newestFirst) R.string.moments_newest_first else R.string.moments_oldest_first),
-                        Modifier.padding(start = 8.dp),
+        when {
+            view == 1 && moments.isNotEmpty() -> {
+                val month = YearMonth.of(monthIndex / 12, monthIndex % 12 + 1)
+                CalendarView(
+                    month = month,
+                    today = today,
+                    entries = entries,
+                    anniversaries = MomentCalendar.anniversaries(shown, month),
+                    onMonth = { monthIndex += it },
+                    onToday = { monthIndex = today.year * 12 + today.monthValue - 1 },
+                    onOpen = onOpen,
+                )
+            }
+            view == 2 && moments.isNotEmpty() -> PhotoCalendarView(entries, today, onOpen)
+            view == 3 && moments.isNotEmpty() -> {
+                SortToggle(timeline.size, settings.newestFirst, onNewestFirst)
+                CardsView(timeline, today, onOpen)
+            }
+            else -> {
+                SortToggle(timeline.size, settings.newestFirst, onNewestFirst)
+                timeline.forEachIndexed { index, entry ->
+                    TimelineItem(
+                        entry = entry,
+                        today = today,
+                        isFirst = index == 0,
+                        isLast = index == timeline.lastIndex,
+                        onClick = (entry as? TimelineEntry.Saved)?.let { { onOpen(it.moment) } },
+                        relative = relativeText(context, entry.date, today),
                     )
                 }
-            }
-            timeline.forEachIndexed { index, entry ->
-                TimelineItem(
-                    entry = entry,
-                    today = today,
-                    isFirst = index == 0,
-                    isLast = index == timeline.lastIndex,
-                    onClick = (entry as? TimelineEntry.Saved)?.let { { onOpen(it.moment) } },
-                    relative = relativeText(context, entry.date, today),
-                )
             }
         }
 
@@ -530,6 +536,199 @@ private fun CalendarView(
             onClick = (entry as? TimelineEntry.Saved)?.let { { onOpen(it.moment) } },
             relative = relativeText(context, entry.date, today),
         )
+    }
+}
+
+/** Schalter „neueste zuerst“ — steht über der Zeitleiste und über den Karten */
+@Composable
+private fun ColumnScope.SortToggle(count: Int, newestFirst: Boolean, onNewestFirst: (Boolean) -> Unit) {
+    if (count <= 1) return
+    TextButton(
+        onClick = { onNewestFirst(!newestFirst) },
+        modifier = Modifier
+            .align(Alignment.End)
+            .padding(bottom = 8.dp),
+    ) {
+        Icon(Icons.Rounded.SwapVert, null, modifier = Modifier.size(18.dp))
+        Text(
+            stringResource(if (newestFirst) R.string.moments_newest_first else R.string.moments_oldest_first),
+            Modifier.padding(start = 8.dp),
+        )
+    }
+}
+
+/** Fotokalender wie in Google Fotos: Monate mit einem Raster, in dem jeder Tag das Foto des Moments zeigt */
+@Composable
+private fun PhotoCalendarView(entries: List<TimelineEntry>, today: LocalDate, onOpen: (Moment) -> Unit) {
+    val locale = LocalConfiguration.current.locales[0]
+    val colors = MaterialTheme.colorScheme
+    val byDay = entries.filterIsInstance<TimelineEntry.Saved>().groupBy { it.date }
+    val months = byDay.keys.map { YearMonth.from(it) }.distinct().sortedDescending()
+    months.forEach { month ->
+        Text(
+            month.format(DateTimeFormatter.ofPattern("LLLL yyyy", locale))
+                .replaceFirstChar { it.titlecase(locale) },
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
+        )
+        val firstDay = WeekFields.of(locale).firstDayOfWeek
+        Row(Modifier.padding(top = 4.dp)) {
+            (0..6).forEach { i ->
+                val dow = DayOfWeek.of(((firstDay.value - 1 + i) % 7) + 1)
+                Text(
+                    dow.getDisplayName(TextStyle.SHORT, locale),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f).padding(2.dp),
+                )
+            }
+        }
+        val offset = (month.atDay(1).dayOfWeek.value - firstDay.value + 7) % 7
+        val cells: List<LocalDate?> = List(offset) { null } +
+            (1..month.lengthOfMonth()).map { month.atDay(it) }
+        cells.chunked(7).forEach { week ->
+            Row(Modifier.padding(top = 4.dp)) {
+                week.forEach { day ->
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .padding(2.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (day != null) {
+                            val saved = byDay[day].orEmpty()
+                            val withPhoto = saved.firstOrNull { it.moment.photoPaths.isNotEmpty() }
+                                ?: saved.firstOrNull()
+                            val photo = withPhoto?.moment?.photoPaths?.firstOrNull()
+                            if (photo != null && withPhoto != null) {
+                                Box(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .then(
+                                            if (day == today) Modifier.border(2.dp, colors.primary, RoundedCornerShape(8.dp)) else Modifier,
+                                        )
+                                        .clickable { onOpen(withPhoto.moment) },
+                                ) {
+                                    AsyncImage(
+                                        model = File(photo),
+                                        contentDescription = withPhoto.moment.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                    Text(
+                                        day.dayOfMonth.toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.onSurface,
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .padding(4.dp)
+                                            .background(colors.surface.copy(alpha = 0.75f), RoundedCornerShape(6.dp))
+                                            .padding(horizontal = 5.dp, vertical = 2.dp),
+                                    )
+                                }
+                            } else {
+                                Box(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (saved.isNotEmpty()) colors.primaryContainer else Color.Transparent)
+                                        .then(
+                                            if (day == today) Modifier.border(2.dp, colors.primary, RoundedCornerShape(8.dp)) else Modifier,
+                                        )
+                                        .then(if (withPhoto != null) Modifier.clickable { withPhoto?.let { onOpen(it.moment) } } else Modifier),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        day.dayOfMonth.toString(),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (saved.isNotEmpty()) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (saved.isNotEmpty()) colors.onPrimaryContainer else colors.onSurface,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
+/** Große Karten: Foto, Titel und „Tag N“ (Tage seit dem Moment) */
+@Composable
+private fun CardsView(entries: List<TimelineEntry>, today: LocalDate, onOpen: (Moment) -> Unit) {
+    val context = LocalContext.current
+    entries.forEach { entry ->
+        val moment = (entry as? TimelineEntry.Saved)?.moment
+        val photos = moment?.photoPaths.orEmpty()
+        val days = ChronoUnit.DAYS.between(entry.date, today).coerceAtLeast(0)
+        Card(
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .then(if (moment != null) Modifier.clickable { onOpen(moment) } else Modifier),
+        ) {
+            Column {
+                if (photos.isNotEmpty()) {
+                    AsyncImage(
+                        model = File(photos.first()),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 10f),
+                    )
+                } else {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 10f)
+                            .background(Presets[0].brush),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        BeatingHeart(size = 40.dp)
+                    }
+                }
+                Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
+                    Text(
+                        "${Texts.longDate(entry.date)} · ${relativeText(context, entry.date, today)}".uppercase(),
+                        style = LabelCaps,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        moment?.title ?: stringResource(R.string.moment_together_start),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    entry.who?.let {
+                        Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    }
+                    Text(
+                        stringResource(R.string.moments_day_n, formatNumber(days)),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                    if (!moment?.note.isNullOrBlank()) {
+                        Text(
+                            moment!!.note,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 6.dp),
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

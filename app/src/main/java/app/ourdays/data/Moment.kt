@@ -121,9 +121,6 @@ object MomentMath {
         moments.filter { m ->
             m.date == day && m.updatedAt > 0 && Instant.ofEpochMilli(m.updatedAt).atZone(zone).toLocalDate().isBefore(day)
         }
-
-    /** Tage zwischen [m] und [today]: positiv = vergangen, negativ = in der Zukunft. */
-    fun daysSince(m: Moment, today: LocalDate): Long = ChronoUnit.DAYS.between(m.date, today)
 }
 
 /** Suche und Filter in der Zeitleiste, erst sinnvoll ab einigen Momenten */

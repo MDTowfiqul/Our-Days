@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Our Days — Our games</title>
+<meta name="description" content="Play live with your partner, right in the Our Days app.">
+<meta name="theme-color" content="#0F0C20">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: #0F0C20;
+    background-image:
+      radial-gradient(600px 300px at 85% -10%, rgba(255, 77, 141, .25), transparent 60%),
+      radial-gradient(700px 350px at -10% 110%, rgba(124, 93, 250, .30), transparent 60%);
+    color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    width: 100%; max-width: 480px;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 28px;
+    padding: 32px 24px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  h1 { font-size: 30px; line-height: 1.25; margin: 0; }
+  .sub { color: #FFB2B9; font-size: 16px; margin: 10px 0 0; }
+  .games { margin-top: 24px; text-align: left; }
+  a.game {
+    display: flex; gap: 16px; align-items: center;
+    background: rgba(255, 255, 255, .07);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 20px;
+    padding: 18px;
+    margin-top: 12px;
+    color: #fff; text-decoration: none;
+  }
+  a.game:active { background: rgba(255, 255, 255, .13); }
+  .icon { font-size: 30px; }
+  .game b { display: block; font-size: 18px; }
+  .game span { color: rgba(255, 255, 255, .65); font-size: 15px; }
+  .note { margin-top: 20px; font-size: 14px; color: rgba(255, 255, 255, .55); }
+  .foot { margin-top: 28px; font-size: 13px; color: rgba(255, 255, 255, .5); }
+  .foot a { color: #FFB2B9; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main class="card">
+  <div>🎯</div>
+  <h1>Our games</h1>
+  <p class="sub">Play live with your partner — same room, both phones.</p>
+  <div class="games">
+    <a class="game" id="wyrLink" href="./would-you-rather/">
+      <span class="icon">🤔</span>
+      <span><b>Would You Rather</b><span>Pick one — see if you match</span></span>
+    </a>
+    <a class="game" id="quizLink" href="./quiz/">
+      <span class="icon">🧠</span>
+      <span><b>How well do you know me?</b><span>Answer about each other, score together</span></span>
+    </a>
+  </div>
+  <p class="note hidden" id="noRoom">Open this page from the Our Days app to play together — the room code comes from your pairing.</p>
+  <p class="foot">Made with <a href="https://mdtowfiqul.github.io/Our-Days/">Our Days</a> ♥</p>
+</main>
+<script>
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var room = (params.get("room") || "").trim();
+  var v = (params.get("v") || "1").trim();
+  // Room codes are 6 lowercase hex chars; anything else is not a room.
+  if (!/^[0-9a-f]{6}$/.test(room)) {
+    document.getElementById("noRoom").classList.remove("hidden");
+    return;
+  }
+  var suffix = "?room=" + room + "&v=" + encodeURIComponent(v);
+  document.getElementById("wyrLink").href = "./would-you-rather/" + suffix;
+  document.getElementById("quizLink").href = "./quiz/" + suffix;
+})();
+</script>
+</body>
+</html>

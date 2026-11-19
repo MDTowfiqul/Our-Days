@@ -209,6 +209,63 @@ class SyncTest {
     }
 
     @Test
+    fun syncFileCarriesOnlyOneRelationship(): Unit = runBlocking {
+        val repo = LoveRepository(context)
+        repo.resetAll()
+        repo.setNames(listOf("Alex", "Sam", "Mum"))
+        val s = repo.current()
+        val alex = s.people.first { it.name == "Alex" }
+        val sam = s.people.first { it.name == "Sam" }
+        val mum = s.people.first { it.name == "Mum" }
+        // Hauptbeziehung nur Alex + Sam, zweite Beziehung Alex + Mum
+        repo.saveRelationship(Relationship(PeopleCodec.MAIN_ID, listOf(alex.id, sam.id), s.relationships.first().startDate))
+        repo.saveRelationship(Relationship("mum", listOf(alex.id, mum.id), LocalDate.of(2020, 1, 1)))
+        repo.saveMoment(Moment("m1", "Main moment", LocalDate.of(2025, 3, 15)), emptyList(), emptyList())
+        repo.saveMoment(Moment("m2", "Mum moment", LocalDate.of(2025, 3, 16), relationshipId = "mum"), emptyList(), emptyList())
+        val pairing = Pairing(key, null, 1)
+        val file = ByteArrayOutputStream().also { repo.exportSync(it, pairing, PeopleCodec.MAIN_ID) }.toByteArray()
+
+        // Auf einem frischen Handy kommt nur die Hauptbeziehung an — kein Mum-Moment, keine Mum-Beziehung
+        repo.resetAll()
+        repo.setNames(listOf("Alex", "Sam"))
+        val result = repo.importSync(ByteArrayInputStream(file), pairing, PeopleCodec.MAIN_ID)
+        val current = repo.current()
+        assertEquals(listOf("main"), current.relationships.map { it.id })
+        assertEquals(listOf("Alex", "Sam"), current.people.map { it.name })
+        assertEquals(listOf("Main moment"), current.moments.map { it.title })
+        assertEquals(1, result.added)
+    }
+
+    @Test
+    fun syncFileNamesAndDateOnlyCarriesNoMoments(): Unit = runBlocking {
+        val repo = LoveRepository(context)
+        repo.resetAll()
+        repo.setNames(listOf("Alex", "Sam"))
+        repo.saveMoment(Moment("m1", "Main moment", LocalDate.of(2025, 3, 15)), emptyList(), emptyList())
+        val pairing = Pairing(key, null, 1)
+        val file = ByteArrayOutputStream().also { repo.exportSync(it, pairing, PeopleCodec.MAIN_ID, includeMoments = false) }.toByteArray()
+
+        // Auf einem frischen Handy kommen nur Namen und Datum an — kein Moment, kein Foto
+        repo.resetAll()
+        repo.setNames(listOf("Alex", "Sam"))
+        repo.importSync(ByteArrayInputStream(file), pairing, PeopleCodec.MAIN_ID)
+        val current = repo.current()
+        assertEquals(listOf("Alex", "Sam"), current.people.map { it.name })
+        assertEquals(listOf("main"), current.relationships.map { it.id })
+        assertTrue(current.moments.isEmpty())
+        // Die Datei selbst trägt das Kennzeichen, damit der Empfänger es sieht
+        val zip = java.util.zip.ZipInputStream(ByteArrayInputStream(decrypt(file)))
+        var entry = zip.nextEntry
+        var json = ""
+        while (entry != null) {
+            if (entry.name == SyncCodec.JSON) json = zip.readBytes().toString(Charsets.UTF_8)
+            entry = zip.nextEntry
+        }
+        assertFalse(SyncCodec.decode(json).includeMoments)
+        assertTrue(SyncCodec.decode(json).moments.isEmpty())
+    }
+
+    @Test
     fun missingBirthdayComesFromOtherPhone() {
         val birthday = LocalDate.of(1998, 8, 20)
         val remote = SyncData(

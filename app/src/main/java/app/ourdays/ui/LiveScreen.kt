@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -124,6 +123,7 @@ fun LiveScreen(settings: LoveSettings, active: Boolean, now: LocalDateTime? = nu
                 .fillMaxSize()
                 .blur(28.dp)
                 .alpha(0.55f),
+            photoPath = settings.photoFor(settings.relationship.id),
         )
         Box(
             Modifier
@@ -209,7 +209,7 @@ fun LiveScreen(settings: LoveSettings, active: Boolean, now: LocalDateTime? = nu
 
 /** Langsam aufsteigende, halbtransparente Herzen im Hintergrund. */
 @Composable
-private fun FloatingHearts() {
+internal fun FloatingHearts() {
     val transition = rememberInfiniteTransition(label = "hearts")
     // x-Position (Anteil der Breite), Größe, Dauer, Versatz
     val hearts = remember {
@@ -242,3 +242,4 @@ private fun FloatingHearts() {
         }
     }
 }
+

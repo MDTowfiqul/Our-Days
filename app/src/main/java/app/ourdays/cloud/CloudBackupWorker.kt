@@ -5,7 +5,6 @@ import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -13,7 +12,6 @@ import app.ourdays.data.LoveRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 /**
@@ -139,13 +137,4 @@ object CloudBackupScheduler {
         ).setConstraints(constraints).addTag(TAG).build()
         wm.enqueueUniquePeriodicWork(TAG, ExistingPeriodicWorkPolicy.UPDATE, request)
     }
-
-    /** Sofortige Sicherung, z. B. über den Knopf in den Einstellungen. */
-    fun runNow(context: Context): UUID {
-        val request = OneTimeWorkRequestBuilder<CloudBackupWorker>().addTag(TAG).build()
-        WorkManager.getInstance(context).enqueue(request)
-        return request.id
-    }
-
-    fun workInfo(context: Context, id: UUID) = WorkManager.getInstance(context).getWorkInfoById(id)
 }

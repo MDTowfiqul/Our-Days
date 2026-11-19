@@ -50,6 +50,74 @@ private class Piece(
 )
 
 /**
+ * Kurzer Konfetti-Stoß, z. B. für einen Kuss oder eine geöffnete Überraschung.
+ * Feuert bei jedem neuen [key] einmal; kleiner und kürzer als [Confetti].
+ * [originFraction] ist der Startpunkt im Bild (Anteil von Breite und Höhe).
+ */
+@Composable
+internal fun ConfettiBurst(
+    key: Int,
+    originFraction: Offset = Offset(0.5f, 0.8f),
+    modifier: Modifier = Modifier.fillMaxSize(),
+) {
+    val context = LocalContext.current
+    val animationsOff = remember {
+        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    }
+    if (animationsOff) return
+    val pieces = remember(key) {
+        val random = Random(System.nanoTime())
+        List(48) {
+            Piece(
+                angle = (-Math.PI + random.nextDouble() * Math.PI).toFloat(),
+                speed = 0.25f + random.nextFloat() * 0.5f,
+                spin = random.nextFloat() * 6f,
+                turn = -8f + random.nextFloat() * 16f,
+                width = 5f + random.nextFloat() * 5f,
+                height = 9f + random.nextFloat() * 8f,
+                color = ConfettiColors[random.nextInt(ConfettiColors.size)],
+                heart = random.nextFloat() < 0.4f,
+            )
+        }
+    }
+    var time by remember(key) { mutableFloatStateOf(0f) }
+    val duration = 1.6f
+    LaunchedEffect(key) {
+        val start = withFrameNanos { it }
+        while (time < duration) {
+            withFrameNanos { time = (it - start) / 1_000_000_000f }
+        }
+    }
+    if (time >= duration) return
+    Canvas(modifier) {
+        val origin = Offset(size.width * originFraction.x, size.height * originFraction.y)
+        val fade = if (time > duration * 0.7f) 1f - (time - duration * 0.7f) / (duration * 0.3f) else 1f
+        val gravity = size.height * 0.75f
+        pieces.forEach { p ->
+            val reach = size.width * p.speed
+            val x = origin.x + cos(p.angle) * reach * time
+            val y = origin.y + sin(p.angle) * reach * time + gravity * time * time
+            translate(x, y) {
+                rotate(p.spin * 57f + p.turn * time * 57f, Offset.Zero) {
+                    if (p.heart) {
+                        val s = 12f * density / 24f
+                        scale(s, s, Offset.Zero) {
+                            translate(-12f, -12f) { drawPath(HeartPath, p.color.copy(alpha = fade)) }
+                        }
+                    } else {
+                        val h = p.height * density * abs(cos(time * 6f + p.spin)).coerceAtLeast(0.1f)
+                        drawRect(
+                            p.color.copy(alpha = fade),
+                            topLeft = Offset(-p.width * density / 2, -h / 2),
+                            size = Size(p.width * density, h),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+/**
  * Konfetti, das einmal aus der Mitte oben platzt und nach unten fällt (etwa drei Sekunden).
  * Läuft nur einmal pro App-Start und gar nicht, wenn am Handy Animationen ausgeschaltet sind.
  */

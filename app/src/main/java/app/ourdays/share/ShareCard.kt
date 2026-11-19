@@ -47,7 +47,14 @@ object ShareCard {
         val h = HEIGHT.toFloat()
 
         // Foto (mit dem Ausschnitt aus der App) oder Farbverlauf
-        WidgetPhoto.render(context, s, w, h, maxSide = HEIGHT.toFloat())?.let {
+        WidgetPhoto.render(
+            context,
+            s,
+            w,
+            h,
+            maxSide = HEIGHT.toFloat(),
+            photoPath = s.photoFor(if (s.showAll) null else s.relationship.id),
+        )?.let {
             canvas.drawBitmap(it, null, RectF(0f, 0f, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
         }
         // Verlauf von unten ins Weinrot, damit die Schrift auf jedem Foto lesbar ist
@@ -76,9 +83,7 @@ object ShareCard {
 
 
         // Kleiner Schriftzug oben, mit gezeichnetem Herz statt Emoji
-        val brand = paint(40f, sansMedium, soft)
-        canvas.drawText("Since Us", MARGIN, 120f, brand)
-        drawHeart(canvas, MARGIN + brand.measureText("Since Us") + 12f, 120f - 30f, 34f, pink)
+        brand(canvas)
 
         val together = LoveMath.together(s.startDate, today)
         val future = s.startDate.isAfter(today)
@@ -182,7 +187,14 @@ object ShareCard {
         val canvas = Canvas(out)
         val w = WIDTH.toFloat()
         val h = HEIGHT.toFloat()
-        (background ?: WidgetPhoto.render(context, s, w, h, maxSide = h))?.let {
+        (background ?: WidgetPhoto.render(
+            context,
+            s,
+            w,
+            h,
+            maxSide = h,
+            photoPath = s.photoFor(if (s.showAll) null else s.relationship.id),
+        ))?.let {
             canvas.drawBitmap(it, null, RectF(0f, 0f, w, h), Paint(Paint.FILTER_BITMAP_FLAG))
         }
         shade(canvas, w, h)
@@ -236,11 +248,11 @@ object ShareCard {
     private val SOFT = 0xE6FFE3E7.toInt()
     private val PINK = 0xFFFF8FA3.toInt()
 
-    /** Schriftzug „Since Us“ mit Herz oben links */
+    /** Schriftzug „Our Days“ mit Herz oben links */
     private fun brand(canvas: Canvas) {
         val brand = paint(40f, sansMedium, SOFT)
-        canvas.drawText("Since Us", MARGIN, 120f, brand)
-        drawHeart(canvas, MARGIN + brand.measureText("Since Us") + 12f, 120f - 30f, 34f, PINK)
+        canvas.drawText("Our Days", MARGIN, 120f, brand)
+        drawHeart(canvas, MARGIN + brand.measureText("Our Days") + 12f, 120f - 30f, 34f, PINK)
     }
 
     /** Text in höchstens [maxLines] Zeilen umbrechen; was nicht passt, wird mit „…“ gekürzt */

@@ -89,6 +89,12 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        // The test executor talks to Gradle over loopback; localhost
+        // resolves to ::1 first here, and the executor only listens on
+        // IPv4 — without this the worker never connects (120 s timeout).
+        unitTests.all {
+            it.systemProperty("java.net.preferIPv4Stack", "true")
+        }
         // Optional: Robolectric-Laufzeit aus lokalem Ordner statt Download
         System.getenv("ROBOLECTRIC_DEPS_DIR")?.let { dir ->
             unitTests.all {

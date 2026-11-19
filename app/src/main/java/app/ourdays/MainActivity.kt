@@ -254,10 +254,10 @@ class MainActivity : ComponentActivity() {
 
                 BackHandler(enabled = showSettings || showCloudRestore || showPartnerSync || showGuide || editingPhoto || editingMoment != null || showLicenses) {
                     when {
+                        showGuide -> showGuide = false
                         showLicenses -> showLicenses = false
                         showCloudRestore -> showCloudRestore = false
                         showPartnerSync -> showPartnerSync = false
-                        showGuide -> showGuide = false
                         editingMoment != null -> editingMoment = null
                         editingPhoto -> editingPhoto = false
                         else -> showSettings = false
@@ -268,11 +268,11 @@ class MainActivity : ComponentActivity() {
                 val screen = when {
                     !introDone -> "intro"
                     s == null -> "loading"
+                    showGuide -> "guide"
                     editingPhoto && s.photoPath != null -> "editor"
                     editingMoment != null && s.onboardingDone -> "moment"
                     showCloudRestore -> "cloud-restore"
                     showPartnerSync -> "partner-sync"
-                    showGuide -> "guide"
                     !s.onboardingDone -> "onboarding"
                     showSettings && showLicenses -> "licenses"
                     showSettings -> "settings"
@@ -352,6 +352,7 @@ class MainActivity : ComponentActivity() {
                                         onMe = vm::setMe,
                                         onUnpair = vm::unpair,
                                         onOpen = { syncOpener.launch(arrayOf("*/*")) },
+                                        onGuide = { showGuide = true },
                                     ),
                                     onContinue = {
                                         vm.setOnboardingDone(true)

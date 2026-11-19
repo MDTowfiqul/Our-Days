@@ -22,6 +22,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -88,6 +91,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        hideSystemBars()
         lockOn = AppLock.isEnabled(this)
         // Nach dem Drehen entsperrt bleiben, nach langer Pause (App vom System beendet) wieder sperren
         val away = System.currentTimeMillis() - (savedInstanceState?.getLong(KEY_SAVED_AT) ?: 0L)
@@ -504,6 +508,20 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Vollbild: Status- und Navigationsleiste ausblenden; Wischen bringt sie kurz zurück. */
+    private fun hideSystemBars() {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        // Nach einem Dialog oder dem Teilen-Fenster die Leisten wieder ausblenden
+        if (hasFocus) hideSystemBars()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

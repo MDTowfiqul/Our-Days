@@ -110,6 +110,21 @@
   </div>
   <p class="foot">Made with <a href="https://mdtowfiqul.github.io/Our-Days/">Our Days</a> ♥</p>
 </main>
+<script>
+  // Report script-load errors INTO the page so they are visible without DevTools.
+  window.__gameError = null;
+  window.addEventListener("error", function (e) {
+    window.__gameError = String((e && e.message) || (e && e.error) || e);
+    var el = document.getElementById("loadingText");
+    if (el) el.textContent = "Start failed: " + window.__gameError;
+  });
+  window.addEventListener("unhandledrejection", function (e) {
+    var r = e && e.reason;
+    window.__gameError = String((r && r.message) || r);
+    var el = document.getElementById("loadingText");
+    if (el) el.textContent = "Start failed: " + window.__gameError;
+  });
+</script>
 <script type="module">
 import { roomCodeFromUrl, waitForAuth, joinRoom, roomRef, onServerOffset } from "../shared.js";
 import { set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
@@ -245,7 +260,7 @@ if (!room) {
   // If the game script never starts (e.g. this browser blocks storage),
   // say so instead of spinning forever.
   setTimeout(function () {
-    if (!window.__gameBooted) {
+    if (!window.__gameBooted && !window.__gameError) {
       var el = document.getElementById("loadingText");
       if (el) el.textContent = "This page could not start here — please reload or try another browser. / এই পেজটি এখানে চালু হয়নি — আবার লোড করো বা অন্য ব্রাউজার চেষ্টা করো।";
     }

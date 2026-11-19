@@ -112,7 +112,10 @@ import { roomCodeFromUrl, waitForAuth, joinRoom, roomRef, onServerOffset } from 
 import { set, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 var room = roomCodeFromUrl();
-var lang = localStorage.getItem("watch-lang") || "en";
+var __memStore = {};
+function storeGet(k) { try { return localStorage.getItem(k); } catch (e) { return __memStore[k] || null; } }
+function storeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { __memStore[k] = v; } }
+var lang = storeGet("watch-lang") || "en";
 var uid = null;
 var serverOffset = 0;
 var player = null;
@@ -152,6 +155,7 @@ function isFacebookLink(text) {
 }
 
 function renderLang() {
+  window.__gameBooted = true;
   el("langBtn").textContent = lang === "bn" ? "English" : "বাংলা";
   el("loadingText").textContent = t("Joining your room…", "রুমে যোগ দিচ্ছি…");
   el("pasteHint").textContent = t("Paste a YouTube link — both phones watch the same video, in sync.", "ইউটিউব লিংক দাও — দুই ফোন একই ভিডিও একসাথে দেখবে।");
@@ -206,7 +210,7 @@ el("changeBtn").addEventListener("click", function () {
 
 el("langBtn").addEventListener("click", function () {
   lang = lang === "bn" ? "en" : "bn";
-  localStorage.setItem("watch-lang", lang);
+  storeSet("watch-lang", lang);
   renderLang();
 });
 
@@ -295,6 +299,16 @@ if (!room) {
     el("loadingText").textContent = t("Could not join the room — check your connection and reload.", "রুমে যোগ দেওয়া যায়নি — সংযোগ দেখে আবার লোড করো।");
   });
 }
+</script>
+<script>
+  // If the game script never starts (e.g. this browser blocks storage),
+  // say so instead of spinning forever.
+  setTimeout(function () {
+    if (!window.__gameBooted) {
+      var el = document.getElementById("loadingText");
+      if (el) el.textContent = "This page could not start here — please reload or try another browser. / এই পেজটি এখানে চালু হয়নি — আবার লোড করো বা অন্য ব্রাউজার চেষ্টা করো।";
+    }
+  }, 8000);
 </script>
 </body>
 </html>

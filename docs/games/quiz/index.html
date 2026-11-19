@@ -113,7 +113,10 @@ import { set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebas
 var ROUNDS = 10;
 var room = roomCodeFromUrl();
 var questions = [];
-var lang = localStorage.getItem("quiz-lang") || "en";
+var __memStore = {};
+function storeGet(k) { try { return localStorage.getItem(k); } catch (e) { return __memStore[k] || null; } }
+function storeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { __memStore[k] = v; } }
+var lang = storeGet("quiz-lang") || "en";
 var uid = null;
 var players = []; // sorted UIDs; round r is about players[(r - 1) % 2]
 var round = 1;
@@ -127,6 +130,7 @@ function aboutUid() { return players.length === 2 ? players[(round - 1) % 2] : n
 function iAmAbout() { return aboutUid() === uid; }
 
 function renderLang() {
+  window.__gameBooted = true;
   el("langBtn").textContent = lang === "bn" ? "English" : "বাংলা";
   el("roundLabel").textContent = questions.length ? t("Round ", "রাউন্ড ") + round + " / " + ROUNDS : "";
   el("loadingText").textContent = t("Joining your room…", "রুমে যোগ দিচ্ছি…");
@@ -220,7 +224,7 @@ function pick(i) {
 
 el("langBtn").addEventListener("click", function () {
   lang = lang === "bn" ? "en" : "bn";
-  localStorage.setItem("quiz-lang", lang);
+  storeSet("quiz-lang", lang);
   renderLang();
 });
 
@@ -278,7 +282,19 @@ fetch("./questions.json").then(function (r) { return r.json(); }).then(function 
   }).catch(function () {
     el("loadingText").textContent = t("Could not join the room — check your connection and reload.", "রুমে যোগ দেওয়া যায়নি — সংযোগ দেখে আবার লোড করো।");
   });
+}).catch(function () {
+  el("loadingText").textContent = t("Could not load the game — check your connection and reload.", "গেমটি লোড করা যায়নি — সংযোগ দেখে আবার লোড করো।");
 });
+</script>
+<script>
+  // If the game script never starts (e.g. this browser blocks storage),
+  // say so instead of spinning forever.
+  setTimeout(function () {
+    if (!window.__gameBooted) {
+      var el = document.getElementById("loadingText");
+      if (el) el.textContent = "This page could not start here — please reload or try another browser. / এই পেজটি এখানে চালু হয়নি — আবার লোড করো বা অন্য ব্রাউজার চেষ্টা করো।";
+    }
+  }, 8000);
 </script>
 </body>
 </html>

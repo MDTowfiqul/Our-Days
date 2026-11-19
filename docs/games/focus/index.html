@@ -116,7 +116,10 @@ import { set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasej
 
 var DURATIONS = [10, 15, 25, 45, 60, 90, 120];
 var room = roomCodeFromUrl();
-var lang = localStorage.getItem("focus-lang") || "en";
+var __memStore = {};
+function storeGet(k) { try { return localStorage.getItem(k); } catch (e) { return __memStore[k] || null; } }
+function storeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { __memStore[k] = v; } }
+var lang = storeGet("focus-lang") || "en";
 var uid = null;
 var minutes = 25;
 var focus = null; // { start, minutes, dead } — start is a server timestamp
@@ -129,6 +132,7 @@ function t(en, bn) { return lang === "bn" ? bn : en; }
 function serverNow() { return Date.now() + serverOffset; }
 
 function renderLang() {
+  window.__gameBooted = true;
   el("langBtn").textContent = lang === "bn" ? "English" : "বাংলা";
   el("loadingText").textContent = t("Joining your room…", "রুমে যোগ দিচ্ছি…");
   el("idleText").textContent = t("Plant a tree together and focus until it grows. If anyone gives up, the tree dies.", "একসাথে গাছ লাগাও আর মনোযোগ দিয়ে বড় হতে দাও। কেউ হাল ছাড়লে গাছ মরে যাবে।");
@@ -194,7 +198,7 @@ function renderState() {
 
 el("langBtn").addEventListener("click", function () {
   lang = lang === "bn" ? "en" : "bn";
-  localStorage.setItem("focus-lang", lang);
+  storeSet("focus-lang", lang);
   renderLang();
 });
 
@@ -236,6 +240,16 @@ if (!room) {
     el("loadingText").textContent = t("Could not join the room — check your connection and reload.", "রুমে যোগ দেওয়া যায়নি — সংযোগ দেখে আবার লোড করো।");
   });
 }
+</script>
+<script>
+  // If the game script never starts (e.g. this browser blocks storage),
+  // say so instead of spinning forever.
+  setTimeout(function () {
+    if (!window.__gameBooted) {
+      var el = document.getElementById("loadingText");
+      if (el) el.textContent = "This page could not start here — please reload or try another browser. / এই পেজটি এখানে চালু হয়নি — আবার লোড করো বা অন্য ব্রাউজার চেষ্টা করো।";
+    }
+  }, 8000);
 </script>
 </body>
 </html>

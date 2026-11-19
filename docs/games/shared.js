@@ -16,13 +16,18 @@ export function roomCodeFromUrl() {
   return /^[0-9a-f]{6}$/.test(room) ? room : "";
 }
 
-/** Promise that resolves with the anonymous UID once signed in. */
-export function waitForAuth() {
+/**
+ * Promise that resolves with the anonymous UID once signed in.
+ * Rejects after 20s so a stuck sign-in shows an error instead of
+ * spinning forever (the pages' .catch handlers display it).
+ */
+export function waitForAuth(timeoutMs = 20000) {
   return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("auth timeout")), timeoutMs);
     const off = onAuthStateChanged(auth, (user) => {
-      if (user) { off(); resolve(user.uid); }
-    }, (err) => reject(err));
-    signInAnonymously(auth).catch((err) => reject(err));
+      if (user) { clearTimeout(timer); off(); resolve(user.uid); }
+    }, (err) => { clearTimeout(timer); reject(err); });
+    signInAnonymously(auth).catch((err) => { clearTimeout(timer); reject(err); });
   });
 }
 

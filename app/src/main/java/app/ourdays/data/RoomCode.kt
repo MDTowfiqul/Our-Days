@@ -28,3 +28,9 @@ fun gameUrl(game: String, roomCode: String): String =
 
 /** URL of the games index page for a room. */
 fun gamesIndexUrl(roomCode: String): String = "${GAMES_BASE_URL}?room=$roomCode&v=1"
+
+/** URL of the Focus together page for a room. */
+fun focusUrl(roomCode: String): String = gameUrl("focus", roomCode)
+
+/** URL of the Watch together page for a room. */
+fun watchUrl(roomCode: String): String = gameUrl("watch", roomCode)

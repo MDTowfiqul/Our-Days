@@ -33,8 +33,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.ourdays.data.LoveSettings
 import app.ourdays.data.Pairing
+import app.ourdays.data.focusUrl
 import app.ourdays.data.gamesIndexUrl
 import app.ourdays.data.roomCodeForPairing
+import app.ourdays.data.watchUrl
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -120,8 +122,22 @@ fun FunTab(
                 GameWebView(gamesIndexUrl(roomCodeForPairing(pairing))) { section = null }
             }
         }
-        // Fokus und Watch bekommen ihre Bildschirme in den nächsten Aufgaben
-        FunSection.FOCUS, FunSection.WATCH -> FunSectionSoon(s)
+        FunSection.FOCUS -> {
+            val pairing = pairings[settings.relationship.id]
+            if (pairing == null) {
+                FunNotPaired()
+            } else {
+                GameWebView(focusUrl(roomCodeForPairing(pairing)), titleRes = FunSection.FOCUS.title) { section = null }
+            }
+        }
+        FunSection.WATCH -> {
+            val pairing = pairings[settings.relationship.id]
+            if (pairing == null) {
+                FunNotPaired()
+            } else {
+                GameWebView(watchUrl(roomCodeForPairing(pairing)), titleRes = FunSection.WATCH.title) { section = null }
+            }
+        }
     }
 }
 
@@ -215,31 +231,6 @@ private fun FunNotPaired() {
             stringResource(R.string.game_not_paired),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
-        )
-    }
-}
-
-/** Platzhalter, bis der Bereich in den nächsten Aufgaben seinen Bildschirm bekommt */
-@Composable
-private fun FunSectionSoon(section: FunSection) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        SectionIcon(section.iconAsset, 96)
-        Text(
-            stringResource(section.title),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(top = 24.dp),
-        )
-        Text(
-            stringResource(R.string.fun_hub_soon),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp),
         )
     }
 }

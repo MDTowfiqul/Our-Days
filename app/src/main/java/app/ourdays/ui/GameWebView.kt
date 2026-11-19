@@ -37,7 +37,7 @@ import ourdays.app.R
 
 /** A hosted game page in a WebView, with an offline state + retry. */
 @Composable
-fun GameWebView(url: String, onBack: () -> Unit) {
+fun GameWebView(url: String, @androidx.annotation.StringRes titleRes: Int = R.string.fun_hub_games, onBack: () -> Unit) {
     val context = LocalContext.current
     var online by remember { mutableStateOf(isOnline(context)) }
     var reloadTick by remember { mutableIntStateOf(0) }
@@ -46,7 +46,7 @@ fun GameWebView(url: String, onBack: () -> Unit) {
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.back), modifier = Modifier.size(24.dp))
             }
-            Text(stringResource(R.string.fun_hub_games), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(titleRes), style = MaterialTheme.typography.titleLarge)
         }
         if (online) {
             key(reloadTick) {

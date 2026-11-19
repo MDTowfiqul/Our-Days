@@ -186,4 +186,16 @@ class FunTest {
             gameUrl("would-you-rather", "abc123"),
         )
     }
+
+    @Test
+    fun focusAndWatchUrlsHaveRoomAndVersion() {
+        assertEquals(
+            "https://mdtowfiqul.github.io/Our-Days/games/focus/?room=abc123&v=1",
+            focusUrl("abc123"),
+        )
+        assertEquals(
+            "https://mdtowfiqul.github.io/Our-Days/games/watch/?room=abc123&v=1",
+            watchUrl("abc123"),
+        )
+    }
 }
